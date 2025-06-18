@@ -1,0 +1,281 @@
+/*
+ * Copyright 2025 Sweden Connect
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+html,
+body {
+    background-color: #f5f5f5;
+    font-family: "Open Sans", sans-serif;
+}
+
+hr {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+a {
+    color: #000000;
+    text-decoration: underline;
+    /*
+    font-size: 14px;
+    line-height: 16px;
+     */
+}
+
+p {
+    font-size: 14px;
+    line-height: 24px;
+}
+
+.top-logo {
+    padding: 19px 0;
+}
+
+.main-div {
+    margin-top: 30px;
+}
+
+.content-container {
+    background: #ffffff;
+    padding: 29px;
+    -webkit-box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
+    -moz-box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.content-heading {
+    padding-bottom: 27px;
+}
+
+.content-heading h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 24px;
+}
+
+.copyright {
+    margin-top: 23px;
+}
+
+.copyright p {
+    font-size: 10px;
+    line-height: 24px;
+    margin-right: 10px;
+}
+
+.copyright img {
+    transform: translateY(5%);
+}
+
+@media (min-width: 576px) {
+    .flags {
+        margin-top: 36px;
+    }
+
+    .flags:first-of-type {
+        margin-top: 38px;
+    }
+}
+
+.providers {
+    margin-top: 33px;
+}
+
+.providers p.info {
+    font-size: 18px;
+    line-height: 24px;
+}
+
+.providers .provider {
+    margin-top: 9px;
+    padding: 20px;
+    background-color: #f7f7f7;
+    border: 1px solid #d8d8d8;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.providers .provider img,
+.providers .provider p {
+    display: inline-block;
+}
+
+.providers .provider img {
+    width: 33px;
+}
+
+.providers .provider p {
+    margin: 0 0 0 8px;
+    width: calc(100% - 46px);
+    vertical-align: middle;
+}
+
+.providers .provider:first-of-type {
+    margin-top: 23px;
+}
+
+.ns-providers {
+    margin-top: 44px;
+}
+
+.ns-providers p.info {
+    font-size: 14px;
+    line-height: 24px;
+    margin-bottom: 23px;
+}
+
+.ns-providers .ns-provider img {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    width: 25px;
+    height: auto;
+    opacity: 0.6;
+}
+
+@media (min-width: 576px) {
+    .ns-providers .ns-provider img {
+        margin-right: 8px;
+        margin-left: 32px;
+        display: inline-block;
+    }
+}
+
+.ns-providers .ns-provider p {
+    margin: 10px 0 0;
+    width: 100%;
+    text-align: center;
+    vertical-align: middle;
+    display: inline-block;
+    font-size: 12px;
+    line-height: 17px;
+}
+
+@media (min-width: 576px) {
+    .ns-providers .ns-provider p {
+        width: calc(100% - 70px);
+        margin: 0;
+        text-align: left;
+    }
+}
+
+.ns-providers .ns-provider:first-of-type {
+    margin-bottom: 13px;
+}
+
+.verification {
+    margin-top: 23px;
+}
+
+.verification .box {
+    margin-top: 9px;
+    padding: 20px 32px;
+    background-color: #f7f7f7;
+    border: 1px solid #d8d8d8;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-bottom: 33px;
+}
+
+.verification .box div {
+    display: block;
+    margin-top: 5px;
+}
+
+.verification .box .name {
+    margin: 0;
+    font-size: 18px;
+    line-height: 24px;
+}
+
+.verification .box button {
+    margin-top: 20px;
+    font-size: 14px;
+    padding: 10px 75px;
+    font-weight: 700;
+}
+
+.verification p {
+    font-size: 14px;
+    line-height: 24px;
+}
+
+.error h2 {
+    font-size: 24px;
+    line-height: 26px;
+    margin: 0;
+    font-weight: 700;
+}
+
+.error p {
+    margin-top: 6px;
+}
+
+.error p:last-child {
+    margin-bottom: 0;
+}
+
+.sign-message {
+    margin-bottom: 50px;
+    background-color: #f7f7f7;
+    border-top: 1px solid #d0caca;
+    border-bottom: 1px solid #d0caca;
+    padding: 23px 28px;
+}
+
+.sign-message pre {
+    margin: 0;
+}
+
+.header {
+    background-color: #fff;
+    -webkit-box-shadow: 0 -3px 10px 0 rgba(0, 0, 0, 0.5);
+    -moz-box-shadow: 0 -3px 10px 0 rgba(0, 0, 0, 0.5);
+    box-shadow: 0 -3px 10px 0 rgba(0, 0, 0, 0.5);
+}
+
+.tablet-up {
+    display: none;
+}
+
+@media (min-width: 576px) {
+    .container {
+        width: 900px;
+    }
+
+    .tablet-up {
+        display: block;
+    }
+
+    .tablet-down {
+        display: none;
+    }
+}
+
+/* Return */
+.return {
+    padding: 23px;
+    border-bottom: 1px solid #d0caca;
+}
+
+/* Helpers */
+.full-width {
+    margin-left: -29px;
+    margin-right: -29px;
+}
+
+.hide {
+    display: none;
+}

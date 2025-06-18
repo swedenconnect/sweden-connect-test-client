@@ -1,0 +1,156 @@
+<!--
+  ~ Copyright 2025 Sweden Connect
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}" th:xmllang="${#locale.language}">
+<head th:insert="~{fragments/base :: headerFragment}"></head>
+<body>
+
+<nav class="navbar navbar-expand-lg bg-light" data-bs-theme="light">
+  <div class="container-fluid">
+    <a id="menu-home" class="navbar-brand" href="#">
+      <img th:src="@{/images/logo-notext.svg}" src="/images/logo-notext.svg" width="30" height="30"
+           class="d-inline-block align-top" alt="Sweden Connect"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01"
+            aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarColor01">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a id="menu-saml" class="nav-link gen-saml" href="#" th:text="#{ui.menu.saml}">SAML</a>
+        </li>
+        <li class="nav-item">
+          <a id="menu-oidc" class="nav-link gen-oidc" href="#" th:text="#{ui.menu.oidc}">OIDC</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button"
+             aria-haspopup="true"
+             aria-expanded="false" th:text="#{ui.menu.advanced}">Advanced</a>
+          <div class="dropdown-menu">
+            <a id="menu-saml-clients" class="dropdown-item" href="#" th:text="#{ui.menu.advanced.saml-clients}">SAML
+              Clients</a>
+            <a id="menu-saml-metadata" class="dropdown-item" href="#" th:text="#{ui.menu.advanced.saml-metadata}">SAML
+              Federation
+              Metadata</a>
+            <a class="dropdown-item" href="#" th:text="#{ui.menu.advanced.saml-settings}">SAML Settings</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#" th:text="#{ui.menu.advanced.oidc-clients}">OIDC Clients</a>
+            <a class="dropdown-item" href="#" th:text="#{ui.menu.advanced.oidc-ops}">OIDC Providers</a>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<main class="container main" id="main">
+
+  <div id="main-home" class="main-div">
+    <h1>Sweden Connect Test Client for SAML and OpenID Connect</h1>
+  </div> <!-- main-home -->
+
+  <div id="main-saml" class="main-div">
+    <h1>SAML</h1>
+  </div>
+
+  <div id="main-saml-clients" class="main-div">
+    <h1>SAML Clients</h1>
+  </div>
+
+  <!-- SAML Metadata -->
+  <div id="main-saml-metadata" class="main-div">
+
+    <div class="col-sm-12 content-container">
+      <div class="row">
+        <div class="col-sm-12 content-heading">
+          <h2 th:text="#{ui.saml.metadata.title}">SAML Federation Metadata</h2>
+        </div>
+        <div class="col-sm-12">
+
+          <table class="table table-hover">
+            <tbody>
+            <tr>
+              <th scope="row">Description</th>
+              <td><span id="saml-metadata-description"></span></td>
+            </tr>
+            <tr>
+              <th scope="row">Location</th>
+              <td>
+                <span id="saml-metadata-location"></span>
+                <a id="saml-metadata-location-url"></a>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Last updated</th>
+              <td><span id="saml-metadata-last-update"></span></td>
+            </tr>
+            </tbody>
+          </table>
+          <div id="saml-metadata-view-metadata">
+            <button type="button" class="btn btn-primary">View metadata</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- main-saml-metadata -->
+
+  <div id="main-oidc" class="main-div">
+    <h1>OIDC</h1>
+  </div>
+
+  <div id="xml-viewer">
+    <div class="modal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Modal title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <pre>
+              <code id="xml-content" class="language-xml"></code>
+            </pre>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</main>
+
+<footer th:replace="~{fragments/footer :: copyright}"></footer>
+
+<script th:inline="javascript">
+  let ui_messages = {
+    ui_saml_xml_metadata_idps : '/*[[#{ui.saml.xml.metadata.idps}]]*/',
+    ui_saml_xml_metadata_all : '/*[[#{ui_saml_xml_metadata_all}]]*/'
+  };
+</script>
+
+<th:block th:insert="~{fragments/base :: scriptFragment}"></th:block>
+<th:block th:insert="~{fragments/base :: scriptFragment2}"></th:block>
+
+</body>
+</html>
