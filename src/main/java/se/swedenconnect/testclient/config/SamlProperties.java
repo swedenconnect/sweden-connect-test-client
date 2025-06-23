@@ -15,6 +15,7 @@
  */
 package se.swedenconnect.testclient.config;
 
+import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +24,12 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.util.Assert;
+import se.swedenconnect.security.credential.config.properties.PkiCredentialConfigurationProperties;
 
 import java.io.File;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Configuration properties for SAML.
@@ -33,7 +37,7 @@ import java.security.cert.X509Certificate;
  * @author Martin Lindström
  */
 @Slf4j
-public class SamlConfigurationProperties implements InitializingBean {
+public class SamlProperties implements InitializingBean {
 
   /**
    * SAML federation settings.
@@ -42,11 +46,35 @@ public class SamlConfigurationProperties implements InitializingBean {
   @NestedConfigurationProperty
   private final SamlFederationProperties federation = new SamlFederationProperties();
 
+  /**
+   * The SP:s.
+   */
+  @Getter
+  @NestedConfigurationProperty
+  private final List<SamlSpProperties> sps = new ArrayList<>();
+
   /** {@inheritDoc} */
   @Override
-  public void afterPropertiesSet() throws Exception {
+  public void afterPropertiesSet() {
     Assert.notNull(this.federation, "testclient.saml.federation.* is required");
     this.federation.afterPropertiesSet();
+    Assert.notEmpty(this.sps, "testclient.saml.sps is required (at least one SP must be configured)");
+    this.sps.forEach(SamlSpProperties::afterPropertiesSet);
+  }
+
+  public void assertCredentials(@Nullable final PkiCredentialConfigurationProperties defaultCredential)
+      throws IllegalArgumentException {
+    if (defaultCredential == null) {
+      for (final SamlSpProperties sp : this.sps) {
+        if (sp.getCredentials() == null) {
+          throw new IllegalArgumentException("No credentials configured for SP %s".formatted(sp.getEntityId()));
+        }
+        if (sp.getCredentials().getSigning() == null || sp.getCredentials().getEncryption() == null) {
+          throw new IllegalArgumentException(
+              "Incomplete credentials configuration for SP %s".formatted(sp.getEntityId()));
+        }
+      }
+    }
   }
 
   /**

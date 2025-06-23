@@ -17,7 +17,10 @@ package se.swedenconnect.testclient.config;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import se.swedenconnect.security.credential.config.properties.PkiCredentialConfigurationProperties;
 
 /**
  * Configuration properties for the Sweden Connect Test Client application.
@@ -25,11 +28,23 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Martin Lindström
  */
 @ConfigurationProperties("testclient")
-public class TestClientConfigurationProperties {
+public class TestClientConfigurationProperties implements InitializingBean {
+
+  /**
+   * The default credential to use if no signing or encryption credential is given for a client.
+   */
+  @Getter
+  @Setter
+  private PkiCredentialConfigurationProperties defaultCredential;
 
   /** The SAML settings. */
   @Getter
-  @Setter
-  private SamlConfigurationProperties saml;
+  @NestedConfigurationProperty
+  private SamlProperties saml = new SamlProperties();
 
+  @Override
+  public void afterPropertiesSet() {
+    this.saml.afterPropertiesSet();
+    this.saml.assertCredentials(this.defaultCredential);
+  }
 }

@@ -50,7 +50,7 @@ function displayFederationInfo() {
 $(document).ready(function() {
 
   $('#saml-metadata-view-metadata button').click(function(){
-    $('#xml-viewer .modal-title').text(ui_messages.ui_saml_xml_metadata_all);
+    $('#xml-viewer .modal-title').text(getUIMessageText('ui.saml.xml.metadata.all'));
 
     $.ajax({
       url: '/saml/federation/metadata',

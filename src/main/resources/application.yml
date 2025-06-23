@@ -16,3 +16,62 @@
 spring:
   application:
     name: swedenconnect-test-client
+
+credential:
+  bundles:
+    keystore:
+      test-client:
+        location: classpath:test-client-credentials.jks
+        password: secret
+        type: JKS
+    jks:
+      ec-nist-p256:
+        name: "Test Client EC NIST-P256"
+        store-reference: test-client
+        key:
+          alias: ec-nist-p256
+          key-password: secret
+      ec-nist-p384:
+        name: "Test Client EC NIST-P384"
+        store-reference: test-client
+        key:
+          alias: ec-nist-p384
+          key-password: secret
+      ec-nist-p521:
+        name: "Test Client EC NIST-P521"
+        store-reference: test-client
+        key:
+          alias: ec-nist-p521
+          key-password: secret
+      rsa-1024:
+        name: "Test Client RSA-1024"
+        store-reference: test-client
+        key:
+          alias: rsa-1024
+          key-password: secret
+      rsa-2048:
+        name: "Test Client RSA-2048"
+        store-reference: test-client
+        key:
+          alias: rsa-2048
+          key-password: secret
+      rsa-3072:
+        name: "Test Client RSA-3072"
+        store-reference: test-client
+        key:
+          alias: rsa-3072
+          key-password: secret
+      rsa-4096:
+        name: "Test Client RSA-4096"
+        store-reference: test-client
+        key:
+          alias: rsa-4096
+          key-password: secret
+      rsa-4096-expired:
+        name: "Test Client RSA-4096 (expired cert)"
+        metadata:
+          description: "RSA-4096 - Expired certificate"
+        store-reference: test-client
+        key:
+          alias: rsa-4096-expired
+          key-password: secret

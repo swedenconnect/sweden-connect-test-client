@@ -1,0 +1,93 @@
+/*
+ * Copyright 2025 Sweden Connect
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package se.swedenconnect.testclient.config;
+
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+import se.swedenconnect.security.credential.config.properties.PkiCredentialConfigurationProperties;
+
+import java.security.cert.X509Certificate;
+
+/**
+ * Configuration properties for a SAML SP.
+ *
+ * @author Martin Lindström
+ */
+public class SamlSpProperties implements InitializingBean {
+
+  /**
+   * The SAML entityID for the SP.
+   */
+  @Getter
+  @Setter
+  private String entityId;
+
+  /**
+   * The SAML SP credentials.
+   */
+  @Getter
+  @Setter
+  private CredentialsProperties credentials;
+
+  @Override
+  public void afterPropertiesSet() {
+    Assert.hasText(this.entityId, "Missing entity-id for SAML SP");
+  }
+
+  /**
+   * SAML SP credentials.
+   */
+  public static class CredentialsProperties {
+
+    /**
+     * The signing credential. If not set, the default credential must be assigned.
+     */
+    @Getter
+    @Setter
+    private PkiCredentialConfigurationProperties signing;
+    /**
+     * Set in advance before rolling the signing credential ...
+     */
+    @Getter
+    @Setter
+    private X509Certificate futureSigningCertificate;
+
+    /**
+     * The encryption credential. If not set, the default credential must be assigned.
+     */
+    @Getter
+    @Setter
+    private PkiCredentialConfigurationProperties encryption;
+
+    /**
+     * The previous encryption credential. Must be set after the encryption key has been
+     */
+    @Getter
+    @Setter
+    private PkiCredentialConfigurationProperties previousEncryption;
+
+    /**
+     * The credential to use for metadata signing.
+     */
+    @Getter
+    @Setter
+    private PkiCredentialConfigurationProperties metadata;
+
+  }
+
+}

@@ -15,13 +15,20 @@
 #
 
 testclient:
+  default-credential:
+    bundle: rsa-4096
   saml:
     federation:
       description: "Sweden Connect Local Development Federation"
-      metadata-location: classpath:environments/localdev/metadata.xml
-      #https://local.dev.swedenconnect.se:9000/metadata/mdx/role/idp.xml
+      #metadata-location: classpath:environments/localdev/metadata.xml
+      metadata-location: https://local.dev.swedenconnect.se:9000/metadata/mdx/role/idp.xml
       validation-certificate: classpath:environments/localdev/metadata.crt
       backup-location: target/metadata.xml
       tls:
         skip-hostname-verification: true
         default-tls-trust: TRUST_ALL
+    sps:
+      - entity-id: https://local.swedenconnect.se/testsp1
+        credentials:
+          signing:
+            bundle: ec-nist-p256

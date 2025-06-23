@@ -27,6 +27,12 @@ function initPage() {
   onNavbarClicked(null, 'home');
 }
 
+function getUIMessageText(value) {
+  let modifiedValue = value.replace(/\./g, '_');
+  let message = ui_messages[modifiedValue] || '';
+  message = message.replace(/^\/\*|"|\*\/$/g, '');
+  return message;
+}
 
 $(document).ready(function() {
 

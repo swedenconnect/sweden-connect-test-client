@@ -28,7 +28,7 @@ import se.swedenconnect.opensaml.saml2.metadata.provider.FilesystemMetadataProvi
 import se.swedenconnect.opensaml.saml2.metadata.provider.HTTPMetadataProvider;
 import se.swedenconnect.opensaml.saml2.metadata.provider.MetadataProvider;
 import se.swedenconnect.opensaml.saml2.metadata.provider.StaticMetadataProvider;
-import se.swedenconnect.testclient.config.SamlConfigurationProperties;
+import se.swedenconnect.testclient.config.SamlProperties;
 import se.swedenconnect.testclient.utils.HttpClientUtils;
 
 import java.io.File;
@@ -61,7 +61,7 @@ public class SamlFederation {
    * @param sslBundles the Spring SSL bundles
    * @throws Exception for errors creating the underlying {@link MetadataProvider}
    */
-  public SamlFederation(@Nonnull final SamlConfigurationProperties.SamlFederationProperties properties,
+  public SamlFederation(@Nonnull final SamlProperties.SamlFederationProperties properties,
       @Nonnull final SslBundles sslBundles) throws Exception {
 
     this.description = properties.getDescription();

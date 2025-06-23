@@ -16,12 +16,20 @@
 package se.swedenconnect.testclient.config;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import se.swedenconnect.security.credential.PkiCredential;
+import se.swedenconnect.security.credential.factory.PkiCredentialFactory;
 import se.swedenconnect.testclient.saml.SamlFederation;
+import se.swedenconnect.testclient.saml.SamlSp;
+import se.swedenconnect.testclient.utils.ClientCredentials;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Configuration for the Sweden Connect Test Client configuration.
@@ -35,22 +43,52 @@ public class TestClientConfiguration {
 
   private final TestClientConfigurationProperties properties;
 
+  private final PkiCredentialFactory credentialFactory;
+
   private final SslBundles sslBundles;
 
   public TestClientConfiguration(@Nonnull final TestClientConfigurationProperties properties,
-      @Nonnull final SslBundles sslBundles) {
+      @Nonnull final PkiCredentialFactory credentialFactory, @Nonnull final SslBundles sslBundles) {
     this.properties = properties;
+    this.credentialFactory = credentialFactory;
     this.sslBundles = sslBundles;
   }
 
   @Bean
+  @Nonnull
   SamlFederation samlFederation() throws Exception {
-    if (this.properties.getSaml() != null) {
-      return new SamlFederation(this.properties.getSaml().getFederation(), this.sslBundles);
+    return new SamlFederation(this.properties.getSaml().getFederation(), this.sslBundles);
+  }
+
+  @Bean("testclient.DefaultCredential")
+  @Nullable
+  PkiCredential defaultCredential() throws Exception {
+    return this.properties.getDefaultCredential() != null
+        ? this.credentialFactory.createCredential(this.properties.getDefaultCredential())
+        : null;
+  }
+
+  @Bean
+  List<SamlSp> getSamlSps() throws Exception {
+    final List<SamlSp> sps = new ArrayList<>();
+    for (final SamlSpProperties spp : this.properties.getSaml().getSps()) {
+      sps.add(new SamlSp(spp.getEntityId(), this.createClientCredentials(spp.getCredentials())));
     }
-    else {
-      return null;
+    return sps;
+  }
+
+  private ClientCredentials createClientCredentials(@Nullable final SamlSpProperties.CredentialsProperties cp)
+      throws Exception {
+    if (cp == null) {
+      return new ClientCredentials(null, null, null, null, null, this.defaultCredential());
     }
+    return new ClientCredentials(
+        cp.getSigning() != null ? this.credentialFactory.createCredential(cp.getSigning()) : null,
+        cp.getFutureSigningCertificate(),
+        cp.getEncryption() != null ? this.credentialFactory.createCredential(cp.getEncryption()) : null,
+        cp.getPreviousEncryption() != null ? this.credentialFactory.createCredential(cp.getPreviousEncryption()) : null,
+        cp.getMetadata() != null ? this.credentialFactory.createCredential(cp.getMetadata()) : null,
+        this.defaultCredential());
   }
 
 }
