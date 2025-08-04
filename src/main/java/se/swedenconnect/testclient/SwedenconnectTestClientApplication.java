@@ -15,12 +15,16 @@
  */
 package se.swedenconnect.testclient;
 
+import jakarta.annotation.Nonnull;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.convert.converter.Converter;
 import se.swedenconnect.opensaml.OpenSAMLInitializer;
 import se.swedenconnect.opensaml.OpenSAMLSecurityDefaultsConfig;
 import se.swedenconnect.opensaml.OpenSAMLSecurityExtensionConfig;
+import se.swedenconnect.opensaml.common.utils.LocalizedString;
 import se.swedenconnect.opensaml.sweid.xmlsec.config.SwedishEidSecurityConfiguration;
 
 /**
@@ -42,6 +46,23 @@ public class SwedenconnectTestClientApplication {
             new OpenSAMLSecurityDefaultsConfig(new SwedishEidSecurityConfiguration()),
             new OpenSAMLSecurityExtensionConfig());
     return OpenSAMLInitializer.getInstance();
+  }
+
+  /**
+   * Creates a converter from a string to a {@link LocalizedString}.
+   *
+   * @return a LocalizedStringConverter bean
+   */
+  @Bean
+  @ConfigurationPropertiesBinding
+  Converter<String, LocalizedString> localizedStringConverter() {
+    return new Converter<>() {
+
+      @Override
+      public LocalizedString convert(@Nonnull final String source) {
+        return new LocalizedString(source);
+      }
+    };
   }
 
 }

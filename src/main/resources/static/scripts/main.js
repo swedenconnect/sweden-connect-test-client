@@ -47,6 +47,7 @@ $(document).ready(function() {
 
   $('#menu-saml').click(function(event) {
     onNavbarClicked(event, 'saml');
+    displaySpAndIdpOptions();
   });
 
   $('#menu-oidc').click(function(event) {
@@ -55,6 +56,7 @@ $(document).ready(function() {
 
   $('#menu-saml-clients').click(function(event) {
     onNavbarClicked(event, 'saml-clients');
+    displaySamlSps();
   });
 
   $('#menu-saml-metadata').click(function(event) {

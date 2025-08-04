@@ -44,6 +44,7 @@ p {
 
 .main-div {
     margin-top: 30px;
+    display: none;
 }
 
 .content-container {
@@ -251,9 +252,11 @@ p {
 }
 
 @media (min-width: 576px) {
+    /*
     .container {
         width: 900px;
     }
+     */
 
     .tablet-up {
         display: block;

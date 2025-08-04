@@ -18,7 +18,9 @@ package se.swedenconnect.testclient.saml;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import net.shibboleth.shared.resolver.ResolverException;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
+import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.UrlResource;
@@ -35,8 +37,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * A bean that represents a SAML federation.
@@ -44,6 +50,9 @@ import java.util.Objects;
  * @author Martin Lindström
  */
 public class SamlFederation {
+
+  /** IdP Cache lifetime. */
+  public static final Duration IDP_CACHE_LIFETIME = Duration.ofMinutes(10);
 
   /** The metadata location. */
   private final MetadataLocation metadataLocation;
@@ -53,6 +62,15 @@ public class SamlFederation {
 
   /** The metadata provider for this federation. */
   private final MetadataProvider metadataProvider;
+
+  /** IdP sorting order. */
+  private final List<String> idpSortingOrder;
+
+  /** Cache of IdP:s. */
+  private List<EntityDescriptor> idpCache;
+
+  /** When the cache was updated last. */
+  private Instant cacheLastUpdate;
 
   /**
    * Constructor.
@@ -91,6 +109,7 @@ public class SamlFederation {
     provider.initialize();
 
     this.metadataProvider = provider;
+    this.idpSortingOrder = properties.getIdpSorting();
   }
 
   /**
@@ -131,6 +150,39 @@ public class SamlFederation {
   @Nullable
   public Instant getLastUpdate() {
     return this.metadataProvider.getLastUpdate();
+  }
+
+  /**
+   * Gets a list of all IdP:s available (according to the defined sorting order).
+   *
+   * @return a list of all IdP:s available
+   * @throws ResolverException if fetching IdP:s fail
+   */
+  @Nonnull
+  public synchronized List<EntityDescriptor> getIdps() throws ResolverException {
+    if (this.idpCache == null || this.cacheLastUpdate == null
+        || this.cacheLastUpdate.plus(IDP_CACHE_LIFETIME).isBefore(Instant.now())) {
+      final List<List<EntityDescriptor>> sortedIdps = new ArrayList<>();
+      this.idpSortingOrder.forEach(x -> sortedIdps.add(new ArrayList<>()));
+      sortedIdps.add(new ArrayList<>());
+      final List<EntityDescriptor> idps = this.metadataProvider.getIdentityProviders();
+      for (final EntityDescriptor idp : idps) {
+        boolean sortMatch = false;
+        for (int i = 0; i < this.idpSortingOrder.size(); i++) {
+          if (idps.get(i).getEntityID().toLowerCase().contains(this.idpSortingOrder.get(i).toLowerCase())) {
+            sortedIdps.get(i).add(idp);
+            sortMatch = true;
+            break;
+          }
+        }
+        if (!sortMatch) {
+          sortedIdps.getLast().add(idp);
+        }
+      }
+      this.idpCache = sortedIdps.stream().flatMap(List::stream).collect(Collectors.toList());
+      this.cacheLastUpdate = Instant.now();
+    }
+    return this.idpCache;
   }
 
   /**

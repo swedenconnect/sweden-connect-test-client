@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+                     entityID="https://dummy.com"
+                     xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <md:SPSSODescriptor AuthnRequestsSigned="true" WantAssertionsSigned="false"
+                      protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"
+                      xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata">
+    <md:Extensions>
+      <mdui:UIInfo xmlns:mdui="urn:oasis:names:tc:SAML:metadata:ui">
+        <mdui:DisplayName xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="sv">Sweden Connect Test-SP</mdui:DisplayName>
+        <mdui:DisplayName xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="en">Sweden Connect Test SP</mdui:DisplayName>
+        <mdui:Description xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="sv">
+          SAML SP för test av legitimeringstjänster inom Sweden Connect
+        </mdui:Description>
+        <mdui:Description xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="en">
+          SAML SP for testing of Sweden Connect Identity Providers
+        </mdui:Description>
+        <mdui:Logo height="56" width="280" xmlns:mdui="urn:oasis:names:tc:SAML:metadata:ui">/images/logo.svg</mdui:Logo>
+        <mdui:Logo height="256" width="256" xmlns:mdui="urn:oasis:names:tc:SAML:metadata:ui">/images/logo-notext.svg</mdui:Logo>
+      </mdui:UIInfo>
+    </md:Extensions>
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</md:NameIDFormat>
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</md:NameIDFormat>
+  </md:SPSSODescriptor>
+  <md:Organization xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata">
+    <md:OrganizationName xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="sv">Sweden Connect</md:OrganizationName>
+    <md:OrganizationName xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="en">Sweden Connect</md:OrganizationName>
+    <md:OrganizationDisplayName xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="sv">Sweden Connect</md:OrganizationDisplayName>
+    <md:OrganizationDisplayName xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="en">Sweden Connect</md:OrganizationDisplayName>
+    <md:OrganizationURL xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="sv">https://swedenconnect.se</md:OrganizationURL>
+    <md:OrganizationURL xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="en">https://swedenconnect.se</md:OrganizationURL>
+  </md:Organization>
+  <md:ContactPerson contactType="technical" xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata">
+    <md:Company>Sweden Connect</md:Company>
+    <md:EmailAddress>operations@swedenconnect.se</md:EmailAddress>
+  </md:ContactPerson>
+  <md:ContactPerson contactType="support" xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata">
+    <md:Company>Sweden Connect</md:Company>
+    <md:EmailAddress>operations@swedenconnect.se</md:EmailAddress>
+  </md:ContactPerson>
+</md:EntityDescriptor>

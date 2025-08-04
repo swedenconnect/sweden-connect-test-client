@@ -20,6 +20,7 @@ import lombok.Setter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.Assert;
 import se.swedenconnect.security.credential.config.properties.PkiCredentialConfigurationProperties;
 
 /**
@@ -29,6 +30,13 @@ import se.swedenconnect.security.credential.config.properties.PkiCredentialConfi
  */
 @ConfigurationProperties("testclient")
 public class TestClientConfigurationProperties implements InitializingBean {
+
+  /**
+   * The base URL for the application. This includes the protocol, domain, and possibly the port and context path.
+   */
+  @Getter
+  @Setter
+  private String baseUrl;
 
   /**
    * The default credential to use if no signing or encryption credential is given for a client.
@@ -44,6 +52,7 @@ public class TestClientConfigurationProperties implements InitializingBean {
 
   @Override
   public void afterPropertiesSet() {
+    Assert.hasText(this.baseUrl, "testclient.base-url must not be set");
     this.saml.afterPropertiesSet();
     this.saml.assertCredentials(this.defaultCredential);
   }

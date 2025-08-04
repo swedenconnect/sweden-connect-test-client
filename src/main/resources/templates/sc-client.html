@@ -63,12 +63,53 @@
     <h1>Sweden Connect Test Client for SAML and OpenID Connect</h1>
   </div> <!-- main-home -->
 
+  <!-- SAML -->
   <div id="main-saml" class="main-div">
-    <h1>SAML</h1>
+    <div class="col-sm-12 content-container">
+      <div class="row">
+        <div class="col-sm-12">
+          <h2 class="content-heading" th:text="#{ui.saml.title}">SAML Authentication</h2>
+          <p>
+            Select which SAML Service Provider you want to use when requesting SAML authentication, and then select
+            which SAML Identity Provider to send the authentication request to.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          <form>
+            <div>
+              <label for="saml-sp-select" class="form-label mt-4">Select SAML SP</label>
+              <select class="form-select" id="saml-sp-select">
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="col-sm-6" id="sp-info">
+          <div class="mt-4">
+            <p id="sp-description"></p>
+            <p>
+              Metadata URL: <span id="sp-metadata-url"><a href="#" target="_blank" rel="noopener"></a></span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- SAML Clients -->
   <div id="main-saml-clients" class="main-div">
-    <h1>SAML Clients</h1>
+
+    <div class="col-sm-12 content-container">
+      <div class="row">
+        <div class="col-sm-12 content-heading">
+          <h2 th:text="#{ui.saml.sps.title}">SAML Service Providers</h2>
+        </div>
+        <div class="col-sm-12" id="saml-sp-list">
+
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- SAML Metadata -->
@@ -80,7 +121,6 @@
           <h2 th:text="#{ui.saml.metadata.title}">SAML Federation Metadata</h2>
         </div>
         <div class="col-sm-12">
-
           <table class="table table-hover">
             <tbody>
             <tr>
@@ -101,7 +141,7 @@
             </tbody>
           </table>
           <div id="saml-metadata-view-metadata">
-            <button type="button" class="btn btn-primary">View metadata</button>
+            <button type="button" class="btn btn-primary">View Metadata</button>
           </div>
 
         </div>

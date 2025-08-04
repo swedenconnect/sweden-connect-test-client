@@ -14,7 +14,18 @@
 # limitations under the License.
 #
 
+server:
+  port: 9100
+  ssl:
+    enabled: true
+    key-store: classpath:environments/localdev/local.dev.swedenconnect.se.jks
+    key-store-password: secret
+    key-store-type: JKS
+    key-alias: tls
+    key-password: secret
+
 testclient:
+  base-url: https://local.dev.swedenconnect.se:${server.port}
   default-credential:
     bundle: rsa-4096
   saml:
@@ -27,8 +38,69 @@ testclient:
       tls:
         skip-hostname-verification: true
         default-tls-trust: TRUST_ALL
+    common-metadata:
+      metadata-template: classpath:saml-metadata-template.xml
+      default-entity-categories:
+        - http://id.elegnamnden.se/ec/1.0/loa3-pnr
+        - http://id.swedenconnect.se/ec/sc/uncertified-loa3-pnr
+        - http://id.elegnamnden.se/ec/1.0/eidas-naturalperson
+        - http://id.elegnamnden.se/st/1.0/public-sector-sp
+        - http://id.swedenconnect.se/contract/sc/sweden-connect
+        - http://id.swedenconnect.se/contract/sc/eid-choice-2017
+        - http://id.swedenconnect.se/general-ec/1.0/secure-authenticator-binding
+        - http://id.swedenconnect.se/general-ec/1.0/accepts-coordination-number
     sps:
       - entity-id: https://local.swedenconnect.se/testsp1
+        description: "Test SP 1 - SP for personal identity number authentication"
+        path-prefix: "1"
+        metadata:
+          entity-categories:
+            - http://id.elegnamnden.se/ec/1.0/loa3-pnr
+            - http://id.swedenconnect.se/ec/sc/uncertified-loa3-pnr
+            - http://id.elegnamnden.se/st/1.0/public-sector-sp
+            - http://id.swedenconnect.se/contract/sc/sweden-connect
+            - http://id.swedenconnect.se/contract/sc/eid-choice-2017
+            - http://id.swedenconnect.se/general-ec/1.0/secure-authenticator-binding
+            - http://id.swedenconnect.se/general-ec/1.0/accepts-coordination-number
+          name-id-formats:
+            - urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
+          wants-assertions-signed: true
+          ui-info:
+            display-name:
+              - "sv-Sweden Connect Test-SP 1"
+              - "en-Sweden Connect Test SP 1"
+          attribute-consuming-services:
+            - service-name:
+                - "sv-Personnummerlegitimering"
+                - "en-Authentication using personal identity number"
+              requested-attributes:
+                - attribute-name: urn:oid:1.2.752.29.4.13
+                  required: true
         credentials:
           signing:
             bundle: ec-nist-p256
+      - entity-id: https://local.swedenconnect.se/testsp2
+        description: "Test SP 2 - SP for eIDAS authentication"
+        path-prefix: "2"
+        metadata:
+          entity-categories:
+            - http://id.elegnamnden.se/ec/1.0/eidas-naturalperson
+            - http://id.elegnamnden.se/st/1.0/public-sector-sp
+            - http://id.swedenconnect.se/contract/sc/sweden-connect
+            - http://id.swedenconnect.se/general-ec/1.0/secure-authenticator-binding
+            - http://id.swedenconnect.se/general-ec/1.0/accepts-coordination-number
+          ui-info:
+            display-name:
+              - "sv-Sweden Connect Test-SP 2"
+              - "en-Sweden Connect Test SP 2"
+          attribute-consuming-services:
+            - service-name:
+                - "sv-eIDAS-legitimering"
+                - "en-eIDAS Authentication"
+              requested-attributes:
+                - attribute-name: urn:oid:1.2.752.201.3.4
+                  required: true
+                - attribute-name: urn:oid:1.2.752.201.3.5
+                  required: true
+                - attribute-name: urn:oid:1.2.752.201.3.6
+                  required: false

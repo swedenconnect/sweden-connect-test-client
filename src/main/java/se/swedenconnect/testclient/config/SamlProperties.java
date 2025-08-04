@@ -47,6 +47,13 @@ public class SamlProperties implements InitializingBean {
   private final SamlFederationProperties federation = new SamlFederationProperties();
 
   /**
+   * Common metadata settings for all SP:s.
+   */
+  @Getter
+  @NestedConfigurationProperty
+  private final CommonSpMetadataProperties commonMetadata = new CommonSpMetadataProperties();
+
+  /**
    * The SP:s.
    */
   @Getter
@@ -58,6 +65,7 @@ public class SamlProperties implements InitializingBean {
   public void afterPropertiesSet() {
     Assert.notNull(this.federation, "testclient.saml.federation.* is required");
     this.federation.afterPropertiesSet();
+    this.commonMetadata.afterPropertiesSet();
     Assert.notEmpty(this.sps, "testclient.saml.sps is required (at least one SP must be configured)");
     this.sps.forEach(SamlSpProperties::afterPropertiesSet);
   }
@@ -97,7 +105,7 @@ public class SamlProperties implements InitializingBean {
     private Resource metadataLocation;
 
     /**
-     * When the {@code metadataLocation} is an HTTPS resource, it is possible to configure the client TLS settings.
+     * When the metadataLocation is an HTTPS resource, it is possible to configure the client TLS settings.
      */
     @Getter
     @Setter
@@ -117,6 +125,12 @@ public class SamlProperties implements InitializingBean {
     @Setter
     private File backupLocation;
 
+    /**
+     * Sorting order in UI of IdP:s.
+     */
+    @Getter
+    private final List<String> idpSorting = new ArrayList<>();
+
     /** {@inheritDoc} */
     @Override
     public void afterPropertiesSet() {
@@ -133,6 +147,27 @@ public class SamlProperties implements InitializingBean {
         }
       }
     }
+  }
+
+  /**
+   * Metadata properties shared by all SP instances.
+   */
+  public static class CommonSpMetadataProperties implements InitializingBean {
+
+    /**
+     * Optional template file for SAML SP metadata.
+     */
+    @Getter
+    @Setter
+    private Resource metadataTemplate;
+
+    @Getter
+    private final List<String> defaultEntityCategories = new ArrayList<>();
+
+    @Override
+    public void afterPropertiesSet() {
+    }
+
   }
 
 }
