@@ -27,6 +27,9 @@ let samlState = {
   // Cached IdP info
   idpInfoCache: null,
 
+  // Whether we are in build authn state
+  buildAuthnState: false,
+
   // init
   //  initializes the state
   //

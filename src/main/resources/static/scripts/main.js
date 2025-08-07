@@ -45,11 +45,6 @@ $(document).ready(function() {
     onNavbarClicked(event, 'home');
   });
 
-  $('#menu-saml').click(function(event) {
-    onNavbarClicked(event, 'saml');
-    displaySpAndIdpOptions();
-  });
-
   $('#menu-oidc').click(function(event) {
     onNavbarClicked(event, 'oidc');
   });

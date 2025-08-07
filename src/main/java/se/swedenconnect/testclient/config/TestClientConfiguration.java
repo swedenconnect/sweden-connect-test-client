@@ -113,7 +113,7 @@ public class TestClientConfiguration {
 
       sps.add(new SamlSp(spp.getEntityId(), spp.getDescription(), spp.getPathPrefix(),
           this.createClientCredentials(spp.getCredentials()), entityDescriptorTemplate,
-          spp.getMetadata()));
+          spp.getMetadata(), this.samlFederation().getMetadataProvider().getMetadataResolver()));
     }
     return sps;
   }

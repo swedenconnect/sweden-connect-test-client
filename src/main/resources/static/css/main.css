@@ -42,6 +42,10 @@ p {
     padding: 19px 0;
 }
 
+main {
+    padding-top: 60px;
+}
+
 .main-div {
     margin-top: 30px;
     display: none;
@@ -257,7 +261,6 @@ p {
         width: 900px;
     }
      */
-
     .tablet-up {
         display: block;
     }
@@ -281,4 +284,24 @@ p {
 
 .hide {
     display: none;
+}
+
+#sp-description {
+    font-weight: bold;
+}
+
+#idp-displayname {
+    font-weight: bold;
+}
+
+.col-form-label {
+    font-weight: bold;
+}
+
+.form-label {
+    font-weight: bold;
+}
+
+.col-form-label {
+    padding-top: 0;
 }

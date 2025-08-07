@@ -22,7 +22,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.shibboleth.shared.resolver.ResolverException;
 import net.shibboleth.shared.xml.SerializeSupport;
-import org.opensaml.core.xml.io.MarshallingException;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.ext.saml2mdui.Description;
 import org.opensaml.saml.ext.saml2mdui.DisplayName;
@@ -30,17 +29,19 @@ import org.opensaml.saml.ext.saml2mdui.UIInfo;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.w3c.dom.Element;
 import se.swedenconnect.opensaml.saml2.metadata.EntityDescriptorUtils;
+import se.swedenconnect.testclient.saml.SamlAuthnRequestModel;
 import se.swedenconnect.testclient.saml.SamlFederation;
 import se.swedenconnect.testclient.saml.SamlSp;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * REST controller for SAML.
@@ -120,6 +121,19 @@ public class SamlRestController {
     initInfo.setIdps(idpModelList);
 
     return initInfo;
+  }
+
+  @GetMapping(value = "/authn/template", produces = MediaType.APPLICATION_JSON_VALUE)
+  public SamlAuthnRequestModel getSamlAuthnRequestTemplate(
+      @Nonnull @RequestParam("sp") final String sp, @Nonnull @RequestParam("idp") final String idp) {
+
+    for (final SamlSp samlSp : this.samlSps) {
+      if (samlSp.getEntityId().equals(sp)) {
+        return samlSp.getTemplateRequest(idp);
+      }
+    }
+
+    throw new NotFoundException("%s not found".formatted(sp));
   }
 
   @GetMapping(value = "/sp/info", produces = MediaType.APPLICATION_JSON_VALUE)

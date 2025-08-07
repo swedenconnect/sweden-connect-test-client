@@ -18,7 +18,7 @@
 <head th:insert="~{fragments/base :: headerFragment}"></head>
 <body>
 
-<nav class="navbar navbar-expand-lg bg-light" data-bs-theme="light">
+<nav class="navbar navbar-expand-lg bg-light fixed-top" data-bs-theme="light">
   <div class="container-fluid">
     <a id="menu-home" class="navbar-brand" href="#">
       <img th:src="@{/images/logo-notext.svg}" src="/images/logo-notext.svg" width="30" height="30"
@@ -79,7 +79,7 @@
         <div class="col-sm-6">
           <form>
             <div>
-              <label for="saml-sp-select" class="form-label mt-4">Select SAML SP</label>
+              <label for="saml-sp-select" class="form-label mt-4">Act as Service Provider ...</label>
               <select class="form-select" id="saml-sp-select">
               </select>
             </div>
@@ -89,13 +89,314 @@
           <div class="mt-4">
             <p id="sp-description"></p>
             <p>
-              Metadata URL: <span id="sp-metadata-url"><a href="#" target="_blank" rel="noopener"></a></span>
+              Metadata URL: <a id="sp-metadata-url" href="#" target="_blank" rel="noopener"></a>
             </p>
           </div>
         </div>
       </div>
+      <div class="row">
+        <div class="col-sm-6">
+          <form>
+            <div>
+              <label for="saml-idp-select" class="form-label mt-4">Select Identity Provider</label>
+              <select class="form-select" id="saml-idp-select">
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="col-sm-6" id="idp-info">
+          <div class="mt-4">
+            <p id="idp-displayname"></p>
+            <p id="idp-description"></p>
+            <p class="text-end">
+              <button id="idp-view-metadata" type="button" class="btn btn-primary btn-sm">View IdP Metadata >>></button>
+            </p>
+          </div>
+        </div>
+      </div>
+      <hr class="mt-4"/>
+      <div class="row mt-4">
+        <div class="col-sm-6">
+          <div class="text-left">
+            <button id="saml-authn-next-button" type="button" class="btn btn-primary">Next</button>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+
+    <div id="saml-build-authn">
+      <div class="col-sm-12 content-container">
+        <div class="row">
+          <div class="col-sm-12">
+            <h2 class="content-heading">Build Authentication Request</h2>
+          </div>
+        </div>
+        <form>
+          <div class="row">
+            <div class="col-sm-2">
+              <label for="saml-request-binding-select"
+                     class="col-form-label col-sm-12 text-sm-right">Request Binding</label>
+            </div>
+            <div class="col-sm-10">
+              <select class="form-select" id="saml-request-binding-select">
+              </select>
+            </div>
+          </div>
+          <div class="row mt-4">
+            <div class="col-sm-2">
+              <label class="col-form-label text-sm-right" for="saml-request-relaystate-input">Relay State</label>
+            </div>
+            <div class="col-sm-10">
+              <input type="text" class="form-control" id="saml-request-relaystate-input">
+            </div>
+          </div>
+          <div class="form-group row mt-4">
+            <label class="col-sm-2 col-form-label">Signature</label>
+            <div class="col-sm-10">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
+                       id="saml-request-signature-radio-sign" checked="">
+                <label class="form-check-label" for="saml-request-signature-radio-sign">Signature will be applied to the
+                  AuthnRequest message</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
+                       id="saml-request-signature-radio-nosign">
+                <label class="form-check-label" for="saml-request-signature-radio-nosign">No signature will be applied
+                  to the AuthnRequest message</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
+                       id="saml-request-signature-radio-signother">
+                <label class="form-check-label" for="saml-request-signature-radio-signother">A signature created with
+                  another certificate than the one given in SP metadata will be applied</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
+                       id="saml-request-signature-radio-signbad">
+                <label class="form-check-label" for="saml-request-signature-radio-signbad">A signature that is incorrect
+                  will be applied to the AuthnRequest message</label>
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+          <div class="form-group row mt-4">
+            <label class="col-sm-2 col-form-label">Force Authentication</label>
+            <div class="col-sm-10">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-forceauthn"
+                       id="saml-request-forceauthn-true">
+                <label class="form-check-label" for="saml-request-forceauthn-true">True</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-forceauthn"
+                       id="saml-request-forceauthn-false">
+                <label class="form-check-label" for="saml-request-forceauthn-false">False</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-forceauthn"
+                       id="saml-request-forceauthn-exclude">
+                <label class="form-check-label" for="saml-request-forceauthn-exclude">Exclude attribute</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-group row mt-4">
+            <label class="col-sm-2 col-form-label">Is Passive?</label>
+            <div class="col-sm-10">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-ispassive"
+                       id="saml-request-ispassive-true">
+                <label class="form-check-label" for="saml-request-ispassive-true">True</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-ispassive"
+                       id="saml-request-ispassive-false">
+                <label class="form-check-label" for="saml-request-ispassive-false">False</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-ispassive"
+                       id="saml-request-ispassive-exclude">
+                <label class="form-check-label" for="saml-request-ispassive-exclude">Exclude attribute</label>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-4" id="saml-advanced-authn-request-button-div">
+            <div class="col-sm-12">
+              <div class="d-flex justify-content-end">
+                <button id="saml-advanced-authn-request-button" type="button" class="btn btn-light btn-sm">More settings
+                  ...
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="form-group" id="saml-advanced-authn-request">
+            <!-- Destination -->
+            <div class="row mt-4">
+              <label class="col-sm-2 col-form-label" for="saml-request-destination">Destination</label>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" id="saml-request-destination">
+              </div>
+            </div>
+            <!-- Issue instant -->
+            <div class="row mt-4">
+              <label class="col-sm-2 col-form-label" for="saml-request-issueinstant">Issue Instant</label>
+              <div class="col-sm-10">
+                <div class="input-group">
+                  <input type="text" class="form-control" placeholder="Will use the time of sending"
+                         aria-describedby="saml-request-issueinstant-button" id="saml-request-issueinstant">
+                  <button class="btn btn-outline-secondary" type="button" id="saml-request-issueinstant-button">Modify
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="mt-4"/>
+
+          <!-- Issuer element -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">Issuer Element</label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-issuer-present"
+                         id="saml-request-issuer-present">
+                  <label class="form-check-label ps-3" for="saml-request-issuer-present">Element present</label>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-4" id="saml-request-issuer-row">
+              <label class="col-sm-2" for="saml-request-issuer">Issuer Value</label>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" id="saml-request-issuer">
+              </div>
+            </div>
+          </div>
+
+          <hr class="mt-4"/>
+
+          <!-- NameID Policy element -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">NameID Policy Element</label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-nip-present"
+                         id="saml-request-nip-present">
+                  <label class="form-check-label ps-3" for="saml-request-nip-present">Element present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-nip-div">
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-nip-format">Format</label>
+                <div class="col-sm-10">
+                  <select class="form-select" id="saml-request-nip-format">
+                    <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">
+                      urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
+                    </option>
+                    <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">
+                      urn:oasis:names:tc:SAML:2.0:nameid-format:transient
+                    </option>
+                    <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified">
+                      urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
+                    </option>
+                    <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">
+                      urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
+                    </option>
+                    <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName">
+                      urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName
+                    </option>
+                    <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName">
+                      urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName
+                    </option>
+                    <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos">
+                      urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos
+                    </option>
+                    <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">
+                      urn:oasis:names:tc:SAML:2.0:nameid-format:entity
+                    </option>
+                    <option value="exclude" selected="">-- Attribute not assigned --</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2">Allow Create</label>
+                <div class="col-sm-10">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-nip-ac"
+                           id="saml-request-nip-ac-true">
+                    <label class="form-check-label" for="saml-request-nip-ac-true">True</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-nip-ac"
+                           id="saml-request-nip-ac-false">
+                    <label class="form-check-label" for="saml-request-nip-ac-false">False</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-nip-ac"
+                           id="saml-request-nip-ac-exclude">
+                    <label class="form-check-label" for="saml-request-nip-ac-exclude">Exclude attribute</label>
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-nip-spnq">SP Name Qualifier</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="saml-request-nip-spnq">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="mt-4"/>
+
+          <!-- Requested Authentication Context element -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">Requested Authentication Context Element</label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-rac-present"
+                         id="saml-request-rac-present">
+                  <label class="form-check-label ps-3" for="saml-request-rac-present">Element present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-rac-div">
+              <div class="row mt-4">
+                <label class="col-sm-2">Authentication Context Class Ref URIs</label>
+                <div class="col-sm-10">
+                  <ul class="list-group" id="saml-request-rac-list">
+                  </ul>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <label for="saml-request-rac-select" class="visually-hidden"></label>
+                  <select class="form-select" id="saml-request-rac-select">
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-4" id="saml-request-rac-custom-div" style="display: none;">
+                <label class="col-sm-2" for="saml-request-rac-custom">Custom Value</label>
+                <div class="col-sm-10">
+                  <div class="input-group">
+                    <input type="text" class="form-control" aria-describedby="saml-request-rac-custom-button"
+                           id="saml-request-rac-custom">
+                    <button class="btn btn-outline-secondary" type="button" id="saml-request-rac-custom-button">Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div> <!-- #main-saml -->
 
   <!-- SAML Clients -->
   <div id="main-saml-clients" class="main-div">

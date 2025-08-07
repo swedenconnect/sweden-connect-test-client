@@ -23,6 +23,7 @@ import org.opensaml.saml.ext.saml2mdattr.EntityAttributes;
 import org.opensaml.saml.ext.saml2mdui.Description;
 import org.opensaml.saml.ext.saml2mdui.DisplayName;
 import org.opensaml.saml.ext.saml2mdui.UIInfo;
+import org.opensaml.saml.metadata.resolver.MetadataResolver;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.Extensions;
 import org.opensaml.saml.saml2.metadata.NameIDFormat;
@@ -37,6 +38,7 @@ import se.swedenconnect.opensaml.saml2.metadata.build.EntityDescriptorBuilder;
 import se.swedenconnect.opensaml.saml2.metadata.build.ExtensionsBuilder;
 import se.swedenconnect.opensaml.saml2.metadata.build.KeyDescriptorBuilder;
 import se.swedenconnect.opensaml.saml2.metadata.build.RequestedAttributeBuilder;
+import se.swedenconnect.opensaml.saml2.request.RequestGenerationException;
 import se.swedenconnect.security.credential.opensaml.OpenSamlCredential;
 import se.swedenconnect.testclient.config.SamlSpProperties;
 import se.swedenconnect.testclient.config.SamlSpProperties.SpMetadataProperties.AttributeConsumingServiceProperties;
@@ -75,20 +77,30 @@ public class SamlSp {
   /** The SP client credentials. */
   private final ClientCredentials credentials;
 
+  /** The metadata resolver. */
+  private final MetadataResolver metadataResolver;
+
+  private final CustomAuthnRequestGenerator authnRequestGenerator;
+
   public SamlSp(@Nonnull final String entityId, @Nonnull final String description,
       @Nonnull final String pathPrefix, @Nonnull final ClientCredentials credentials,
       @Nonnull final EntityDescriptor entityDescriptorTemplate,
-      @Nonnull final SamlSpProperties.SpMetadataProperties metadataProperties) {
+      @Nonnull final SamlSpProperties.SpMetadataProperties metadataProperties,
+      @Nonnull final MetadataResolver metadataResolver) {
     this.entityId = entityId;
     this.description = description;
     this.pathPrefix = pathPrefix;
     this.credentials = credentials;
+    this.metadataResolver = metadataResolver;
 
     this.entityDescriptor = this.buildMetadata(entityDescriptorTemplate, metadataProperties);
 
     this.entityDescriptorContainer = new EntityDescriptorContainer(this.entityDescriptor,
         new OpenSamlCredential(this.credentials.getCredentialForSigning()));
     this.entityDescriptorContainer.setValidity(Duration.ofDays(7));
+
+    this.authnRequestGenerator = new CustomAuthnRequestGenerator(this.entityDescriptor,
+        this.credentials.getCredentialForSigning(), this.metadataResolver);
   }
 
   /**
@@ -204,6 +216,15 @@ public class SamlSp {
     }
 
     return builder.build();
+  }
+
+  public SamlAuthnRequestModel getTemplateRequest(@Nonnull final String idp) {
+    try {
+      return this.authnRequestGenerator.generateAuthnRequestModel(idp);
+    }
+    catch (final RequestGenerationException e) {
+      throw new RuntimeException(e.getMessage());
+    }
   }
 
 }
