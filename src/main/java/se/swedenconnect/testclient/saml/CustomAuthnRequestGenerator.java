@@ -19,11 +19,12 @@ import jakarta.annotation.Nonnull;
 import org.opensaml.core.xml.schema.XSURI;
 import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.metadata.resolver.MetadataResolver;
-import org.opensaml.saml.saml2.core.AuthnContextClassRef;
 import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.opensaml.saml.saml2.core.NameIDPolicy;
 import org.opensaml.saml.saml2.core.RequestedAuthnContext;
+import org.opensaml.saml.saml2.metadata.Endpoint;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
+import org.opensaml.saml.saml2.metadata.SPSSODescriptor;
 import se.swedenconnect.opensaml.saml2.request.AuthnRequestGenerator;
 import se.swedenconnect.opensaml.saml2.request.AuthnRequestGeneratorContext;
 import se.swedenconnect.opensaml.saml2.request.RequestGenerationException;
@@ -32,7 +33,6 @@ import se.swedenconnect.opensaml.sweid.saml2.request.SwedishEidAuthnRequestGener
 import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.opensaml.OpenSamlCredential;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -92,6 +92,12 @@ public class CustomAuthnRequestGenerator extends SwedishEidAuthnRequestGenerator
         model.setRequestedAuthnContextClassUris(rac);
       }
     }
+
+    final SPSSODescriptor ssoDescriptor = this.getSpMetadata().getSPSSODescriptor(SAMLConstants.SAML20P_NS);
+    model.setPossibleAssertionConsumerServiceUrls(ssoDescriptor.getAssertionConsumerServices().stream()
+        .map(Endpoint::getLocation)
+        .toList());
+    model.setAssertionConsumerServiceUrl(authnRequest.getAssertionConsumerServiceURL());
 
     return model;
   }

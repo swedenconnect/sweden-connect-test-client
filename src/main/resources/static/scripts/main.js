@@ -34,6 +34,10 @@ function getUIMessageText(value) {
   return message;
 }
 
+function generateRandomId(prefix = 'id') {
+  return prefix + '_' + Math.random().toString(36).slice(2, 11);
+}
+
 $(document).ready(function() {
 
   initPage();

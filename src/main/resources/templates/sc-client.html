@@ -392,6 +392,56 @@
               </div>
             </div>
           </div>
+          <hr class="mt-4"/>
+
+          <!-- Assertion Consumer Service URL -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-2 col-form-label" for="saml-request-acs-select">Assertion Consumer Service
+                URL</label>
+              <div class="col-sm-10">
+                <select class="form-select" id="saml-request-acs-select">
+                </select>
+              </div>
+            </div>
+            <div class="row mt-4" id="saml-request-acs-custom-div" style="display: none;">
+              <label class="col-sm-2" for="saml-request-acs-custom">Custom Value</label>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" id="saml-request-acs-custom">
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+
+          <!-- Principal Selection Extension -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">Principal Selection Extension</label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-pse-present"
+                         id="saml-request-pse-present">
+                  <label class="form-check-label ps-3" for="saml-request-pse-present">Extension present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-pse-div">
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <label for="saml-request-pse-select" class="visually-hidden"></label>
+                  <select class="form-select" id="saml-request-pse-select">
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-4" id="saml-request-pse-attrs-div">
+                <label class="col-sm-2">Attributes</label>
+                <div class="col-sm-10" id="saml-request-pse-attrs">
+                </div>
+              </div>
+            </div>
+          </div>
+
         </form>
       </div>
     </div>

@@ -61,6 +61,12 @@ public class SamlAuthnRequestModel {
   @JsonProperty("requested_authn_context_class_uris")
   private List<String> requestedAuthnContextClassUris;
 
+  @JsonProperty("possible_assertion_consumer_service_urls")
+  private List<String> possibleAssertionConsumerServiceUrls;
+
+  @JsonProperty("assertion_consumer_service_url")
+  private String assertionConsumerServiceUrl;
+
   @Data
   @NoArgsConstructor
   @AllArgsConstructor

@@ -36,6 +36,23 @@ const AUTHN_CONTEXT_CLASS_REF_URIS = [
   "http://eidas.europa.eu/LoA/test"
 ];
 
+const PRINCIPAL_ATTRIBUTES = [
+  {
+    friendlyName: "personalIdentityNumber", name: "urn:oid:1.2.752.29.4.13",
+    info: "Enter personal identity number (12 digits, no hyphen)"
+  },
+  {friendlyName: "prid", name: "urn:oid:1.2.752.201.3.4", info: "Enter provisional ID"},
+  {friendlyName: "eidasPersonIdentifier", name: "urn:oid:1.2.752.201.3.7", info: "Enter eIDAS person identifier"},
+  {
+    friendlyName: "mappedPersonalIdentityNumber", name: "urn:oid:1.2.752.201.3.16",
+    info: "Enter personal identity number (12 digits, no hyphen)"
+  },
+  {friendlyName: "c - country", name: "urn:oid:2.5.4.6", info: "Enter country code (2 letters)"},
+  {friendlyName: "dateOfBirth", name: "urn:oid:1.3.6.1.5.5.7.9.1", info: "Enter date of birth (YYYY-MM-DD)"},
+  {friendlyName: "sn - surname", name: "urn:oid:2.5.4.4", info: "Enter surname"},
+  {friendlyName: "givenName", name: "urn:oid:2.5.4.42", info: "Enter given name"}
+];
+
 function displaySpAndIdpOptions() {
   if (samlState.spInfoCache) {
     displaySpOptions(samlState.spInfoCache);
@@ -297,6 +314,28 @@ function populateAuthnRequestParameters(template) {
     $('#saml-request-rac-div').hide();
   }
 
+  // Assertion Consumer Service URL
+  let acsSelect = $('#saml-request-acs-select');
+  for (let acs of template.possible_assertion_consumer_service_urls) {
+    acsSelect.append(new Option(acs, acs));
+  }
+  acsSelect.append(new Option("Enter other URL ...", "add", false, false));
+  acsSelect.append(new Option("-- Not assigned --", "exclude", true, true));
+  if (template.assertion_consumer_service_url) {
+    let opt = acsSelect.find('option[value="' + template.assertion_consumer_service_url + '"]');
+    opt.prop('selected', true);
+  }
+
+  // Principal Selection extension
+  let pseSelect = $('#saml-request-pse-select');
+  pseSelect.append(new Option("Add attribute ...", "add", true, true));
+  for (let attr of PRINCIPAL_ATTRIBUTES) {
+    pseSelect.append(new Option(attr.name + ' (' + attr.friendlyName + ')', attr.name, false, false));
+  }
+  $('#saml-request-pse-attrs-div').hide();
+  $('#saml-request-pse-attrs').empty();
+  $('#saml-request-pse-present').prop('checked', false);
+  $('#saml-request-pse-div').hide();
 }
 
 function addSelectedAuthnContextClassUri(list, uri) {
@@ -317,6 +356,44 @@ function getSelectedAuthnContextClassUris() {
   return $('#saml-request-rac-list').find('li span').map(function() {
     return $(this).text();
   }).get();
+}
+
+function addPrincipalSelectionAttribute(attr) {
+  let attrObj = PRINCIPAL_ATTRIBUTES.find(a => a.name === attr);
+  if (!attrObj) {
+    return;
+  }
+
+  let attrsDiv = $('#saml-request-pse-attrs');
+  let ad = $('<div>');
+  if (attrsDiv.children().length > 0) {
+    ad.addClass("mt-4");
+  }
+  const inputId = generateRandomId();
+  const buttonId = generateRandomId();
+  ad.append($('<label>', {
+    for: inputId,
+    text: attrObj.friendlyName + ' (' + attrObj.name + ')'
+  }));
+
+  let inputDiv = $('<div>', {
+    class: 'input-group mt-2'
+  });
+  inputDiv.append($('<input>', {
+    id: inputId,
+    type: 'text',
+    placeholder: attrObj.info,
+    class: 'form-control',
+    'aria-describedby': buttonId
+  }))
+      .append($('<div>', {class: 'd-flex align-items-center position-absolute top-0 end-0 h-100 pe-3'})
+          .append($('<button>', {
+            id: buttonId,
+            type: 'button',
+            class: 'btn btn-close'
+          })));
+  ad.append(inputDiv);
+  attrsDiv.append(ad);
 }
 
 
@@ -436,6 +513,42 @@ $(document).ready(function() {
       samlRequestRacCustom.val('');
       $('#saml-request-rac-custom-div').hide();
       $("#saml-request-rac-select option[value='add']").prop('selected', true);
+    }
+  });
+
+  $('#saml-request-acs-select').change(function() {
+    let selectedOption = $(this).find('option:selected');
+
+    if (selectedOption.val() === 'add') {
+      $('#saml-request-acs-custom-div').show();
+    }
+    else {
+      $('#saml-request-acs-custom-div').hide();
+      $('#saml-request-acs-custom').val('');
+    }
+  });
+
+  $('#saml-request-pse-present').change(function() {
+    $('#saml-request-pse-div').toggle(this.checked);
+  })
+
+  $('#saml-request-pse-select').change(function() {
+    let selectedOption = $(this).find('option:selected');
+    if (selectedOption.val() === 'add') {
+      return;
+    }
+    else {
+      addPrincipalSelectionAttribute(selectedOption.val());
+      $('#saml-request-pse-attrs-div').show();
+      $("#saml-request-pse-select option[value='add']").prop('selected', true);
+    }
+  });
+
+  $('#saml-request-pse-attrs').on('click', 'button.btn-close', function() {
+    $(this).parent().parent().parent().remove();
+
+    if ($('#saml-request-pse-attrs').children().length === 0) {
+      $('#saml-request-pse-attrs-div').hide();
     }
   });
 
