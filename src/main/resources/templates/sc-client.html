@@ -132,8 +132,11 @@
           </div>
         </div>
         <form>
+
+          <!-- Request binding -->
           <div class="row">
-            <div class="col-sm-2">
+            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                 data-bs-original-title="Determines how the request is sent to the IdP (redirect or POST)">
               <label for="saml-request-binding-select"
                      class="col-form-label col-sm-12 text-sm-right">Request Binding</label>
             </div>
@@ -142,80 +145,98 @@
               </select>
             </div>
           </div>
+
+          <!-- Relay state -->
           <div class="row mt-4">
-            <div class="col-sm-2">
+            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                 data-bs-original-title="The RelayState token is an opaque reference to state information maintained at the SP. The IdP must return this parameter unchanged.">
               <label class="col-form-label text-sm-right" for="saml-request-relaystate-input">Relay State</label>
             </div>
             <div class="col-sm-10">
               <input type="text" class="form-control" id="saml-request-relaystate-input">
             </div>
           </div>
+
+          <!-- Signature -->
           <div class="form-group row mt-4">
-            <label class="col-sm-2 col-form-label">Signature</label>
+            <label class="col-sm-2 col-form-label">
+              <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                    data-bs-original-title="Tells how and if a signature is applied to the request.">Signature</span>
+            </label>
             <div class="col-sm-10">
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="saml-request-signature-radio"
-                       id="saml-request-signature-radio-sign" checked="">
+                       id="saml-request-signature-radio-sign" checked="" value="ok_signature">
                 <label class="form-check-label" for="saml-request-signature-radio-sign">Signature will be applied to the
                   AuthnRequest message</label>
               </div>
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="saml-request-signature-radio"
-                       id="saml-request-signature-radio-nosign">
+                       id="saml-request-signature-radio-nosign" value="no_signature">
                 <label class="form-check-label" for="saml-request-signature-radio-nosign">No signature will be applied
                   to the AuthnRequest message</label>
               </div>
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="saml-request-signature-radio"
-                       id="saml-request-signature-radio-signother">
+                       id="saml-request-signature-radio-signother" value="other_signature">
                 <label class="form-check-label" for="saml-request-signature-radio-signother">A signature created with
                   another certificate than the one given in SP metadata will be applied</label>
               </div>
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="saml-request-signature-radio"
-                       id="saml-request-signature-radio-signbad">
+                       id="saml-request-signature-radio-signbad" value="bad_signature">
                 <label class="form-check-label" for="saml-request-signature-radio-signbad">A signature that is incorrect
                   will be applied to the AuthnRequest message</label>
               </div>
             </div>
           </div>
           <hr class="mt-4"/>
+
+          <!-- Force Authentication -->
           <div class="form-group row mt-4">
-            <label class="col-sm-2 col-form-label">Force Authentication</label>
+            <label class="col-sm-2 col-form-label">
+              <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                    data-bs-original-title="Tells whether the 'force authentication'-attribute should be applied.">Force Authentication</span>
+            </label>
             <div class="col-sm-10">
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="saml-request-forceauthn"
-                       id="saml-request-forceauthn-true">
+                       id="saml-request-forceauthn-true" value="true">
                 <label class="form-check-label" for="saml-request-forceauthn-true">True</label>
               </div>
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="saml-request-forceauthn"
-                       id="saml-request-forceauthn-false">
+                       id="saml-request-forceauthn-false" value="false">
                 <label class="form-check-label" for="saml-request-forceauthn-false">False</label>
               </div>
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="saml-request-forceauthn"
-                       id="saml-request-forceauthn-exclude">
+                       id="saml-request-forceauthn-exclude" value="exclude">
                 <label class="form-check-label" for="saml-request-forceauthn-exclude">Exclude attribute</label>
               </div>
             </div>
           </div>
+
+          <!-- Is Passive -->
           <div class="form-group row mt-4">
-            <label class="col-sm-2 col-form-label">Is Passive?</label>
+            <label class="col-sm-2 col-form-label">
+              <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                    data-bs-original-title="Tells whether the 'is passive'-attribute should be applied.">Is Passive?</span>
+            </label>
             <div class="col-sm-10">
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="saml-request-ispassive"
-                       id="saml-request-ispassive-true">
+                       id="saml-request-ispassive-true" value="true">
                 <label class="form-check-label" for="saml-request-ispassive-true">True</label>
               </div>
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="saml-request-ispassive"
-                       id="saml-request-ispassive-false">
+                       id="saml-request-ispassive-false" value="false">
                 <label class="form-check-label" for="saml-request-ispassive-false">False</label>
               </div>
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="saml-request-ispassive"
-                       id="saml-request-ispassive-exclude">
+                       id="saml-request-ispassive-exclude" value="exclude">
                 <label class="form-check-label" for="saml-request-ispassive-exclude">Exclude attribute</label>
               </div>
             </div>
@@ -232,14 +253,20 @@
           <div class="form-group" id="saml-advanced-authn-request">
             <!-- Destination -->
             <div class="row mt-4">
-              <label class="col-sm-2 col-form-label" for="saml-request-destination">Destination</label>
+              <label class="col-sm-2 col-form-label" for="saml-request-destination">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The destination URL to include in the request.">Destination</span>
+              </label>
               <div class="col-sm-10">
                 <input type="text" class="form-control" id="saml-request-destination">
               </div>
             </div>
             <!-- Issue instant -->
             <div class="row mt-4">
-              <label class="col-sm-2 col-form-label" for="saml-request-issueinstant">Issue Instant</label>
+              <label class="col-sm-2 col-form-label" for="saml-request-issueinstant">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The timestamp for when this request was issued.">Issue Instant</span>
+              </label>
               <div class="col-sm-10">
                 <div class="input-group">
                   <input type="text" class="form-control" placeholder="Will use the time of sending"
@@ -256,7 +283,10 @@
           <!-- Issuer element -->
           <div class="form-group">
             <div class="row mt-4">
-              <label class="col-sm-6 col-form-label">Issuer Element</label>
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The entityID of the SP issuing the request.">Issuer Element</span>
+              </label>
               <div class="col-sm-6">
                 <div class="form-check d-flex justify-content-end">
                   <input class="form-check-input" type="checkbox" name="saml-request-issuer-present"
@@ -266,7 +296,10 @@
               </div>
             </div>
             <div class="row mt-4" id="saml-request-issuer-row">
-              <label class="col-sm-2" for="saml-request-issuer">Issuer Value</label>
+              <label class="col-sm-2" for="saml-request-issuer">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The entityID of the SP issuing the request.">Issuer Value</span>
+              </label>
               <div class="col-sm-10">
                 <input type="text" class="form-control" id="saml-request-issuer">
               </div>
@@ -278,7 +311,10 @@
           <!-- NameID Policy element -->
           <div class="form-group">
             <div class="row mt-4">
-              <label class="col-sm-6 col-form-label">NameID Policy Element</label>
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="Specifies constraints on the name identifier to be used to represent the authenticated subject.">NameID Policy Element</span>
+              </label>
               <div class="col-sm-6">
                 <div class="form-check d-flex justify-content-end">
                   <input class="form-check-input" type="checkbox" name="saml-request-nip-present"
@@ -292,31 +328,6 @@
                 <label class="col-sm-2" for="saml-request-nip-format">Format</label>
                 <div class="col-sm-10">
                   <select class="form-select" id="saml-request-nip-format">
-                    <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">
-                      urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
-                    </option>
-                    <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">
-                      urn:oasis:names:tc:SAML:2.0:nameid-format:transient
-                    </option>
-                    <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified">
-                      urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
-                    </option>
-                    <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">
-                      urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
-                    </option>
-                    <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName">
-                      urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName
-                    </option>
-                    <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName">
-                      urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName
-                    </option>
-                    <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos">
-                      urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos
-                    </option>
-                    <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">
-                      urn:oasis:names:tc:SAML:2.0:nameid-format:entity
-                    </option>
-                    <option value="exclude" selected="">-- Attribute not assigned --</option>
                   </select>
                 </div>
               </div>
@@ -325,17 +336,17 @@
                 <div class="col-sm-10">
                   <div class="form-check">
                     <input class="form-check-input" type="radio" name="saml-request-nip-ac"
-                           id="saml-request-nip-ac-true">
+                           id="saml-request-nip-ac-true" value="true">
                     <label class="form-check-label" for="saml-request-nip-ac-true">True</label>
                   </div>
                   <div class="form-check">
                     <input class="form-check-input" type="radio" name="saml-request-nip-ac"
-                           id="saml-request-nip-ac-false">
+                           id="saml-request-nip-ac-false" value="false">
                     <label class="form-check-label" for="saml-request-nip-ac-false">False</label>
                   </div>
                   <div class="form-check">
                     <input class="form-check-input" type="radio" name="saml-request-nip-ac"
-                           id="saml-request-nip-ac-exclude">
+                           id="saml-request-nip-ac-exclude" value="exclude">
                     <label class="form-check-label" for="saml-request-nip-ac-exclude">Exclude attribute</label>
                   </div>
                 </div>
@@ -354,7 +365,10 @@
           <!-- Requested Authentication Context element -->
           <div class="form-group">
             <div class="row mt-4">
-              <label class="col-sm-6 col-form-label">Requested Authentication Context Element</label>
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="Specifies the authentication context URI(s) under which the authentication should be performed.">Requested Authentication Context Element</span>
+              </label>
               <div class="col-sm-6">
                 <div class="form-check d-flex justify-content-end">
                   <input class="form-check-input" type="checkbox" name="saml-request-rac-present"
@@ -374,11 +388,17 @@
               <div class="row mt-4">
                 <div class="col-sm-2"></div>
                 <div class="col-sm-10">
-                  <label for="saml-request-rac-select" class="visually-hidden"></label>
-                  <select class="form-select" id="saml-request-rac-select">
-                  </select>
+                  <div class="btn-group" role="group">
+                    <button id="saml-request-rac-drop" type="button" class="btn btn-sm btn-primary dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add URI
+                    </button>
+                    <div id="saml-request-rac-drop-div" class="dropdown-menu" aria-labelledby="saml-request-rac-drop">
+                    </div>
+                  </div>
                 </div>
               </div>
+
+
               <div class="row mt-4" id="saml-request-rac-custom-div" style="display: none;">
                 <label class="col-sm-2" for="saml-request-rac-custom">Custom Value</label>
                 <div class="col-sm-10">
@@ -390,6 +410,21 @@
                   </div>
                 </div>
               </div>
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-rac-comparison-select">
+                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        data-bs-original-title="Tells how the IdP should treat/compare the requested URI(s).">Comparison</span>
+                </label>
+                <div class="col-sm-10">
+                  <select class="form-select" id="saml-request-rac-comparison-select">
+                    <option value="exact">Exact</option>
+                    <option value="minimum">Minimum</option>
+                    <option value="maximum">Maximum</option>
+                    <option value="better">Better</option>
+                    <option value="exclude">-- Not specified --</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
           <hr class="mt-4"/>
@@ -397,8 +432,10 @@
           <!-- Assertion Consumer Service URL -->
           <div class="form-group">
             <div class="row mt-4">
-              <label class="col-sm-2 col-form-label" for="saml-request-acs-select">Assertion Consumer Service
-                URL</label>
+              <label class="col-sm-2 col-form-label" for="saml-request-acs-select">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="Specifies the location at which the response message must be returned.">Assertion Consumer Service URL</span>
+              </label>
               <div class="col-sm-10">
                 <select class="form-select" id="saml-request-acs-select">
                 </select>
@@ -416,7 +453,10 @@
           <!-- Principal Selection Extension -->
           <div class="form-group">
             <div class="row mt-4">
-              <label class="col-sm-6 col-form-label">Principal Selection Extension</label>
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The RequestedPrincipalSelection extension is used to inform the IdP about details about the user being authenticated (if known).">Requested Principal Selection Extension</span>
+              </label>
               <div class="col-sm-6">
                 <div class="form-check d-flex justify-content-end">
                   <input class="form-check-input" type="checkbox" name="saml-request-pse-present"
@@ -429,15 +469,76 @@
               <div class="row mt-4">
                 <div class="col-sm-2"></div>
                 <div class="col-sm-10">
-                  <label for="saml-request-pse-select" class="visually-hidden"></label>
-                  <select class="form-select" id="saml-request-pse-select">
-                  </select>
+                  <div class="btn-group" role="group">
+                    <button id="saml-request-pse-drop" type="button" class="btn btn-sm btn-primary dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add Attribute
+                    </button>
+                    <div id="saml-request-pse-drop-div" class="dropdown-menu" aria-labelledby="saml-request-pse-drop">
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="row mt-4" id="saml-request-pse-attrs-div">
                 <label class="col-sm-2">Attributes</label>
                 <div class="col-sm-10" id="saml-request-pse-attrs">
                 </div>
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+
+          <!-- User Message Extension -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The UserMessage extension is used to supply the IdP with a message that should be displayed for the user during authentication.">User Message Extension</span>
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-um-present"
+                         id="saml-request-um-present">
+                  <label class="form-check-label ps-3" for="saml-request-um-present">Extension present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-um-div">
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-um-mimetype-select">
+                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        data-bs-original-title="The MIME type for all user messages.">MIME Type</span>
+                </label>
+                <div class="col-sm-10">
+                  <select class="form-select" id="saml-request-um-mimetype-select">
+                  </select>
+                </div>
+              </div>
+              <div id="saml-request-um-messages-div">
+              </div>
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <div class="btn-group" role="group">
+                    <button id="saml-request-um-add-drop" type="button" class="btn btn-sm btn-primary dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add Message
+                    </button>
+                    <div id="saml-request-um-add-drop-div" class="dropdown-menu"
+                         aria-labelledby="saml-request-um-add-drop">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+          <hr class="mt-4"/>
+          <div id="saml-request-submit-div">
+            <div class="row mt-4">
+              <div class="col-sm-12">
+                <button id="saml-request-submit-button" type="button" class="btn btn-primary">Send AuthnRequest
+                </button>
+                <button id="saml-request-restart-button" type="button" class="btn btn-primary">Restart</button>
               </div>
             </div>
           </div>

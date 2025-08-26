@@ -24,6 +24,7 @@ import org.opensaml.saml.ext.saml2mdui.Description;
 import org.opensaml.saml.ext.saml2mdui.DisplayName;
 import org.opensaml.saml.ext.saml2mdui.UIInfo;
 import org.opensaml.saml.metadata.resolver.MetadataResolver;
+import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.Extensions;
 import org.opensaml.saml.saml2.metadata.NameIDFormat;
@@ -39,6 +40,7 @@ import se.swedenconnect.opensaml.saml2.metadata.build.ExtensionsBuilder;
 import se.swedenconnect.opensaml.saml2.metadata.build.KeyDescriptorBuilder;
 import se.swedenconnect.opensaml.saml2.metadata.build.RequestedAttributeBuilder;
 import se.swedenconnect.opensaml.saml2.request.RequestGenerationException;
+import se.swedenconnect.opensaml.saml2.request.RequestHttpObject;
 import se.swedenconnect.security.credential.opensaml.OpenSamlCredential;
 import se.swedenconnect.testclient.config.SamlSpProperties;
 import se.swedenconnect.testclient.config.SamlSpProperties.SpMetadataProperties.AttributeConsumingServiceProperties;
@@ -218,7 +220,13 @@ public class SamlSp {
     return builder.build();
   }
 
-  public SamlAuthnRequestModel getTemplateRequest(@Nonnull final String idp) {
+  @Nonnull
+  public RequestHttpObject<AuthnRequest> generateAuthnRequest(@Nonnull final SamlAuthnRequestParameterModel model) {
+    return null;
+  }
+
+  @Nonnull
+  public SamlAuthnRequestParameterModel getTemplateRequest(@Nonnull final String idp) {
     try {
       return this.authnRequestGenerator.generateAuthnRequestModel(idp);
     }

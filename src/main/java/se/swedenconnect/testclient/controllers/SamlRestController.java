@@ -26,22 +26,26 @@ import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.ext.saml2mdui.Description;
 import org.opensaml.saml.ext.saml2mdui.DisplayName;
 import org.opensaml.saml.ext.saml2mdui.UIInfo;
+import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.w3c.dom.Element;
 import se.swedenconnect.opensaml.saml2.metadata.EntityDescriptorUtils;
-import se.swedenconnect.testclient.saml.SamlAuthnRequestModel;
+import se.swedenconnect.opensaml.saml2.request.RequestHttpObject;
+import se.swedenconnect.testclient.saml.SamlAuthnRequestParameterModel;
 import se.swedenconnect.testclient.saml.SamlFederation;
 import se.swedenconnect.testclient.saml.SamlSp;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * REST controller for SAML.
@@ -124,7 +128,7 @@ public class SamlRestController {
   }
 
   @GetMapping(value = "/authn/template", produces = MediaType.APPLICATION_JSON_VALUE)
-  public SamlAuthnRequestModel getSamlAuthnRequestTemplate(
+  public SamlAuthnRequestParameterModel getSamlAuthnRequestTemplate(
       @Nonnull @RequestParam("sp") final String sp, @Nonnull @RequestParam("idp") final String idp) {
 
     for (final SamlSp samlSp : this.samlSps) {
@@ -134,6 +138,38 @@ public class SamlRestController {
     }
 
     throw new NotFoundException("%s not found".formatted(sp));
+  }
+
+  @PostMapping(value = "/authn/generate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public SamlAuthnRequestModel generateAuthnRequest(@Nonnull @RequestBody final SamlAuthnRequestParameterModel model) {
+
+    for (final SamlSp samlSp : this.samlSps) {
+      if (samlSp.getEntityId().equals(model.getSp())) {
+        final RequestHttpObject<AuthnRequest> request = samlSp.generateAuthnRequest(model);
+        final SamlAuthnRequestModel authnRequestModel = new SamlAuthnRequestModel();
+        authnRequestModel.setSp(model.getSp());
+        authnRequestModel.setIdp(model.getIdp());
+        authnRequestModel.setId(request.getRequest().getID());
+        authnRequestModel.setUrl(request.getSendUrl());
+        authnRequestModel.setMethod(request.getMethod());
+        if ("POST".equalsIgnoreCase(request.getMethod())) {
+          authnRequestModel.setParameters(request.getRequestParameters());
+        }
+        try {
+          Element element = request.getRequest().getDOM();
+          if (element == null) {
+            element = XMLObjectSupport.marshall(request.getRequest());
+          }
+          authnRequestModel.setAuthnRequest(SerializeSupport.prettyPrintXML(element));
+        }
+        catch (final Exception e) {
+          throw new RuntimeException("Failed to get serialize request", e);
+        }
+        return authnRequestModel;
+      }
+    }
+
+    throw new NotFoundException("%s not found".formatted(model.getSp()));
   }
 
   @GetMapping(value = "/sp/info", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -180,6 +216,29 @@ public class SamlRestController {
     private String description;
 
     private String metadata;
+
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class SamlAuthnRequestModel {
+
+    private String sp;
+
+    private String idp;
+
+    private String id;
+
+    // GET or POST
+    private String method;
+
+    private String url;
+
+    private Map<String, String> parameters;
+
+    @JsonProperty("authn_request")
+    private String authnRequest;
 
   }
 

@@ -15,6 +15,34 @@
  */
 
 //
+// The app state object
+//
+let appState = {
+  _app_state: null,
+
+  // getSelectedFeature
+  //
+  getSelectedFeature: function() {
+    return this._get_app_state().selected_feature;
+  },
+
+  // setSelectedFeature
+  //
+  setSelectedFeature: function(feature) {
+    this._get_app_state().selected_feature = feature;
+    localStorage.setItem('sctc.app', JSON.stringify(this._app_state));
+  },
+
+  _get_app_state: function() {
+    if (this._app_state == null) {
+      this._app_state = JSON.parse(localStorage.getItem('sctc.app') || "{}");
+    }
+    return this._app_state;
+  }
+
+};
+
+//
 // The SAML state object
 //
 let samlState = {
@@ -29,6 +57,9 @@ let samlState = {
 
   // Whether we are in build authn state
   buildAuthnState: false,
+
+  // The authnRequest pars
+  authnRequest: null,
 
   // init
   //  initializes the state

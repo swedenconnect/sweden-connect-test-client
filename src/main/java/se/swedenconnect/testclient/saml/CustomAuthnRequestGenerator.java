@@ -19,6 +19,7 @@ import jakarta.annotation.Nonnull;
 import org.opensaml.core.xml.schema.XSURI;
 import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.metadata.resolver.MetadataResolver;
+import org.opensaml.saml.saml2.core.AuthnContextComparisonTypeEnumeration;
 import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.opensaml.saml.saml2.core.NameIDPolicy;
 import org.opensaml.saml.saml2.core.RequestedAuthnContext;
@@ -29,6 +30,7 @@ import se.swedenconnect.opensaml.saml2.request.AuthnRequestGenerator;
 import se.swedenconnect.opensaml.saml2.request.AuthnRequestGeneratorContext;
 import se.swedenconnect.opensaml.saml2.request.RequestGenerationException;
 import se.swedenconnect.opensaml.saml2.request.RequestHttpObject;
+import se.swedenconnect.opensaml.sweid.saml2.authn.umsg.UserMessage;
 import se.swedenconnect.opensaml.sweid.saml2.request.SwedishEidAuthnRequestGenerator;
 import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.opensaml.OpenSamlCredential;
@@ -49,12 +51,20 @@ public class CustomAuthnRequestGenerator extends SwedishEidAuthnRequestGenerator
     super(spMetadata, new OpenSamlCredential(signCredential), metadataResolver);
   }
 
-  public SamlAuthnRequestModel generateAuthnRequestModel(final String idp) throws RequestGenerationException {
+  public RequestHttpObject<AuthnRequest> generateAuthnRequest(@Nonnull final SamlAuthnRequestParameterModel input)
+      throws RequestGenerationException {
+    return this.generateAuthnRequest(input.getIdp(), input.getRelayState(),
+        new CustomAuthnRequestGeneratorContext(input));
+  }
+
+  public SamlAuthnRequestParameterModel generateAuthnRequestModel(final String idp) throws RequestGenerationException {
     final CustomAuthnRequestGeneratorContext context = new CustomAuthnRequestGeneratorContext();
 
     final RequestHttpObject<AuthnRequest> template = this.generateAuthnRequest(idp, null, context);
 
-    final SamlAuthnRequestModel model = new SamlAuthnRequestModel();
+    final SamlAuthnRequestParameterModel model = new SamlAuthnRequestParameterModel();
+    model.setSp(this.getSpEntityID());
+    model.setIdp(idp);
     model.setPossibleRequestBindings(
         List.of(SAMLConstants.SAML2_REDIRECT_BINDING_URI, SAMLConstants.SAML2_POST_BINDING_URI));
     if ("GET".equals(template.getMethod())) {
@@ -75,7 +85,7 @@ public class CustomAuthnRequestGenerator extends SwedishEidAuthnRequestGenerator
 
     final NameIDPolicy nameIdPolicy = authnRequest.getNameIDPolicy();
     if (nameIdPolicy != null) {
-      final SamlAuthnRequestModel.NameIdPolicy nip = new SamlAuthnRequestModel.NameIdPolicy();
+      final SamlAuthnRequestParameterModel.NameIdPolicy nip = new SamlAuthnRequestParameterModel.NameIdPolicy();
       nip.setFormat(nameIdPolicy.getFormat());
       Optional.ofNullable(nameIdPolicy.getAllowCreateXSBoolean()).ifPresent(a -> nip.setAllowCreate(a.getValue()));
       nip.setSpNameQualifier(nameIdPolicy.getSPNameQualifier());
@@ -89,7 +99,9 @@ public class CustomAuthnRequestGenerator extends SwedishEidAuthnRequestGenerator
           .map(XSURI::getURI)
           .toList();
       if (!rac.isEmpty()) {
-        model.setRequestedAuthnContextClassUris(rac);
+        model.setRequestedAuthnContext(new SamlAuthnRequestParameterModel.RequestedAuthnContext(rac,
+            Optional.ofNullable(requestedAuthnContext.getComparison()).map(
+                AuthnContextComparisonTypeEnumeration::toString).orElse(null)));
       }
     }
 
@@ -98,6 +110,28 @@ public class CustomAuthnRequestGenerator extends SwedishEidAuthnRequestGenerator
         .map(Endpoint::getLocation)
         .toList());
     model.setAssertionConsumerServiceUrl(authnRequest.getAssertionConsumerServiceURL());
+
+    final UserMessage userMessage = Optional.ofNullable(authnRequest.getExtensions())
+        .map(e -> e.getUnknownXMLObjects(UserMessage.DEFAULT_ELEMENT_NAME))
+        .filter(list -> !list.isEmpty())
+        .map(List::getFirst)
+        .map(UserMessage.class::cast)
+        .orElse(null);
+    if (userMessage != null) {
+      final SamlAuthnRequestParameterModel.UserMessageExtension umExt =
+          new SamlAuthnRequestParameterModel.UserMessageExtension();
+      umExt.setMimeType(userMessage.getMimeType());
+      umExt.setMessages(
+          userMessage.getMessages().stream()
+              .map(m -> {
+                final String language = "sv".equals(m.getXMLLang()) ? "Swedish"
+                    : "en".equals(m.getXMLLang()) ? "English" : "Unknown language";
+                return new SamlAuthnRequestParameterModel.UserMessageExtension.Message(
+                    m.getXMLLang(), language, m.getContent());
+              })
+              .toList());
+      model.setUserMessageExtension(umExt);
+    }
 
     return model;
   }

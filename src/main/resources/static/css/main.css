@@ -305,3 +305,7 @@ main {
 .col-form-label {
     padding-top: 0;
 }
+
+.user-message {
+    font-family: "Courier New", monospace;
+}
