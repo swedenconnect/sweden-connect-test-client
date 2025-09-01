@@ -45,36 +45,6 @@ function generateRandomId(prefix = 'id') {
   return prefix + '_' + Math.random().toString(36).slice(2, 11);
 }
 
-function getInputValue(id) {
-  let value = $('#' + id).val().trim();
-  return value === '' ? null : value;
-}
-
-function setRadioButtonTrueFalseExclude(radio, value) {
-  if (value === true) {
-    $('input[name="' + radio + '"][value="true"]').prop('checked', true);
-  }
-  else if (value === false) {
-    $('input[name="' + radio + '"][value="false"]').prop('checked', true);
-  }
-  else {
-    $('input[name="' + radio + '"][value="exclude"]').prop('checked', true);
-  }
-}
-
-function getRadioButtonTrueFalseExclude(radio) {
-  let val = $('input[name="' + radio + '"]:checked');
-  if (val === "true") {
-    return true;
-  }
-  else if (val === "false") {
-    return false;
-  }
-  else {
-    return null;
-  }
-}
-
 $(document).ready(function() {
 
   //
@@ -111,3 +81,37 @@ $(document).ready(function() {
   initPage();
 
 });
+
+class CodeViewer {
+
+  constructor() {
+    this.formatterPars = {
+      indentation: '  ',
+      collapseContent: true,
+      throwOnFailure: false
+    };
+
+    hljs.configure({
+      ignoreUnescapedHTML: true,
+      throwUnescapedHTML: false,
+      languages: [ 'xml', 'json' ]
+    });
+  }
+
+  displayXml(title, xml) {
+    let formattedXml = xmlFormatter(xml, this.formatterPars);
+
+    let xmlElement = $('#xml-content');
+
+    xmlElement.text(formattedXml);
+    xmlElement.removeAttr('data-highlighted');
+    hljs.highlightElement(xmlElement.get(0));
+
+    let xmlViewer = $('#xml-viewer');
+    xmlViewer.find('.modal-title').text(title);
+    xmlViewer.find('.modal').modal('show');
+  }
+
+}
+
+const codeViewer = new CodeViewer();

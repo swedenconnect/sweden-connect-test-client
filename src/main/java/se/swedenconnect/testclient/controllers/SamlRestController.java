@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.w3c.dom.Element;
 import se.swedenconnect.opensaml.saml2.metadata.EntityDescriptorUtils;
+import se.swedenconnect.opensaml.saml2.request.RequestGenerationException;
 import se.swedenconnect.opensaml.saml2.request.RequestHttpObject;
 import se.swedenconnect.testclient.saml.SamlAuthnRequestParameterModel;
 import se.swedenconnect.testclient.saml.SamlFederation;
@@ -141,7 +142,8 @@ public class SamlRestController {
   }
 
   @PostMapping(value = "/authn/generate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public SamlAuthnRequestModel generateAuthnRequest(@Nonnull @RequestBody final SamlAuthnRequestParameterModel model) {
+  public SamlAuthnRequestModel generateAuthnRequest(@Nonnull @RequestBody final SamlAuthnRequestParameterModel model)
+      throws RequestGenerationException {
 
     for (final SamlSp samlSp : this.samlSps) {
       if (samlSp.getEntityId().equals(model.getSp())) {
@@ -176,7 +178,8 @@ public class SamlRestController {
   public List<SamlSpInfoModel> getSamlSpInfo() {
     return this.samlSps.stream()
         .map(sp -> new SamlSpInfoModel(sp.getEntityId(), sp.getDescription(),
-            this.urlBuilderBean.buildUrl(SamlSpMetadataController.SP_METADATA_BASEPATH, sp.getPathPrefix())))
+            this.urlBuilderBean.buildUrl(SamlSpMetadataController.SP_METADATA_BASEPATH, sp.getPathPrefix()),
+            sp.getSpMetadata()))
         .toList();
   }
 
@@ -192,6 +195,8 @@ public class SamlRestController {
 
     @JsonProperty("metadata_url")
     private String metadataUrl;
+
+    private String metadata;
   }
 
   @Data

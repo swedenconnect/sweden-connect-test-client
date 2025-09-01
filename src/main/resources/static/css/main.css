@@ -309,3 +309,7 @@ main {
 .user-message {
     font-family: "Courier New", monospace;
 }
+
+span .bi {
+    margin-left: 0.25rem; /* small gap between link text and icon */
+}

@@ -89,6 +89,12 @@ public class TestClientConfiguration {
         : null;
   }
 
+  @Bean("testclient.NonRegisteredCredential")
+  @Nonnull
+  PkiCredential nonRegisteredCredential() throws Exception {
+    return this.credentialFactory.createCredential(this.properties.getNonRegisteredCredential());
+  }
+
   @Bean
   List<SamlSp> getSamlSps() throws Exception {
     final List<SamlSp> sps = new ArrayList<>();
@@ -161,7 +167,8 @@ public class TestClientConfiguration {
   private ClientCredentials createClientCredentials(@Nullable final SamlSpProperties.CredentialsProperties cp)
       throws Exception {
     if (cp == null) {
-      return new ClientCredentials(null, null, null, null, null, this.defaultCredential());
+      return new ClientCredentials(null, null, null, null, null, this.defaultCredential(),
+          this.nonRegisteredCredential());
     }
     return new ClientCredentials(
         cp.getSigning() != null ? this.credentialFactory.createCredential(cp.getSigning()) : null,
@@ -169,7 +176,8 @@ public class TestClientConfiguration {
         cp.getEncryption() != null ? this.credentialFactory.createCredential(cp.getEncryption()) : null,
         cp.getPreviousEncryption() != null ? this.credentialFactory.createCredential(cp.getPreviousEncryption()) : null,
         cp.getMetadata() != null ? this.credentialFactory.createCredential(cp.getMetadata()) : null,
-        this.defaultCredential());
+        this.defaultCredential(),
+        this.nonRegisteredCredential());
   }
 
 }

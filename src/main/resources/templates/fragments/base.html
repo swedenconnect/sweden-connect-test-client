@@ -32,9 +32,16 @@
         -->
   <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap/bootstrap.min.css}"
         href="../../css/bootstrap/bootstrap.min.css"/>
+
+  <link rel="stylesheet" type="text/css"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+        crossorigin="anonymous">
+
   <link rel="stylesheet" th:href="@{/css/main.css}" href="../../css/main.css"/>
 
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" rel="stylesheet">
+
+  <!--<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism.min.css" rel="stylesheet"/>-->
   <link rel="stylesheet" th:href="@{/css/xml-addons.css}" href="../../css/xml-addons.css"/>
 
   <!--
@@ -71,8 +78,11 @@
 
 <th:block th:fragment="scriptFragment2">
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-xml.min.js"></script>
+  <script type="text/javascript" th:src="@{/scripts/highlight/11.9.0/highlight.min.js}"
+          src="../../static/scripts/highlight/11.9.0/highlight.min.js"></script>
+
+  <script type="text/javascript" th:src="@{/scripts/xml-formatter/3.6.6/xml-formatter-singleton.min.js}"
+          src="../../static/scripts/xml-formatter/3.6.6/xml-formatter-singleton.min.js"></script>
 
   <script type="text/javascript" th:src="@{/scripts/state.js}" src="../../static/scripts/state.js"></script>
   <script type="text/javascript" th:src="@{/scripts/main.js}" src="../../static/scripts/main.js"></script>

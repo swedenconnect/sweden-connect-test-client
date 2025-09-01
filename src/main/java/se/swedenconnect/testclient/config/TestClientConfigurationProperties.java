@@ -45,6 +45,13 @@ public class TestClientConfigurationProperties implements InitializingBean {
   @Setter
   private PkiCredentialConfigurationProperties defaultCredential;
 
+  /**
+   * A credential that no client will register. Will be used for testing error handling at IdP/OP.
+   */
+  @Getter
+  @Setter
+  private PkiCredentialConfigurationProperties nonRegisteredCredential;
+
   /** The SAML settings. */
   @Getter
   @NestedConfigurationProperty
@@ -53,6 +60,7 @@ public class TestClientConfigurationProperties implements InitializingBean {
   @Override
   public void afterPropertiesSet() {
     Assert.hasText(this.baseUrl, "testclient.base-url must not be set");
+    Assert.notNull(this.nonRegisteredCredential, "testclient.non-registered-credential must not be null");
     this.saml.afterPropertiesSet();
     this.saml.assertCredentials(this.defaultCredential);
   }

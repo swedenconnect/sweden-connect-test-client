@@ -20,14 +20,19 @@ function displayFederationInfo() {
   $.ajax({
     url: '/saml/federation/info',
     type: 'GET',
-    success: function(info){
+    success: function(info) {
       $('#saml-metadata-description').text(info.description);
       if (info.location.is_url) {
         $('#saml-metadata-location').empty();
         $('#saml-metadata-view-metadata').hide();
-        $('#saml-metadata-location-url').attr('href', info.location.location)
-            .attr({"target": "_blank", "rel": "noopener"})
+        let locationUrl = $('#saml-metadata-location-url');
+        locationUrl.attr('href', info.location.location)
+            .attr({ "target": "_blank", "rel": "noopener" })
             .text(info.location.location);
+        locationUrl.append($('<span>', {
+          class: 'bi bi-box-arrow-up-right',
+          style: 'margin-left: 0.25rem;'
+        }));
       }
       else {
         $('#saml-metadata-location-url').hide();
@@ -49,20 +54,21 @@ function displayFederationInfo() {
 
 $(document).ready(function() {
 
-  $('#saml-metadata-view-metadata button').click(function(){
-    $('#xml-viewer .modal-title').text(getUIMessageText('ui.saml.xml.metadata.all'));
+  $('#saml-metadata-view-metadata button').click(function() {
+    //$('#xml-viewer .modal-title').text(getUIMessageText('ui.saml.xml.metadata.all'));
 
     $.ajax({
       url: '/saml/federation/metadata',
       type: 'GET',
       success: function(data) {
-        $('#xml-viewer .language-xml').text(data.metadata);
+        codeViewer.displayXml("SAML Federation Metadata", data.metadata);
+        //$('#xml-viewer .language-xml').text(data.metadata);
       },
       error: function(error) {
         console.error("Failed to get metadata: " + JSON.stringify(error));
       }
     });
-    $('#xml-viewer .modal').modal('show');
+    //$('#xml-viewer .modal').modal('show');
   });
 
 })

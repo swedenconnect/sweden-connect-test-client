@@ -56,6 +56,10 @@ public class ClientCredentials {
   @Getter
   private final PkiCredential defaultCredential;
 
+  /** For testing non-registered credentials. */
+  @Getter
+  private final PkiCredential nonRegisteredCredential;
+
   /**
    * Constructor.
    *
@@ -66,13 +70,15 @@ public class ClientCredentials {
    * @param metadata the credential to use when signing SP metadata
    * @param defaultCredential the default credential, i.e., the credential to use if no specific credential is
    *     assigned
+   * @param nonRegisteredCredential for testing credentials that have not been registered by the client
    */
   public ClientCredentials(@Nullable final PkiCredential signing,
       @Nullable final X509Certificate futureSigningCertificate,
       @Nullable final PkiCredential encryption,
       @Nullable final PkiCredential previousEncryption,
       @Nullable final PkiCredential metadata,
-      @Nullable final PkiCredential defaultCredential) {
+      @Nullable final PkiCredential defaultCredential,
+      @Nonnull final PkiCredential nonRegisteredCredential) {
     this.signing = signing;
     this.futureSigningCertificate = futureSigningCertificate;
     this.encryption = encryption;
@@ -85,6 +91,7 @@ public class ClientCredentials {
     if (this.encryption == null && this.defaultCredential == null) {
       throw new IllegalArgumentException("Either encryption or defaultCredential must be provided");
     }
+    this.nonRegisteredCredential = nonRegisteredCredential;
   }
 
   /**

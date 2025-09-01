@@ -49,6 +49,10 @@ function displaySamlSps() {
                       target: '_blank',
                       rel: 'noopener'
                     }))
+                    .append($('<span>', {
+                      class: 'bi bi-box-arrow-up-right',
+                      style: 'margin-left: 0.25rem;'
+                    }))
                 )
             ));
         spDiv.append(table);

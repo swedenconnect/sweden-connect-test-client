@@ -78,11 +78,16 @@ public class SamlAuthnRequestParameterModel {
   @JsonProperty("assertion_consumer_service_url")
   private String assertionConsumerServiceUrl;
 
+  private Scoping scoping;
+
   @JsonProperty("requested_principal_selection")
   private List<RequestedPrincipalSelectionValue> requestedPrincipalSelection;
 
   @JsonProperty("user_message_extension")
   private UserMessageExtension userMessageExtension;
+
+  @JsonProperty("sign_message")
+  private SignMessageExtension signMessage;
 
   @Data
   @NoArgsConstructor
@@ -107,6 +112,18 @@ public class SamlAuthnRequestParameterModel {
     private List<String> uris;
 
     private String comparison;
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @JsonInclude(JsonInclude.Include.ALWAYS)
+  public static class Scoping {
+    @JsonProperty("requester_id")
+    private String requesterId;
+
+    @JsonProperty("idp_list")
+    private List<String> idpList;
   }
 
   @Data
@@ -141,14 +158,35 @@ public class SamlAuthnRequestParameterModel {
 
       private String message;
     }
+
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @JsonInclude(JsonInclude.Include.ALWAYS)
+  public static class SignMessageExtension {
+
+    private String message;
+
+    @JsonProperty("mime_type")
+    private String mimeType;
+
+    private boolean encrypt;
+
+    @JsonProperty("display_entity")
+    private String displayEntity;
+
+    @JsonProperty("must_show")
+    private Boolean mustShow;
+
   }
 
   public enum SignatureOption {
 
     OK_SIGNATURE("ok_signature"),
     NO_SIGNATURE("no_signature"),
-    OTHER_SIGNATURE("other_signature"),
-    BAD_SIGNATURE("bad_signature");
+    OTHER_SIGNATURE("other_signature");
 
     SignatureOption(final String label) {
       this.label = label;

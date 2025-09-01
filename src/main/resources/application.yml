@@ -75,3 +75,15 @@ credential:
         key:
           alias: rsa-4096-expired
           key-password: secret
+      not-registered:
+        name: "Not registered"
+        store-reference: test-client
+        metadata:
+          description: "RSA key - not registered in client metadata"
+        key:
+          alias: not-registered
+          key-password: secret
+
+testclient:
+  non-registered-credential:
+    bundle: not-registered

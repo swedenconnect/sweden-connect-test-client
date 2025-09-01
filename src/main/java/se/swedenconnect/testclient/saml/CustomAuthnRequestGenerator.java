@@ -17,24 +17,31 @@ package se.swedenconnect.testclient.saml;
 
 import jakarta.annotation.Nonnull;
 import org.opensaml.core.xml.schema.XSURI;
+import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.metadata.resolver.MetadataResolver;
 import org.opensaml.saml.saml2.core.AuthnContextComparisonTypeEnumeration;
 import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.IDPEntry;
 import org.opensaml.saml.saml2.core.NameIDPolicy;
 import org.opensaml.saml.saml2.core.RequestedAuthnContext;
 import org.opensaml.saml.saml2.metadata.Endpoint;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.SPSSODescriptor;
+import se.swedenconnect.opensaml.saml2.core.build.AuthnRequestBuilder;
+import se.swedenconnect.opensaml.saml2.core.build.ScopingBuilder;
 import se.swedenconnect.opensaml.saml2.request.AuthnRequestGenerator;
 import se.swedenconnect.opensaml.saml2.request.AuthnRequestGeneratorContext;
 import se.swedenconnect.opensaml.saml2.request.RequestGenerationException;
 import se.swedenconnect.opensaml.saml2.request.RequestHttpObject;
 import se.swedenconnect.opensaml.sweid.saml2.authn.umsg.UserMessage;
 import se.swedenconnect.opensaml.sweid.saml2.request.SwedishEidAuthnRequestGenerator;
+import se.swedenconnect.opensaml.sweid.saml2.signservice.dss.Message;
+import se.swedenconnect.opensaml.sweid.saml2.signservice.dss.SignMessage;
 import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.opensaml.OpenSamlCredential;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,14 +58,20 @@ public class CustomAuthnRequestGenerator extends SwedishEidAuthnRequestGenerator
     super(spMetadata, new OpenSamlCredential(signCredential), metadataResolver);
   }
 
-  public RequestHttpObject<AuthnRequest> generateAuthnRequest(@Nonnull final SamlAuthnRequestParameterModel input)
+  public CustomAuthnRequestGenerator(@Nonnull final EntityDescriptor spMetadata,
+      @Nonnull final MetadataResolver metadataResolver) {
+    super(spMetadata, null, metadataResolver);
+  }
+
+  public RequestHttpObject<AuthnRequest> generateAuthnRequest(
+      @Nonnull final SamlAuthnRequestParameterModel input, @Nonnull final PkiCredential nonRegisteredCredential)
       throws RequestGenerationException {
     return this.generateAuthnRequest(input.getIdp(), input.getRelayState(),
-        new CustomAuthnRequestGeneratorContext(input));
+        new CustomAuthnRequestGeneratorContext(input, nonRegisteredCredential));
   }
 
   public SamlAuthnRequestParameterModel generateAuthnRequestModel(final String idp) throws RequestGenerationException {
-    final CustomAuthnRequestGeneratorContext context = new CustomAuthnRequestGeneratorContext();
+    final CustomAuthnRequestGeneratorContext context = new CustomAuthnRequestGeneratorContext(this.getSpMetadata());
 
     final RequestHttpObject<AuthnRequest> template = this.generateAuthnRequest(idp, null, context);
 
@@ -133,6 +146,26 @@ public class CustomAuthnRequestGenerator extends SwedishEidAuthnRequestGenerator
       model.setUserMessageExtension(umExt);
     }
 
+    final SignMessage signMessage = Optional.ofNullable(authnRequest.getExtensions())
+        .map(e -> e.getUnknownXMLObjects(SignMessage.DEFAULT_ELEMENT_NAME))
+        .filter(list -> !list.isEmpty())
+        .map(List::getFirst)
+        .map(SignMessage.class::cast)
+        .orElse(null);
+    if (signMessage != null) {
+      final SamlAuthnRequestParameterModel.SignMessageExtension smExt =
+          new SamlAuthnRequestParameterModel.SignMessageExtension();
+
+      smExt.setMessage(Optional.ofNullable(signMessage.getMessage())
+          .map(Message::getContent)
+          .orElse(null));
+      smExt.setMimeType(signMessage.getMimeType());
+      smExt.setEncrypt(false);
+      smExt.setDisplayEntity(signMessage.getDisplayEntity());
+      smExt.setMustShow(true);
+      model.setSignMessage(smExt);
+    }
+
     return model;
   }
 
@@ -179,6 +212,32 @@ public class CustomAuthnRequestGenerator extends SwedishEidAuthnRequestGenerator
     }
     else {
       return super.buildRequestHttpObject(request, relayState, context, binding, destination, recipientMetadata);
+    }
+  }
+
+  @Override
+  protected void addScoping(final AuthnRequestBuilder builder, final AuthnRequestGeneratorContext context,
+      final EntityDescriptor idpMetadata) throws RequestGenerationException {
+
+    final CustomAuthnRequestGeneratorContext customContext = (CustomAuthnRequestGeneratorContext) context;
+    if (customContext.isGenerateTemplate()) {
+      return;
+    }
+    final SamlAuthnRequestParameterModel.Scoping scoping = customContext.getModel().getScoping();
+    if (scoping != null) {
+
+      final List<IDPEntry> idpEntries = new ArrayList<>();
+      if (scoping.getIdpList() != null) {
+        for (final String idp : scoping.getIdpList()) {
+          final IDPEntry entry = (IDPEntry) XMLObjectSupport.buildXMLObject(IDPEntry.DEFAULT_ELEMENT_NAME);
+          entry.setProviderID(idp);
+          idpEntries.add(entry);
+        }
+      }
+      builder.scoping(ScopingBuilder.builder()
+          .requesterIDs(scoping.getRequesterId())
+          .idpList(null, !idpEntries.isEmpty() ? idpEntries : null)
+          .build());
     }
   }
 }

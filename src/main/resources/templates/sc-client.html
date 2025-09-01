@@ -90,6 +90,10 @@
             <p id="sp-description"></p>
             <p>
               Metadata URL: <a id="sp-metadata-url" href="#" target="_blank" rel="noopener"></a>
+              <span class="bi bi-box-arrow-up-right"></span>
+            </p>
+            <p class="text-end">
+              <button id="sp-view-metadata" type="button" class="btn btn-primary btn-sm">View SP Metadata >>></button>
             </p>
           </div>
         </div>
@@ -181,12 +185,6 @@
                        id="saml-request-signature-radio-signother" value="other_signature">
                 <label class="form-check-label" for="saml-request-signature-radio-signother">A signature created with
                   another certificate than the one given in SP metadata will be applied</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
-                       id="saml-request-signature-radio-signbad" value="bad_signature">
-                <label class="form-check-label" for="saml-request-signature-radio-signbad">A signature that is incorrect
-                  will be applied to the AuthnRequest message</label>
               </div>
             </div>
           </div>
@@ -398,7 +396,6 @@
                 </div>
               </div>
 
-
               <div class="row mt-4" id="saml-request-rac-custom-div" style="display: none;">
                 <label class="col-sm-2" for="saml-request-rac-custom">Custom Value</label>
                 <div class="col-sm-10">
@@ -445,6 +442,54 @@
               <label class="col-sm-2" for="saml-request-acs-custom">Custom Value</label>
               <div class="col-sm-10">
                 <input type="text" class="form-control" id="saml-request-acs-custom">
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+
+          <!-- Scoping element -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The Scoping element allows for adding requested IdPs/authentication methods and/or a requester ID.">Scoping Element</span>
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-scoping-present"
+                         id="saml-request-scoping-present">
+                  <label class="form-check-label ps-3" for="saml-request-scoping-present">Element present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-scoping-div">
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-scoping-requesterid">
+                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        data-bs-original-title="If the SP acts upon another requester this field may be used.">Requester ID</span>
+                </label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="saml-request-scoping-requesterid">
+                </div>
+              </div>
+              <div id="saml-request-scoping-idps-div">
+                <div class="row mt-4">
+                  <label class="col-sm-2" for="saml-request-scoping-idpentry">
+                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        data-bs-original-title="Specify one or more identifiers. This gives information to a proxy IdP on which underlying IdP/method to use.">IdP entry (part of IdP list)</span>
+                  </label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="saml-request-scoping-idpentry">
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <button id="saml-request-scoping-add-button" type="button" class="btn btn-sm btn-primary">Add IdP
+                    Entry
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -528,6 +573,77 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+
+          <!-- Sign Message Extension -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The SignMessage extension is used to supply the IdP with a message that should be displayed for the user during authentication for signature.">Sign Message Extension</span>
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-sm-present"
+                         id="saml-request-sm-present">
+                  <label class="form-check-label ps-3" for="saml-request-sm-present">Extension present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-sm-div">
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-sm-textarea">Message</label>
+                <div class="col-sm-10 d-flex" style="position: relative;">
+                  <textarea class="form-control user-message" id="saml-request-sm-textarea" rows="3"
+                            placeholder="Enter SignMessage ..."></textarea>
+                </div>
+              </div>
+              <div class="row mt-2">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <input class="form-check-input" type="checkbox" id="saml-request-sm-encrypt-cb">
+                  <label class="form-check-label ps-2" for="saml-request-sm-encrypt-cb">Encrypt message</label>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-sm-mimetype-select">
+                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        data-bs-original-title="The MIME type for the sign message.">MIME Type</span>
+                </label>
+                <div class="col-sm-10">
+                  <select class="form-select" id="saml-request-sm-mimetype-select">
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-sm-display-entity">Display Entity</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="saml-request-sm-display-entity">
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2">Must Show</label>
+                <div class="col-sm-10">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-sm-must-show"
+                           id="saml-request-sm-must-show-true" value="true">
+                    <label class="form-check-label" for="saml-request-sm-must-show-true">True</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-sm-must-show"
+                           id="saml-request-sm-must-show-false" value="false">
+                    <label class="form-check-label" for="saml-request-sm-must-show-false">False</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-sm-must-show"
+                           id="saml-request-sm-must-show-exclude" value="exclude">
+                    <label class="form-check-label" for="saml-request-sm-must-show-exclude">Exclude attribute</label>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -618,7 +734,7 @@
           </div>
           <div class="modal-body">
             <pre>
-              <code id="xml-content" class="language-xml"></code>
+              <code id="xml-content" class="language-xml hljs"></code>
             </pre>
           </div>
           <div class="modal-footer">

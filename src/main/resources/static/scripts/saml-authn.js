@@ -126,6 +126,7 @@ function displaySpOptions(spInfo) {
         let spUrl = $('#sp-metadata-url');
         spUrl.attr('href', sp.metadata_url);
         spUrl.text(sp.metadata_url);
+        $('#sp-view-metadata').attr('value', sp.entity_id);
         spInfoDiv.show();
       }
     }
@@ -147,6 +148,7 @@ function onSelectedSp(entityId) {
         let spUrl = $('#sp-metadata-url');
         spUrl.attr('href', sp.metadata_url);
         spUrl.text(sp.metadata_url);
+        $('#sp-view-metadata').attr('value', sp.entity_id);
         $('#sp-info').show();
         samlState.setSelectedSp(entityId);
         break;
@@ -244,9 +246,17 @@ $(document).ready(function() {
     let entityId = $(this).val();
     for (const idp of samlState.idpInfoCache) {
       if (idp.entity_id === entityId) {
-        $('#xml-viewer .modal-title').text(entityId);
-        $('#xml-viewer .language-xml').text(idp.metadata);
-        $('#xml-viewer .modal').modal('show');
+        codeViewer.displayXml(entityId, idp.metadata);
+        break;
+      }
+    }
+  });
+
+  $('#sp-view-metadata').click(function() {
+    let entityId = $(this).val();
+    for (const sp of samlState.spInfoCache) {
+      if (sp.entity_id === entityId) {
+        codeViewer.displayXml(entityId, sp.metadata);
         break;
       }
     }
@@ -295,6 +305,21 @@ $(document).ready(function() {
   $('#saml-request-submit-button').click(function() {
     let authnRequestParameters = samlState.authnRequest.getAuthnRequestParameters();
     alert(JSON.stringify(authnRequestParameters));
+
+    $.ajax({
+      url: '/saml/authn/generate',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(authnRequestParameters),
+      dataType: 'json',
+      success: function(response) {
+        alert(JSON.stringify(response));
+      },
+      error: function(error) {
+        console.error("Failed to generate SAML AuthnRequest: " + JSON.stringify(error));
+      }
+    });
+
   });
 
 })
@@ -327,6 +352,8 @@ class AuthnRequest {
     this.initAcs(this.template.assertion_consumer_service_url, this.template.possible_assertion_consumer_service_urls);
     this.initRequestedPrincipalSelection();
     this.initUserMessage(this.template.user_message_extension);
+    this.initScoping();
+    this.initSignMessage(this.template.idp, this.template.sign_message);
   }
 
   /**
@@ -347,6 +374,8 @@ class AuthnRequest {
     this.pars.assertion_consumer_service_url = this.getAcs();
     this.pars.requested_principal_selection = this.getRequestedPrincipalSelection();
     this.pars.user_message_extension = this.getUserMessage();
+    this.pars.scoping = this.getScoping();
+    this.pars.sign_message = this.getSignMessage();
     return this.pars;
   }
 
@@ -993,6 +1022,118 @@ class AuthnRequest {
         mime_type: mimeType,
         messages: messages
       };
+    }
+    else {
+      return null;
+    }
+  }
+
+  initScoping() {
+    let scopingCheckbox = $('#saml-request-scoping-present');
+    let scopingDiv = $('#saml-request-scoping-div');
+
+    scopingDiv.hide();
+    scopingCheckbox.prop('checked', false);
+
+    let scopingIdpList = $('#saml-request-scoping-idps-div');
+    $('#saml-request-scoping-add-button').click(function() {
+      let mainDiv = $('<div>', {
+        class: 'row mt-3'
+      });
+      mainDiv.append($('<div>', {
+        class: 'col-sm-2'
+      }));
+      mainDiv.append($('<div>', {
+        class: 'col-sm-10'
+      }).append($('<input>', {
+        type: 'text',
+        class: 'form-control',
+        placeholder: 'Add IdP/method identifier ...'
+      })));
+
+      scopingIdpList.append(mainDiv);
+    });
+
+    scopingCheckbox.change(function() {
+      scopingDiv.toggle(scopingCheckbox.checked);
+    });
+  }
+
+  getScoping() {
+    if ($('#saml-request-scoping-present').prop('checked')) {
+      let scoping = {};
+      scoping.requester_id = AuthnRequest.getValueFromInput($('#saml-request-scoping-requesterid'));
+      scoping.idp_list = [];
+
+      $('#saml-request-scoping-idps-div input').each(function() {
+        let value = AuthnRequest.getValueFromInput($(this));
+        if (value) {
+          scoping.idp_list.push(value);
+        }
+      });
+      if (scoping.idp_list.length === 0) {
+        scoping.idp_list = null;
+      }
+
+      return scoping;
+    }
+    else {
+      return null;
+    }
+  }
+
+  static SM_MIME_TYPES = [ "text", "text/plain", "text/markdown", "text/dummy" ];
+
+  initSignMessage(idp, sm) {
+
+    let smCheckbox = $('#saml-request-sm-present');
+    let smDiv = $('#saml-request-sm-div');
+    let smMimeSelect = $('#saml-request-sm-mimetype-select');
+
+    for (let mt of AuthnRequest.SM_MIME_TYPES) {
+      smMimeSelect.append(new Option(mt, mt));
+    }
+    smMimeSelect.append(new Option("-- Not specified --", "exclude"));
+
+    if (sm) {
+      smCheckbox.prop('checked', true);
+      let smTextarea = $('#saml-request-sm-textarea');
+
+      if (sm.message) {
+        smTextarea.val(sm.message);
+      }
+      $('#saml-request-sm-encrypt-cb').prop('checked', sm.encrypt);
+
+      $('#saml-request-sm-display-entity').val(sm.display_entity);
+      smMimeSelect.val(sm.mime_type || 'exclude');
+      AuthnRequest.setRadioButtonTrueFalseExclude('saml-request-sm-must-show', sm.must_show);
+      smDiv.show();
+    }
+    else {
+      smCheckbox.prop('checked', false);
+      AuthnRequest.setRadioButtonTrueFalseExclude('saml-request-sm-must-show', true);
+      $('#saml-request-sm-display-entity').val(idp);
+      smDiv.hide();
+    }
+
+    smCheckbox.change(function() {
+      smDiv.toggle(smCheckbox.checked);
+    });
+
+  }
+
+  getSignMessage() {
+    if ($('#saml-request-sm-present').prop('checked')) {
+      let sm = {};
+      sm.message = $('#saml-request-sm-textarea').val();
+      sm.mime_type = $("#saml-request-sm-mimetype-select").val();
+      if (sm.mime_type === 'exclude') {
+        sm.mime_type = null;
+      }
+      sm.encrypt = $('#saml-request-sm-encrypt-cb').is(':checked');
+      sm.display_entity = AuthnRequest.getValueFromInput($('#saml-request-sm-display-entity'));
+      sm.must_show = AuthnRequest.getRadioButtonTrueFalseExclude('saml-request-sm-must-show');
+      return sm;
     }
     else {
       return null;

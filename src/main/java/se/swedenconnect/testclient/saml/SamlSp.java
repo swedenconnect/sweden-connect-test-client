@@ -17,6 +17,7 @@ package se.swedenconnect.testclient.saml;
 
 import jakarta.annotation.Nonnull;
 import lombok.Getter;
+import net.shibboleth.shared.xml.SerializeSupport;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.ext.saml2mdattr.EntityAttributes;
@@ -30,6 +31,7 @@ import org.opensaml.saml.saml2.metadata.Extensions;
 import org.opensaml.saml.saml2.metadata.NameIDFormat;
 import org.opensaml.saml.saml2.metadata.SPSSODescriptor;
 import org.opensaml.security.credential.UsageType;
+import org.w3c.dom.Element;
 import se.swedenconnect.opensaml.common.utils.LocalizedString;
 import se.swedenconnect.opensaml.saml2.metadata.EntityDescriptorContainer;
 import se.swedenconnect.opensaml.saml2.metadata.EntityDescriptorUtils;
@@ -84,6 +86,8 @@ public class SamlSp {
 
   private final CustomAuthnRequestGenerator authnRequestGenerator;
 
+  private final CustomAuthnRequestGenerator authnRequestGeneratorNoSigning;
+
   public SamlSp(@Nonnull final String entityId, @Nonnull final String description,
       @Nonnull final String pathPrefix, @Nonnull final ClientCredentials credentials,
       @Nonnull final EntityDescriptor entityDescriptorTemplate,
@@ -103,6 +107,7 @@ public class SamlSp {
 
     this.authnRequestGenerator = new CustomAuthnRequestGenerator(this.entityDescriptor,
         this.credentials.getCredentialForSigning(), this.metadataResolver);
+    this.authnRequestGeneratorNoSigning = new CustomAuthnRequestGenerator(this.entityDescriptor, this.metadataResolver);
   }
 
   /**
@@ -221,18 +226,39 @@ public class SamlSp {
   }
 
   @Nonnull
-  public RequestHttpObject<AuthnRequest> generateAuthnRequest(@Nonnull final SamlAuthnRequestParameterModel model) {
-    return null;
-  }
+  public RequestHttpObject<AuthnRequest> generateAuthnRequest(@Nonnull final SamlAuthnRequestParameterModel model)
+      throws RequestGenerationException {
 
-  @Nonnull
-  public SamlAuthnRequestParameterModel getTemplateRequest(@Nonnull final String idp) {
-    try {
-      return this.authnRequestGenerator.generateAuthnRequestModel(idp);
-    }
-    catch (final RequestGenerationException e) {
-      throw new RuntimeException(e.getMessage());
-    }
+    final CustomAuthnRequestGenerator generator =
+        model.getSignatureOption() == SamlAuthnRequestParameterModel.SignatureOption.NO_SIGNATURE
+            ? this.authnRequestGeneratorNoSigning
+            : this.authnRequestGenerator;
+
+    return generator.generateAuthnRequest(model, this.credentials.getNonRegisteredCredential());
+}
+
+@Nonnull
+public SamlAuthnRequestParameterModel getTemplateRequest(@Nonnull final String idp) {
+  try {
+    return this.authnRequestGenerator.generateAuthnRequestModel(idp);
   }
+  catch (final RequestGenerationException e) {
+    throw new RuntimeException(e.getMessage());
+  }
+}
+
+@Nonnull
+public String getSpMetadata() {
+  try {
+    Element element = this.entityDescriptor.getDOM();
+    if (element == null) {
+      element = XMLObjectSupport.marshall(this.entityDescriptor);
+    }
+    return SerializeSupport.prettyPrintXML(element);
+  }
+  catch (final Exception e) {
+    throw new RuntimeException("Failed to serialize metadata", e);
+  }
+}
 
 }

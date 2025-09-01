@@ -19,11 +19,14 @@
     max-width: calc(100vw - 20px) !important;
 }
 
+/*
 #xml-viewer .language-xml {
     font-size: 0.85em;
     font-family: 'Courier New', Courier, monospace;
     line-height: 1.4;
 }
+
+ */
 
 .token.tag,
 .token.attr-name {
