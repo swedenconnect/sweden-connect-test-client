@@ -20,7 +20,7 @@
 
 <nav class="navbar navbar-expand-lg bg-light fixed-top" data-bs-theme="light">
   <div class="container-fluid">
-    <a id="menu-home" class="navbar-brand" href="#">
+    <a id="menu-home" class="navbar-brand" href="javascript:void(0)">
       <img th:src="@{/images/logo-notext.svg}" src="/images/logo-notext.svg" width="30" height="30"
            class="d-inline-block align-top" alt="Sweden Connect"/>
     </a>
@@ -31,25 +31,20 @@
     <div class="collapse navbar-collapse" id="navbarColor01">
       <ul class="navbar-nav me-auto">
         <li class="nav-item">
-          <a id="menu-saml" class="nav-link gen-saml" href="#" th:text="#{ui.menu.saml}">SAML</a>
+          <a id="menu-saml" class="nav-link gen-saml" href="javascript:void(0)">SAML</a>
         </li>
         <li class="nav-item">
-          <a id="menu-oidc" class="nav-link gen-oidc" href="#" th:text="#{ui.menu.oidc}">OIDC</a>
+          <a id="menu-oidc" class="nav-link gen-oidc" href="javascript:void(0)">OpenID Connect</a>
         </li>
         <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button"
-             aria-haspopup="true"
-             aria-expanded="false" th:text="#{ui.menu.advanced}">Advanced</a>
+          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="javascript:void(0)" role="button"
+             aria-haspopup="true" aria-expanded="false">Advanced</a>
           <div class="dropdown-menu">
-            <a id="menu-saml-clients" class="dropdown-item" href="#" th:text="#{ui.menu.advanced.saml-clients}">SAML
-              Clients</a>
-            <a id="menu-saml-metadata" class="dropdown-item" href="#" th:text="#{ui.menu.advanced.saml-metadata}">SAML
-              Federation
-              Metadata</a>
-            <a class="dropdown-item" href="#" th:text="#{ui.menu.advanced.saml-settings}">SAML Settings</a>
+            <a id="menu-saml-clients" class="dropdown-item" href="javascript:void(0)">SAML Clients</a>
+            <a id="menu-saml-metadata" class="dropdown-item" href="javascript:void(0)">SAML Federation Metadata</a>
             <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="#" th:text="#{ui.menu.advanced.oidc-clients}">OIDC Clients</a>
-            <a class="dropdown-item" href="#" th:text="#{ui.menu.advanced.oidc-ops}">OIDC Providers</a>
+            <a class="dropdown-item" href="javascript:void(0)">OIDC Clients</a>
+            <a class="dropdown-item" href="javascript:void(0)">OIDC Providers</a>
           </div>
         </li>
       </ul>
@@ -68,7 +63,7 @@
     <div class="col-sm-12 content-container">
       <div class="row">
         <div class="col-sm-12">
-          <h2 class="content-heading" th:text="#{ui.saml.title}">SAML Authentication</h2>
+          <h2 class="content-heading">SAML Authentication</h2>
           <p>
             Select which SAML Service Provider you want to use when requesting SAML authentication, and then select
             which SAML Identity Provider to send the authentication request to.
@@ -118,17 +113,19 @@
           </div>
         </div>
       </div>
-      <hr class="mt-4"/>
-      <div class="row mt-4">
-        <div class="col-sm-6">
-          <div class="text-left">
-            <button id="saml-authn-next-button" type="button" class="btn btn-primary">Next</button>
+      <div id="saml-authn-next-button-div">
+        <hr class="mt-4"/>
+        <div class="row mt-4">
+          <div class="col-sm-6">
+            <div class="text-left">
+              <button id="saml-authn-next-button" type="button" class="btn btn-primary">Next</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div id="saml-build-authn">
+    <div id="saml-build-authn" class="hide">
       <div class="col-sm-12 content-container">
         <div class="row">
           <div class="col-sm-12">
@@ -248,7 +245,7 @@
               </div>
             </div>
           </div>
-          <div class="form-group" id="saml-advanced-authn-request">
+          <div class="form-group hide" id="saml-advanced-authn-request">
             <!-- Destination -->
             <div class="row mt-4">
               <label class="col-sm-2 col-form-label" for="saml-request-destination">
@@ -463,15 +460,26 @@
               </div>
             </div>
             <div id="saml-request-scoping-div">
-              <div class="row mt-4">
-                <label class="col-sm-2" for="saml-request-scoping-requesterid">
+              <div id="saml-request-scoping-rid-div">
+                <div class="row mt-4">
+                  <label class="col-sm-2" for="saml-request-scoping-requesterid">
                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                        data-bs-original-title="If the SP acts upon another requester this field may be used.">Requester ID</span>
-                </label>
-                <div class="col-sm-10">
-                  <input type="text" class="form-control" id="saml-request-scoping-requesterid">
+                        data-bs-original-title="If the SP acts upon another requester this field may be used.">Requester IDs</span>
+                  </label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="saml-request-scoping-requesterid">
+                  </div>
                 </div>
               </div>
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <button id="saml-request-scoping-rid-add-button" type="button" class="btn btn-sm btn-primary">Add
+                    Another Requester ID
+                  </button>
+                </div>
+              </div>
+
               <div id="saml-request-scoping-idps-div">
                 <div class="row mt-4">
                   <label class="col-sm-2" for="saml-request-scoping-idpentry">
@@ -486,7 +494,8 @@
               <div class="row mt-4">
                 <div class="col-sm-2"></div>
                 <div class="col-sm-10">
-                  <button id="saml-request-scoping-add-button" type="button" class="btn btn-sm btn-primary">Add IdP
+                  <button id="saml-request-scoping-add-button" type="button" class="btn btn-sm btn-primary">Add Another
+                    IdP
                     Entry
                   </button>
                 </div>
@@ -663,6 +672,111 @@
       </div>
     </div>
 
+    <!-- Result view of SAML authentication -->
+    <div id="saml-authn-result" class="hide">
+      <div class="col-sm-12 content-container">
+        <div class="row">
+          <div class="col-sm-12">
+            <h2 class="content-heading">Authentication Result</h2>
+          </div>
+        </div>
+
+        <div id="saml-authn-result-idp-error" class="card text-white mb-3 hide">
+          <div class="card-header">Identity Provider Error</div>
+          <div class="card-body">
+          </div>
+        </div>
+
+        <div class="card border-primary mb-3" id="saml-authn-result-authnrequest">
+          <div class="card-header">Authentication Request</div>
+          <div class="card-body">
+            <p class="card-text">Information about the SAML authentication request that was sent to the Identity
+              Provider.</p>
+            <div class="row hide" id="saml-authn-result-authnrequest-details">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="row">
+              <p class="text-end">
+                <button id="saml-authn-result-view-authnrequest-details" type="button" class="btn btn-primary btn-sm">
+                  View Details
+                </button>
+                <button id="saml-authn-result-view-authnrequest" type="button" class="btn btn-primary btn-sm">View
+                  AuthnRequest Message
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="card border-primary mb-3 hide" id="saml-authn-result-response">
+          <div class="card-header">SAML Response</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="row">
+              <p class="text-end">
+                <button id="saml-authn-result-view-response" type="button" class="btn btn-primary btn-sm">View Response
+                  Message
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="card border-primary mb-3 hide" id="saml-authn-result-assertion">
+          <div class="card-header">SAML Assertion</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody id="body-assertion">
+                  </tbody>
+                </table>
+                <div id="assertions-table">
+                  <p><strong>Attribute Statement</strong></p>
+                  <table class="table table-hover saml-table">
+                    <thead>
+                    <tr>
+                      <th scope="col" class="table-text">Name</th>
+                      <th scope="col" class="table-text">Friendly name</th>
+                      <th scope="col" class="table-text">Value</th>
+                    </tr>
+                    </thead>
+                    <tbody id="body-attributes">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <p class="text-end">
+                <button id="saml-authn-result-view-assertion" type="button" class="btn btn-primary btn-sm">View
+                  Assertion
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="mt-4"/>
+        <div class="row mt-4">
+          <div class="col-sm-12">
+            <button id="saml-authn-result-restart-button" type="button" class="btn btn-primary">Restart</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div> <!-- #main-saml -->
 
   <!-- SAML Clients -->
@@ -671,10 +785,9 @@
     <div class="col-sm-12 content-container">
       <div class="row">
         <div class="col-sm-12 content-heading">
-          <h2 th:text="#{ui.saml.sps.title}">SAML Service Providers</h2>
+          <h2>SAML Service Providers</h2>
         </div>
         <div class="col-sm-12" id="saml-sp-list">
-
         </div>
       </div>
     </div>
@@ -686,7 +799,7 @@
     <div class="col-sm-12 content-container">
       <div class="row">
         <div class="col-sm-12 content-heading">
-          <h2 th:text="#{ui.saml.metadata.title}">SAML Federation Metadata</h2>
+          <h2>SAML Federation Metadata</h2>
         </div>
         <div class="col-sm-12">
           <table class="table table-hover">
@@ -745,16 +858,31 @@
     </div>
   </div>
 
+  <div id="error-modal" class="modal">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Error</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
+        <div id="error-modal-contents" class="modal-body">
+          <p>Modal body text goes here.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
 </main>
 
 <footer th:replace="~{fragments/footer :: copyright}"></footer>
 
 <script th:inline="javascript">
-  let ui_messages = {
-    ui_saml_xml_metadata_idps: '/*[[#{ui.saml.xml.metadata.idps}]]*/',
-    ui_saml_xml_metadata_all: '/*[[#{ui.saml.xml.metadata.all}]]*/'
-  };
+
+  const saml_responseData = JSON.parse(/*[[${samlResponseData}]]*/ 'null');
+
 </script>
 
 <th:block th:insert="~{fragments/base :: scriptFragment}"></th:block>

@@ -15,9 +15,14 @@
  */
 package se.swedenconnect.testclient.controllers;
 
+import jakarta.annotation.Nonnull;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
+
+import java.util.Optional;
 
 /**
  * The main controller - the start page.
@@ -28,8 +33,17 @@ import org.springframework.web.servlet.ModelAndView;
 public class MainController {
 
   @GetMapping("/")
-  public ModelAndView home() {
-    return new ModelAndView("sc-client");
+  public ModelAndView home(@Nonnull final HttpServletRequest request) {
+    final ModelAndView view = new ModelAndView("sc-client");
+
+    final HttpSession session = request.getSession();
+    Optional.ofNullable(session.getAttribute(SamlController.SESSION_NAME_SAML_RESPONSE))
+        .ifPresent(data -> {
+          view.addObject("samlResponseData", data);
+          session.removeAttribute(SamlController.SESSION_NAME_SAML_RESPONSE);
+        });
+
+    return view;
   }
 
 }

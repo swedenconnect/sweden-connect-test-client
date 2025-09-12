@@ -40,6 +40,13 @@ import java.util.List;
 public class SamlProperties implements InitializingBean {
 
   /**
+   * Whether SAML is enabled.
+   */
+  @Getter
+  @Setter
+  private boolean enabled;
+
+  /**
    * SAML federation settings.
    */
   @Getter
@@ -63,11 +70,13 @@ public class SamlProperties implements InitializingBean {
   /** {@inheritDoc} */
   @Override
   public void afterPropertiesSet() {
-    Assert.notNull(this.federation, "testclient.saml.federation.* is required");
-    this.federation.afterPropertiesSet();
-    this.commonMetadata.afterPropertiesSet();
-    Assert.notEmpty(this.sps, "testclient.saml.sps is required (at least one SP must be configured)");
-    this.sps.forEach(SamlSpProperties::afterPropertiesSet);
+    if (this.enabled) {
+      Assert.notNull(this.federation, "testclient.saml.federation.* is required");
+      this.federation.afterPropertiesSet();
+      this.commonMetadata.afterPropertiesSet();
+      Assert.notEmpty(this.sps, "testclient.saml.sps is required (at least one SP must be configured)");
+      this.sps.forEach(SamlSpProperties::afterPropertiesSet);
+    }
   }
 
   public void assertCredentials(@Nullable final PkiCredentialConfigurationProperties defaultCredential)

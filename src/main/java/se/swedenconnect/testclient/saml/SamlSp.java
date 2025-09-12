@@ -18,6 +18,7 @@ package se.swedenconnect.testclient.saml;
 import jakarta.annotation.Nonnull;
 import lombok.Getter;
 import net.shibboleth.shared.xml.SerializeSupport;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.ext.saml2mdattr.EntityAttributes;
@@ -43,12 +44,21 @@ import se.swedenconnect.opensaml.saml2.metadata.build.KeyDescriptorBuilder;
 import se.swedenconnect.opensaml.saml2.metadata.build.RequestedAttributeBuilder;
 import se.swedenconnect.opensaml.saml2.request.RequestGenerationException;
 import se.swedenconnect.opensaml.saml2.request.RequestHttpObject;
+import se.swedenconnect.opensaml.saml2.response.ResponseProcessingException;
+import se.swedenconnect.opensaml.saml2.response.ResponseProcessingInput;
+import se.swedenconnect.opensaml.saml2.response.ResponseProcessingResult;
+import se.swedenconnect.opensaml.saml2.response.ResponseStatusErrorException;
 import se.swedenconnect.security.credential.opensaml.OpenSamlCredential;
 import se.swedenconnect.testclient.config.SamlSpProperties;
 import se.swedenconnect.testclient.config.SamlSpProperties.SpMetadataProperties.AttributeConsumingServiceProperties;
+import se.swedenconnect.testclient.controllers.SamlController;
 import se.swedenconnect.testclient.utils.ClientCredentials;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -88,6 +98,8 @@ public class SamlSp {
 
   private final CustomAuthnRequestGenerator authnRequestGeneratorNoSigning;
 
+  private final CustomResponseProcessor responseProcessor;
+
   public SamlSp(@Nonnull final String entityId, @Nonnull final String description,
       @Nonnull final String pathPrefix, @Nonnull final ClientCredentials credentials,
       @Nonnull final EntityDescriptor entityDescriptorTemplate,
@@ -108,6 +120,9 @@ public class SamlSp {
     this.authnRequestGenerator = new CustomAuthnRequestGenerator(this.entityDescriptor,
         this.credentials.getCredentialForSigning(), this.metadataResolver);
     this.authnRequestGeneratorNoSigning = new CustomAuthnRequestGenerator(this.entityDescriptor, this.metadataResolver);
+
+    this.responseProcessor =
+        new CustomResponseProcessor(this.metadataResolver, this.credentials.getCredentialsForEncryption());
   }
 
   /**
@@ -235,30 +250,87 @@ public class SamlSp {
             : this.authnRequestGenerator;
 
     return generator.generateAuthnRequest(model, this.credentials.getNonRegisteredCredential());
-}
-
-@Nonnull
-public SamlAuthnRequestParameterModel getTemplateRequest(@Nonnull final String idp) {
-  try {
-    return this.authnRequestGenerator.generateAuthnRequestModel(idp);
   }
-  catch (final RequestGenerationException e) {
-    throw new RuntimeException(e.getMessage());
-  }
-}
 
-@Nonnull
-public String getSpMetadata() {
-  try {
-    Element element = this.entityDescriptor.getDOM();
-    if (element == null) {
-      element = XMLObjectSupport.marshall(this.entityDescriptor);
+  @Nonnull
+  public SamlAuthnRequestParameterModel getTemplateRequest(@Nonnull final String idp) {
+    try {
+      return this.authnRequestGenerator.generateAuthnRequestModel(idp);
     }
-    return SerializeSupport.prettyPrintXML(element);
+    catch (final RequestGenerationException e) {
+      throw new RuntimeException(e.getMessage());
+    }
   }
-  catch (final Exception e) {
-    throw new RuntimeException("Failed to serialize metadata", e);
+
+  @Nonnull
+  public String getSpMetadata() {
+    try {
+      Element element = this.entityDescriptor.getDOM();
+      if (element == null) {
+        element = XMLObjectSupport.marshall(this.entityDescriptor);
+      }
+      return SerializeSupport.prettyPrintXML(element);
+    }
+    catch (final Exception e) {
+      throw new RuntimeException("Failed to serialize metadata", e);
+    }
   }
-}
+
+  public SamlResponseProcessingModel processResponse(@Nonnull final SamlController.SamlResponseData responseData,
+      @Nonnull final String authnRequestString, @Nonnull final String sentRelayState) {
+
+    final AuthnRequest authnRequest;
+    try {
+      authnRequest = (AuthnRequest) XMLObjectSupport.unmarshallFromInputStream(
+          XMLObjectProviderRegistrySupport.getParserPool(),
+          new ByteArrayInputStream(authnRequestString.getBytes(StandardCharsets.UTF_8)));
+    }
+    catch (final Exception e) {
+      return new SamlResponseProcessingModel(e, responseData.getRelayState());
+    }
+
+    final ResponseProcessingInput input = new ResponseProcessingInput() {
+
+      @Override
+      public AuthnRequest getAuthnRequest(final String id) {
+        return authnRequest;
+      }
+
+      @Override
+      public String getRequestRelayState(final String id) {
+        return sentRelayState;
+      }
+
+      @Override
+      public String getReceiveURL() {
+        return responseData.getReceiveUrl();
+      }
+
+      @Override
+      public Instant getReceiveInstant() {
+        return responseData.getReceiveInstant();
+      }
+
+      @Override
+      public String getClientIpAddress() {
+        return null;
+      }
+
+      @Override
+      public X509Certificate getClientCertificate() {
+        return null;
+      }
+    };
+
+    try {
+      final ResponseProcessingResult result = this.responseProcessor.processSamlResponse(
+          responseData.getSamlResponse(), responseData.getRelayState(), input, null);
+
+      return new SamlResponseProcessingModel(result, responseData.getRelayState());
+    }
+    catch (final ResponseStatusErrorException | ResponseProcessingException e) {
+      return new SamlResponseProcessingModel(e, responseData.getRelayState());
+    }
+  }
 
 }

@@ -313,3 +313,9 @@ main {
 span .bi {
     margin-left: 0.25rem; /* small gap between link text and icon */
 }
+
+.saml-table .table-text {
+    font-size: 0.875em;
+    margin-bottom: 0.75rem;
+    vertical-align: top;
+}

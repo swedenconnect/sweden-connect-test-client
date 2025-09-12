@@ -46,7 +46,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -250,17 +249,22 @@ public class CustomAuthnRequestGeneratorContext implements SwedishEidAuthnReques
       final String message = "Signature requested by %s"
           .formatted(Optional.ofNullable(this.getDisplayName("en")).orElse("the Test Service"));
 
-      return (md, e) -> {
-        return SignMessageBuilder.builder()
-            .message(message)
-            .mimeType(SignMessageMimeTypeEnum.TEXT)
-            .displayEntity(md.getEntityID())
-            .mustShow(true)
-            .build();
-      };
+      return (md, e) -> SignMessageBuilder.builder()
+          .message(message)
+          .mimeType(SignMessageMimeTypeEnum.TEXT)
+          .displayEntity(md.getEntityID())
+          .mustShow(true)
+          .build();
     }
     else if (this.model.getSignMessage() != null) {
-      return SwedishEidAuthnRequestGeneratorContext.super.getSignMessageBuilderFunction();
+      return (md, e) -> SignMessageBuilder.builder()
+          .message(this.model.getSignMessage().getMessage())
+          .mimeType(Optional.ofNullable(this.model.getSignMessage().getMimeType())
+              .map(SignMessageMimeTypeEnum::parse)
+              .orElse(null))
+          .displayEntity(this.model.getSignMessage().getDisplayEntity())
+          .mustShow(this.model.getSignMessage().getMustShow())
+          .build();
     }
     else {
       return (md, e) -> null;

@@ -14,31 +14,72 @@
  * limitations under the License.
  */
 
-function onNavbarClicked(event, name) {
-  if (event != null) {
-    event.preventDefault();
-  }
-  $('.main-div').hide();
-  $("#main-" + name).show();
-}
+class TestClient {
 
-function initPage() {
-  $('.noscripthide').show();
-  $('[data-bs-toggle="tooltip"]').tooltip();
-  let feature = appState.getSelectedFeature();
-  if (feature) {
-    $("#menu-" + feature).trigger('click');
-  }
-  else {
-    onNavbarClicked(null, 'home');
-  }
-}
+  constructor() {
+    this.samlAuthentication = null;
 
-function getUIMessageText(value) {
-  let modifiedValue = value.replace(/\./g, '_');
-  let message = ui_messages[modifiedValue] || '';
-  message = message.replace(/^\/\*|"|\*\/$/g, '');
-  return message;
+    $('.noscripthide').show();
+    $('[data-bs-toggle="tooltip"]').tooltip();
+
+    $('#menu-home').click((event) => {
+      appState.setSelectedFeature('home');
+      this.onNavbarClicked(event, 'home');
+    });
+
+    $('#menu-saml').click((event) => {
+      let scrollCb = null;
+      if (this.samlAuthentication === null) {
+        this.samlAuthentication = new SamlAuthentication();
+      }
+      else {
+        scrollCb = () => this.samlAuthentication.scrollToActiveView();
+      }
+      appState.setSelectedFeature('saml');
+      this.onNavbarClicked(event, 'saml', scrollCb);
+    });
+
+    $('#menu-oidc').click((event) => {
+      appState.setSelectedFeature('oidc');
+      this.onNavbarClicked(event, 'oidc');
+    });
+
+    $('#menu-saml-clients').click((event) => {
+      appState.setSelectedFeature('saml-clients');
+      this.onNavbarClicked(event, 'saml-clients');
+      displaySamlSps();
+    });
+
+    $('#menu-saml-metadata').click((event) => {
+      appState.setSelectedFeature('saml-metadata');
+      this.onNavbarClicked(event, 'saml-metadata');
+      displayFederationInfo();
+    });
+  }
+
+  static init() {
+    const testClient = new TestClient();
+
+    let feature = appState.getSelectedFeature();
+    if (feature) {
+      $("#menu-" + feature).trigger('click');
+    }
+    else {
+      testClient.onNavbarClicked(null, 'home');
+    }
+  }
+
+  onNavbarClicked(event, name, fn = null) {
+    if (event != null) {
+      event.preventDefault();
+    }
+    $('.main-div').hide();
+    $("#main-" + name).show();
+    if (fn) {
+      fn();
+    }
+  }
+
 }
 
 function generateRandomId(prefix = 'id') {
@@ -46,40 +87,7 @@ function generateRandomId(prefix = 'id') {
 }
 
 $(document).ready(function() {
-
-  //
-  // Navigation menu actions
-  //
-  $('#menu-home').click(function(event) {
-    appState.setSelectedFeature('home');
-    onNavbarClicked(event, 'home');
-  });
-
-  $('#menu-saml').click(function(event) {
-    appState.setSelectedFeature('saml');
-    onNavbarClicked(event, 'saml');
-    displaySpAndIdpOptions();
-  });
-
-  $('#menu-oidc').click(function(event) {
-    appState.setSelectedFeature('oidc');
-    onNavbarClicked(event, 'oidc');
-  });
-
-  $('#menu-saml-clients').click(function(event) {
-    appState.setSelectedFeature('saml-clients');
-    onNavbarClicked(event, 'saml-clients');
-    displaySamlSps();
-  });
-
-  $('#menu-saml-metadata').click(function(event) {
-    appState.setSelectedFeature('saml-metadata');
-    onNavbarClicked(event, 'saml-metadata');
-    displayFederationInfo();
-  });
-
-  initPage();
-
+  TestClient.init();
 });
 
 class CodeViewer {
@@ -115,3 +123,25 @@ class CodeViewer {
 }
 
 const codeViewer = new CodeViewer();
+
+function redirectBrowser(url) {
+  window.location.href = url;
+}
+
+function postBrowser(url, pars) {
+  let form = $('<form>', {
+    action: url,
+    method: 'POST'
+  });
+
+  $.each(pars, function(key, value) {
+    form.append($('<input>', {
+      type: 'hidden',
+      name: key,
+      value: value
+    }));
+  });
+
+  $('body').append(form);
+  form.submit();
+}

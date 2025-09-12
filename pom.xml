@@ -60,9 +60,9 @@
 
     <java.version>21</java.version>
 
-    <spring.boot.version>3.5.0</spring.boot.version>
+    <spring.boot.version>3.5.5</spring.boot.version>
 
-    <credentials-support.version>2.0.6</credentials-support.version>
+    <credentials-support.version>2.0.7</credentials-support.version>
     <bc.version>1.81</bc.version>
   </properties>
 
@@ -109,13 +109,13 @@
       <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
-        <version>10.3</version>
+        <version>10.5</version>
       </dependency>
 
       <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>oauth2-oidc-sdk</artifactId>
-        <version>11.25</version>
+        <version>11.28</version>
       </dependency>
 
       <!-- Bouncy Castle -->
@@ -146,25 +146,25 @@
     <dependency>
       <groupId>se.swedenconnect.opensaml</groupId>
       <artifactId>opensaml-addons</artifactId>
-      <version>2.1.5</version>
+      <version>2.1.6</version>
     </dependency>
 
     <dependency>
       <groupId>se.swedenconnect.opensaml</groupId>
       <artifactId>opensaml-swedish-eid</artifactId>
-      <version>2.2.5</version>
+      <version>2.2.6</version>
     </dependency>
 
     <dependency>
       <groupId>se.swedenconnect.opensaml</groupId>
       <artifactId>opensaml-eidas</artifactId>
-      <version>3.2.4</version>
+      <version>3.2.5</version>
     </dependency>
 
     <dependency>
       <groupId>se.swedenconnect.opensaml</groupId>
       <artifactId>opensaml-security-ext</artifactId>
-      <version>4.1.6</version>
+      <version>4.1.7</version>
     </dependency>
 
     <dependency>
@@ -339,7 +339,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.5.0</version>
+        <version>3.6.1</version>
         <executions>
           <execution>
             <id>enforce</id>

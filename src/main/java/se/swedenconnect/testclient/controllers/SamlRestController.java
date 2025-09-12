@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.shibboleth.shared.resolver.ResolverException;
 import net.shibboleth.shared.xml.SerializeSupport;
+import org.opensaml.core.xml.io.MarshallingException;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.ext.saml2mdui.Description;
 import org.opensaml.saml.ext.saml2mdui.DisplayName;
@@ -41,9 +42,11 @@ import se.swedenconnect.opensaml.saml2.request.RequestGenerationException;
 import se.swedenconnect.opensaml.saml2.request.RequestHttpObject;
 import se.swedenconnect.testclient.saml.SamlAuthnRequestParameterModel;
 import se.swedenconnect.testclient.saml.SamlFederation;
+import se.swedenconnect.testclient.saml.SamlResponseProcessingModel;
 import se.swedenconnect.testclient.saml.SamlSp;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -111,16 +114,6 @@ public class SamlRestController {
           }
         }
       }
-      try {
-        Element element = idp.getDOM();
-        if (element == null) {
-          element = XMLObjectSupport.marshall(idp);
-        }
-        model.setMetadata(SerializeSupport.prettyPrintXML(element));
-      }
-      catch (final Exception e) {
-        throw new RuntimeException("Failed to get metadata IdP metadata", e);
-      }
       idpModelList.add(model);
     }
     initInfo.setIdps(idpModelList);
@@ -152,8 +145,10 @@ public class SamlRestController {
         authnRequestModel.setSp(model.getSp());
         authnRequestModel.setIdp(model.getIdp());
         authnRequestModel.setId(request.getRequest().getID());
+        authnRequestModel.setIssueInstant(request.getRequest().getIssueInstant());
         authnRequestModel.setUrl(request.getSendUrl());
         authnRequestModel.setMethod(request.getMethod());
+        authnRequestModel.setRelayState(request.getRequestParameters().get("RelayState"));
         if ("POST".equalsIgnoreCase(request.getMethod())) {
           authnRequestModel.setParameters(request.getRequestParameters());
         }
@@ -174,13 +169,75 @@ public class SamlRestController {
     throw new NotFoundException("%s not found".formatted(model.getSp()));
   }
 
+  @PostMapping(value = "/authn/verify", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public SamlResponseProcessingModel verifySamlResponse(
+      @Nonnull @RequestBody final SamlResponseValidationInput responseInput) {
+
+    for (final SamlSp samlSp : this.samlSps) {
+      if (samlSp.getEntityId().equals(responseInput.getSp())) {
+        return samlSp.processResponse(responseInput.getResponseData(), responseInput.getAuthnRequest(),
+            responseInput.getSentRelayState());
+      }
+    }
+
+    throw new NotFoundException("%s not found".formatted(responseInput.getSp()));
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class SamlResponseValidationInput {
+
+    private String sp;
+
+    @JsonProperty("authn_request")
+    private String authnRequest;
+
+    @JsonProperty("sent_relay_state")
+    private String sentRelayState;
+
+    @JsonProperty("response_data")
+    private SamlController.SamlResponseData responseData;
+  }
+
   @GetMapping(value = "/sp/info", produces = MediaType.APPLICATION_JSON_VALUE)
   public List<SamlSpInfoModel> getSamlSpInfo() {
     return this.samlSps.stream()
         .map(sp -> new SamlSpInfoModel(sp.getEntityId(), sp.getDescription(),
-            this.urlBuilderBean.buildUrl(SamlSpMetadataController.SP_METADATA_BASEPATH, sp.getPathPrefix()),
-            sp.getSpMetadata()))
+            this.urlBuilderBean.buildUrl(SamlSpMetadataController.SP_METADATA_BASEPATH, sp.getPathPrefix())))
         .toList();
+  }
+
+  @GetMapping(value = "/sp/metadata", produces = MediaType.TEXT_PLAIN_VALUE)
+  public String getSamlSpMetadata(
+      @Nonnull
+      @RequestParam("sp") final String sp) {
+    return this.samlSps.stream()
+        .filter(s -> s.getEntityId().equals(sp))
+        .findFirst()
+        .map(SamlSp::getSpMetadata)
+        .orElseThrow(() -> new NotFoundException("%s not found".formatted(sp)));
+  }
+
+  @GetMapping(value = "/idp/metadata", produces = MediaType.TEXT_PLAIN_VALUE)
+  public String getSamlIdpMetadata(
+      @Nonnull
+      @RequestParam("idp") final String idp) {
+
+    try {
+      final EntityDescriptor metadata = this.samlFederation.getIdp(idp);
+      if (metadata == null) {
+        throw new NotFoundException("%s not found".formatted(idp));
+      }
+      Element element = metadata.getDOM();
+      if (element == null) {
+        element = XMLObjectSupport.marshall(metadata);
+      }
+      return SerializeSupport.prettyPrintXML(element);
+    }
+    catch (final ResolverException | MarshallingException e) {
+      throw new RuntimeException("Failed to get metadata IdP metadata", e);
+    }
   }
 
   @Data
@@ -195,8 +252,6 @@ public class SamlRestController {
 
     @JsonProperty("metadata_url")
     private String metadataUrl;
-
-    private String metadata;
   }
 
   @Data
@@ -219,9 +274,6 @@ public class SamlRestController {
     private String displayName;
 
     private String description;
-
-    private String metadata;
-
   }
 
   @Data
@@ -235,6 +287,9 @@ public class SamlRestController {
 
     private String id;
 
+    @JsonProperty("issue_instant")
+    private Instant issueInstant;
+
     // GET or POST
     private String method;
 
@@ -244,6 +299,9 @@ public class SamlRestController {
 
     @JsonProperty("authn_request")
     private String authnRequest;
+
+    @JsonProperty("relay_state")
+    private String relayState;
 
   }
 

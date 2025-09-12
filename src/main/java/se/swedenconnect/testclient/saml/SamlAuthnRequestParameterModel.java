@@ -61,6 +61,12 @@ public class SamlAuthnRequestParameterModel {
 
   private String destination;
 
+  @JsonProperty("redirect_destination")
+  private String redirectDestination;
+
+  @JsonProperty("post_destination")
+  private String postDestination;
+
   @JsonProperty("issue_instant")
   private Instant issueInstant;
 
@@ -119,8 +125,8 @@ public class SamlAuthnRequestParameterModel {
   @AllArgsConstructor
   @JsonInclude(JsonInclude.Include.ALWAYS)
   public static class Scoping {
-    @JsonProperty("requester_id")
-    private String requesterId;
+    @JsonProperty("requester_ids")
+    private List<String> requesterIds;
 
     @JsonProperty("idp_list")
     private List<String> idpList;

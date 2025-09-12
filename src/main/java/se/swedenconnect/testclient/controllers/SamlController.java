@@ -15,15 +15,23 @@
  */
 package se.swedenconnect.testclient.controllers;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
+
+import java.time.Instant;
 
 /**
  * SAML controller.
@@ -33,17 +41,81 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 public class SamlController {
 
+  /** Session attribute name where we store the SAML response data. */
+  public static final String SESSION_NAME_SAML_RESPONSE = "sctc.samlResponse";
+
   /** The base path for the assertion consumer service URL:s. */
   public static final String ASSERTION_CONSUMER_SERVICE_BASE_PATH = "/saml/acs";
 
+  /** For JSON serializing. */
+  private final ObjectMapper objectMapper;
+
+  /**
+   * Constructor.
+   *
+   * @param objectMapper the system object mapper
+   */
+  public SamlController(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
+  /**
+   * Entry point where we receive SAML responses.
+   *
+   * @param request the HTTP servlet request
+   * @param sp the SP prefix
+   * @param samlResponse the SAML response
+   * @param relayState the relay state (may be {@code null})
+   * @return a {@link ModelAndView} that redirects to the home view
+   */
   @PostMapping(value = ASSERTION_CONSUMER_SERVICE_BASE_PATH + "/{sp}")
   public ModelAndView processResponse(@Nonnull final HttpServletRequest request,
-      @Nonnull final HttpServletResponse response,
       @PathVariable("sp") @Nonnull final String sp,
       @RequestParam("SAMLResponse") @Nonnull final String samlResponse,
       @RequestParam(value = "RelayState", required = false) @Nullable final String relayState) {
 
-    return null;
+    request.getSession().setAttribute(SESSION_NAME_SAML_RESPONSE,
+        this.toJson(new SamlResponseData(samlResponse, relayState, request.getRequestURL().toString(), Instant.now())));
+
+    return new ModelAndView("redirect:/");
+  }
+
+  /**
+   * Returns the JSON representation of the supplied object.
+   *
+   * @param responseData the object to serialize
+   * @return the JSON representation of the object
+   */
+  public String toJson(final SamlResponseData responseData) {
+    try {
+      return this.objectMapper.writeValueAsString(responseData);
+    }
+    catch (final JsonProcessingException e) {
+      throw new RuntimeException("Failed to serialize JSON", e);
+    }
+  }
+
+  /**
+   * Model class for representing a SAML response.
+   */
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @JsonInclude(JsonInclude.Include.ALWAYS)
+  public static class SamlResponseData {
+
+    /** The SAML response. */
+    @JsonProperty("saml_response")
+    private String samlResponse;
+
+    @JsonProperty("relay_state")
+    private String relayState;
+
+    @JsonProperty("receive_url")
+    private String receiveUrl;
+
+    @JsonProperty("receive_instant")
+    private Instant receiveInstant;
   }
 
 }

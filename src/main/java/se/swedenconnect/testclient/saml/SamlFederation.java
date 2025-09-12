@@ -186,6 +186,18 @@ public class SamlFederation {
   }
 
   /**
+   * Gets the metadata for the given entityID.
+   *
+   * @param idp the IdP entityID
+   * @return an {@link EntityDescriptor} or {@code null}
+   * @throws ResolverException for resolver errors
+   */
+  @Nullable
+  public synchronized EntityDescriptor getIdp(@Nonnull final String idp) throws ResolverException {
+    return this.metadataProvider.getEntityDescriptor(idp);
+  }
+
+  /**
    * Makes sure that all parent directories for the supplied file exists and returns the backup file as an absolute
    * path.
    *

@@ -27,6 +27,7 @@ import org.opensaml.saml.saml2.core.NameIDPolicy;
 import org.opensaml.saml.saml2.core.RequestedAuthnContext;
 import org.opensaml.saml.saml2.metadata.Endpoint;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
+import org.opensaml.saml.saml2.metadata.IDPSSODescriptor;
 import org.opensaml.saml.saml2.metadata.SPSSODescriptor;
 import se.swedenconnect.opensaml.saml2.core.build.AuthnRequestBuilder;
 import se.swedenconnect.opensaml.saml2.core.build.ScopingBuilder;
@@ -93,6 +94,16 @@ public class CustomAuthnRequestGenerator extends SwedishEidAuthnRequestGenerator
     Optional.ofNullable(authnRequest.isPassiveXSBoolean())
         .ifPresent(b -> model.setIsPassive(b.getValue()));
     Optional.ofNullable(authnRequest.getDestination()).ifPresent(model::setDestination);
+
+    final IDPSSODescriptor idpSsoDescriptor = this.getIdpMetadata(idp).getIDPSSODescriptor(SAMLConstants.SAML20P_NS);
+    idpSsoDescriptor.getSingleSignOnServices().forEach(s -> {
+      if (SAMLConstants.SAML2_REDIRECT_BINDING_URI.equals(s.getBinding())) {
+        model.setRedirectDestination(s.getLocation());
+      }
+      else if (SAMLConstants.SAML2_POST_BINDING_URI.equals(s.getBinding())) {
+        model.setPostDestination(s.getLocation());
+      }
+    });
 
     model.setIssuer(authnRequest.getIssuer().getValue());
 
@@ -235,7 +246,7 @@ public class CustomAuthnRequestGenerator extends SwedishEidAuthnRequestGenerator
         }
       }
       builder.scoping(ScopingBuilder.builder()
-          .requesterIDs(scoping.getRequesterId())
+          .requesterIDs(scoping.getRequesterIds())
           .idpList(null, !idpEntries.isEmpty() ? idpEntries : null)
           .build());
     }
