@@ -16,7 +16,6 @@
 package se.swedenconnect.testclient.config;
 
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.ext.saml2mdui.Logo;
@@ -41,9 +40,9 @@ import se.swedenconnect.opensaml.saml2.metadata.build.UIInfoBuilder;
 import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.factory.PkiCredentialFactory;
 import se.swedenconnect.testclient.controllers.SamlController;
+import se.swedenconnect.testclient.credentials.ClientCredentials;
 import se.swedenconnect.testclient.saml.SamlFederation;
 import se.swedenconnect.testclient.saml.SamlSp;
-import se.swedenconnect.testclient.utils.ClientCredentials;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
 import java.util.ArrayList;
@@ -75,14 +74,14 @@ public class SamlConfiguration {
 
   @Bean
   @Nonnull
-  SamlFederation samlFederation() throws Exception {
-    return new SamlFederation(this.properties.getFederation(), this.sslBundles);
+  SamlFederation samlFederation(@Nonnull final ClientTlsProperties clientTls) throws Exception {
+    return new SamlFederation(this.properties.getFederation(), this.sslBundles, clientTls);
   }
 
-  @Bean
+  @Bean("testclient.saml.SpList")
   List<SamlSp> getSamlSps(@Qualifier("testclient.DefaultCredential") @Nonnull final PkiCredential defaultCredential,
-      @Qualifier("testclient.NonRegisteredCredential") @Nonnull final PkiCredential nonRegisteredCredential)
-      throws Exception {
+      @Qualifier("testclient.NonRegisteredCredential") @Nonnull final PkiCredential nonRegisteredCredential,
+      @Nonnull final SamlFederation samlFederation) throws Exception {
     final List<SamlSp> sps = new ArrayList<>();
     for (final SamlSpProperties spp : this.properties.getSps()) {
 
@@ -91,7 +90,7 @@ public class SamlConfiguration {
 
       final AssertionConsumerService acs = AssertionConsumerServiceBuilder.builder()
           .binding(SAMLConstants.SAML2_POST_BINDING_URI)
-          .location(this.urlBuilder.buildUrl(SamlController.ASSERTION_CONSUMER_SERVICE_BASE_PATH, spp.getPathPrefix()))
+          .location(this.urlBuilder.buildUrl(SamlController.ASSERTION_CONSUMER_SERVICE_BASE_PATH, spp.getPathSuffix()))
           .index(0)
           .isDefault(true)
           .build();
@@ -103,10 +102,11 @@ public class SamlConfiguration {
       ssoDescriptor.getAssertionConsumerServices().clear();
       ssoDescriptor.getAssertionConsumerServices().add(acs);
 
-      sps.add(new SamlSp(spp.getEntityId(), spp.getDescription(), spp.getPathPrefix(),
-          this.createClientCredentials(spp.getCredentials(), defaultCredential, nonRegisteredCredential),
+      sps.add(new SamlSp(spp.getEntityId(), spp.getDescription(), spp.getPathSuffix(),
+          ClientCredentials.create(
+              this.credentialFactory, spp.getCredentials(), defaultCredential, nonRegisteredCredential),
           entityDescriptorTemplate, spp.getMetadata(),
-          this.samlFederation().getMetadataProvider().getMetadataResolver()));
+          samlFederation.getMetadataProvider().getMetadataResolver()));
     }
     return sps;
   }
@@ -149,23 +149,6 @@ public class SamlConfiguration {
     }
 
     return builder.build();
-  }
-
-  private ClientCredentials createClientCredentials(@Nullable final SamlSpProperties.CredentialsProperties cp,
-      @Nonnull final PkiCredential defaultCredential, @Nonnull final PkiCredential nonRegisteredCredential)
-      throws Exception {
-    if (cp == null) {
-      return new ClientCredentials(null, null, null, null, null, defaultCredential,
-          nonRegisteredCredential);
-    }
-    return new ClientCredentials(
-        cp.getSigning() != null ? this.credentialFactory.createCredential(cp.getSigning()) : null,
-        cp.getFutureSigningCertificate(),
-        cp.getEncryption() != null ? this.credentialFactory.createCredential(cp.getEncryption()) : null,
-        cp.getPreviousEncryption() != null ? this.credentialFactory.createCredential(cp.getPreviousEncryption()) : null,
-        cp.getMetadata() != null ? this.credentialFactory.createCredential(cp.getMetadata()) : null,
-        defaultCredential,
-        nonRegisteredCredential);
   }
 
 }

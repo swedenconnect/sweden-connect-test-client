@@ -43,8 +43,8 @@
             <a id="menu-saml-clients" class="dropdown-item" href="javascript:void(0)">SAML Clients</a>
             <a id="menu-saml-metadata" class="dropdown-item" href="javascript:void(0)">SAML Federation Metadata</a>
             <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="javascript:void(0)">OIDC Clients</a>
-            <a class="dropdown-item" href="javascript:void(0)">OIDC Providers</a>
+            <a id="menu-oidc-clients" class="dropdown-item" href="javascript:void(0)">OIDC Clients</a>
+            <a id="menu-oidc-ops" class="dropdown-item" href="javascript:void(0)">OIDC Providers</a>
           </div>
         </li>
       </ul>
@@ -55,7 +55,27 @@
 <main class="container main" id="main">
 
   <div id="main-home" class="main-div">
-    <h1>Sweden Connect Test Client for SAML and OpenID Connect</h1>
+    <div class="col-sm-12 content-container">
+      <div class="row">
+        <div class="col-sm-12">
+          <h2 class="content-heading">Test Client for SAML and OpenID Connect</h2>
+          <p>
+            This is a test client for testing SAML Identity Providers and OpenID Providers within the Sweden Connect
+            federation. The tool is mainly used during approval processes for IdP:s/OP:s wishing to join the federation,
+            but is also an excellent help in the development of an IdP/OP.
+          </p>
+          <p id="main-description-saml-fed-info">
+            This instance of the tool is executing against <span id="main-description-saml-fed-info-name"></span>.
+          </p>
+          <p>
+            Currently, OpenID Connect support is disabled.
+          </p>
+          <p>
+            To add your SAML Identity Provider to Sweden Connect, contact <a href="mailto:operations@swedenconnect.se">operations@swedenconnect.se</a>.
+          </p>
+        </div>
+      </div>
+    </div>
   </div> <!-- main-home -->
 
   <!-- SAML -->
@@ -831,8 +851,23 @@
 
   </div> <!-- main-saml-metadata -->
 
+  <!-- Main OIDC view -->
   <div id="main-oidc" class="main-div">
     <h1>OIDC</h1>
+  </div>
+
+  <!-- OIDC Clients -->
+  <div id="main-oidc-clients" class="main-div">
+
+    <div class="col-sm-12 content-container">
+      <div class="row">
+        <div class="col-sm-12 content-heading">
+          <h2>OpenID Connect Relying Parties</h2>
+        </div>
+        <div class="col-sm-12" id="oidc-rp-list">
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="xml-viewer">
@@ -849,6 +884,31 @@
             <pre>
               <code id="xml-content" class="language-xml hljs"></code>
             </pre>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="json-viewer">
+    <div class="modal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Modal title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="modal-body" id="json-content">
+            <!--
+            <pre>
+              <code id="json-content" class="language-json hljs"></code>
+            </pre>
+            -->
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -879,9 +939,10 @@
 
 <footer th:replace="~{fragments/footer :: copyright}"></footer>
 
-<script th:inline="javascript">
+<script th:defer="immediate" th:inline="javascript">
 
-  const saml_responseData = JSON.parse(/*[[${samlResponseData}]]*/ 'null');
+  window.saml_responseData = /*[[${samlResponseData}]]*/ null;
+  window.app_info = /*[[${applicationInfo}]]*/ null;
 
 </script>
 

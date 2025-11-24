@@ -30,6 +30,7 @@ import se.swedenconnect.opensaml.saml2.metadata.provider.FilesystemMetadataProvi
 import se.swedenconnect.opensaml.saml2.metadata.provider.HTTPMetadataProvider;
 import se.swedenconnect.opensaml.saml2.metadata.provider.MetadataProvider;
 import se.swedenconnect.opensaml.saml2.metadata.provider.StaticMetadataProvider;
+import se.swedenconnect.testclient.config.ClientTlsProperties;
 import se.swedenconnect.testclient.config.SamlProperties;
 import se.swedenconnect.testclient.utils.HttpClientUtils;
 
@@ -77,10 +78,11 @@ public class SamlFederation {
    *
    * @param properties the SAML metadata properties
    * @param sslBundles the Spring SSL bundles
+   * @param clientTls client TLS properties
    * @throws Exception for errors creating the underlying {@link MetadataProvider}
    */
   public SamlFederation(@Nonnull final SamlProperties.SamlFederationProperties properties,
-      @Nonnull final SslBundles sslBundles) throws Exception {
+      @Nonnull final SslBundles sslBundles, @Nonnull final ClientTlsProperties clientTls) throws Exception {
 
     this.description = properties.getDescription();
     final AbstractMetadataProvider provider;
@@ -88,7 +90,7 @@ public class SamlFederation {
       this.metadataLocation = new MetadataLocation(properties.getMetadataLocation().getURL().toString(), true);
       provider = new HTTPMetadataProvider(properties.getMetadataLocation().getURL().toString(),
           preProcessBackupFile(properties.getBackupLocation()),
-          HttpClientUtils.createHttpClient(properties.getTls(), sslBundles));
+          HttpClientUtils.createHttpClient(clientTls, sslBundles));
     }
     else if (properties.getMetadataLocation() instanceof FileSystemResource) {
       this.metadataLocation = new MetadataLocation(properties.getMetadataLocation().getFile().getAbsolutePath(), false);

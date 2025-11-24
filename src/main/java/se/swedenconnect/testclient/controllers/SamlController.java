@@ -17,8 +17,6 @@ package se.swedenconnect.testclient.controllers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,52 +45,27 @@ public class SamlController {
   /** The base path for the assertion consumer service URL:s. */
   public static final String ASSERTION_CONSUMER_SERVICE_BASE_PATH = "/saml/acs";
 
-  /** For JSON serializing. */
-  private final ObjectMapper objectMapper;
-
-  /**
-   * Constructor.
-   *
-   * @param objectMapper the system object mapper
-   */
-  public SamlController(final ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
-
   /**
    * Entry point where we receive SAML responses.
    *
    * @param request the HTTP servlet request
-   * @param sp the SP prefix
+   * @param spSuffix the SP suffix
    * @param samlResponse the SAML response
    * @param relayState the relay state (may be {@code null})
    * @return a {@link ModelAndView} that redirects to the home view
    */
-  @PostMapping(value = ASSERTION_CONSUMER_SERVICE_BASE_PATH + "/{sp}")
+  @PostMapping(value = ASSERTION_CONSUMER_SERVICE_BASE_PATH + "/{spSuffix}")
   public ModelAndView processResponse(@Nonnull final HttpServletRequest request,
-      @PathVariable("sp") @Nonnull final String sp,
+      @PathVariable("spSuffix") @Nonnull final String spSuffix,
       @RequestParam("SAMLResponse") @Nonnull final String samlResponse,
       @RequestParam(value = "RelayState", required = false) @Nullable final String relayState) {
 
+    // TODO: check correct URL
+
     request.getSession().setAttribute(SESSION_NAME_SAML_RESPONSE,
-        this.toJson(new SamlResponseData(samlResponse, relayState, request.getRequestURL().toString(), Instant.now())));
+        new SamlResponseData(samlResponse, relayState, request.getRequestURL().toString(), Instant.now()));
 
     return new ModelAndView("redirect:/");
-  }
-
-  /**
-   * Returns the JSON representation of the supplied object.
-   *
-   * @param responseData the object to serialize
-   * @return the JSON representation of the object
-   */
-  public String toJson(final SamlResponseData responseData) {
-    try {
-      return this.objectMapper.writeValueAsString(responseData);
-    }
-    catch (final JsonProcessingException e) {
-      throw new RuntimeException("Failed to serialize JSON", e);
-    }
   }
 
   /**

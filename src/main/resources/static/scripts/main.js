@@ -18,6 +18,7 @@ class TestClient {
 
   constructor() {
     this.samlAuthentication = null;
+    this.oidcRelyingParties = null;
 
     $('.noscripthide').show();
     $('[data-bs-toggle="tooltip"]').tooltip();
@@ -28,20 +29,17 @@ class TestClient {
     });
 
     $('#menu-saml').click((event) => {
-      let scrollCb = null;
-      if (this.samlAuthentication === null) {
-        this.samlAuthentication = new SamlAuthentication();
+      if (TestClient.isSamlEnabled()) {
+        let scrollCb = null;
+        if (this.samlAuthentication === null) {
+          this.samlAuthentication = new SamlAuthentication();
+        }
+        else {
+          scrollCb = () => this.samlAuthentication.scrollToActiveView();
+        }
+        appState.setSelectedFeature('saml');
+        this.onNavbarClicked(event, 'saml', scrollCb);
       }
-      else {
-        scrollCb = () => this.samlAuthentication.scrollToActiveView();
-      }
-      appState.setSelectedFeature('saml');
-      this.onNavbarClicked(event, 'saml', scrollCb);
-    });
-
-    $('#menu-oidc').click((event) => {
-      appState.setSelectedFeature('oidc');
-      this.onNavbarClicked(event, 'oidc');
     });
 
     $('#menu-saml-clients').click((event) => {
@@ -55,10 +53,53 @@ class TestClient {
       this.onNavbarClicked(event, 'saml-metadata');
       displayFederationInfo();
     });
+
+    $('#menu-oidc').click((event) => {
+      appState.setSelectedFeature('oidc');
+      this.onNavbarClicked(event, 'oidc');
+    });
+
+    $('#menu-oidc-clients').click((event) => {
+      if (TestClient.isOidcEnabled()) {
+        if (!this.oidcRelyingParties) {
+          this.oidcRelyingParties = new OidcRelyingParties();
+        }
+        this.oidcRelyingParties.display();
+        appState.setSelectedFeature('oidc-clients');
+        this.onNavbarClicked(event, 'oidc-clients');
+      }
+    });
+
   }
 
   static init() {
     const testClient = new TestClient();
+
+    if (!TestClient.isSamlEnabled()) {
+      $('#menu-saml').addClass("disabled")
+          .attr("aria-disabled", "true")
+          .attr("tabindex", "-1");
+      $('#menu-saml-clients').addClass("disabled")
+          .attr("aria-disabled", "true")
+          .attr("tabindex", "-1");
+      $('#menu-saml-metadata').addClass("disabled")
+          .attr("aria-disabled", "true")
+          .attr("tabindex", "-1");
+      $('#main-description-saml-fed-info').hide();
+    }
+    if (!TestClient.isOidcEnabled()) {
+      $('#menu-oidc').addClass("disabled")
+          .attr("aria-disabled", "true")
+          .attr("tabindex", "-1");
+      $('#menu-oidc-clients').addClass("disabled")
+          .attr("aria-disabled", "true")
+          .attr("tabindex", "-1");
+      $('#menu-oidc-ops').addClass("disabled")
+          .attr("aria-disabled", "true")
+          .attr("tabindex", "-1");
+    }
+
+    $('#main-description-saml-fed-info-name').text(TestClient.getFederationName());
 
     let feature = appState.getSelectedFeature();
     if (feature) {
@@ -66,6 +107,23 @@ class TestClient {
     }
     else {
       testClient.onNavbarClicked(null, 'home');
+    }
+  }
+
+  static isSamlEnabled() {
+    return window.app_info && window.app_info.saml_enabled;
+  }
+
+  static isOidcEnabled() {
+    return window.app_info && window.app_info.oidc_enabled;
+  }
+
+  static getFederationName() {
+    if (window.app_info) {
+      return window.app_info.federation_name;
+    }
+    else {
+      return "???";
     }
   }
 
@@ -99,6 +157,11 @@ class CodeViewer {
       throwOnFailure: false
     };
 
+    this.jsonFormat = {
+      indent: 2,
+      trailingCommas: true
+    };
+
     hljs.configure({
       ignoreUnescapedHTML: true,
       throwUnescapedHTML: false,
@@ -107,17 +170,27 @@ class CodeViewer {
   }
 
   displayXml(title, xml) {
-    let formattedXml = xmlFormatter(xml, this.formatterPars);
+    const formattedXml = xmlFormatter(xml, this.formatterPars);
 
-    let xmlElement = $('#xml-content');
+    const xmlElement = $('#xml-content');
 
     xmlElement.text(formattedXml);
     xmlElement.removeAttr('data-highlighted');
     hljs.highlightElement(xmlElement.get(0));
 
-    let xmlViewer = $('#xml-viewer');
+    const xmlViewer = $('#xml-viewer');
     xmlViewer.find('.modal-title').text(title);
     xmlViewer.find('.modal').modal('show');
+  }
+
+  displayJson(title, json) {
+
+    const formatted = prettyPrintJson.toHtmlString(json, this.jsonFormat);
+    $('#json-content').html(formatted);
+
+    const jsonViewer = $('#json-viewer');
+    jsonViewer.find('.modal-title').text(title);
+    jsonViewer.find('.modal').modal('show');
   }
 
 }

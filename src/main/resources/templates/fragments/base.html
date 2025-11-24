@@ -27,15 +27,18 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 
   <!--
-  <link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/5.3.5/css/bootstrap.min.css}"
-        href="webjars/bootstrap/5.3.5/css/bootstrap.min.css"/>
+  <link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/5.3.8/css/bootstrap.min.css}"
+        href="webjars/bootstrap/5.3.8/css/bootstrap.min.css"/>
         -->
   <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap/bootstrap.min.css}"
         href="../../css/bootstrap/bootstrap.min.css"/>
 
   <link rel="stylesheet" type="text/css"
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-        crossorigin="anonymous">
+        crossorigin="anonymous"/>
+
+  <link rel="stylesheet" type="text/css" th:href="@{/css/pretty-print-json.css}"
+        href="../../css/pretty-print-json.css"/>
 
   <link rel="stylesheet" th:href="@{/css/main.css}" href="../../css/main.css"/>
 
@@ -68,30 +71,39 @@
 <body>
 
 <th:block th:fragment="scriptFragment">
-  <script type="text/javascript" th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"
+  <script defer type="text/javascript" th:src="@{/webjars/jquery/3.7.1/jquery.min.js}"
           src="webjars/jquery/3.7.1/jquery.min.js"></script>
-  <script type="text/javascript" th:src="@{/webjars/popper.js/2.11.7/umd/popper.min.js}"
+  <script defer type="text/javascript" th:src="@{/webjars/popper.js/2.11.7/umd/popper.min.js}"
           src="/webjars/popper.js/2.11.7/umd/popper.min.js"></script>
-  <script type="text/javascript" th:src="@{/webjars/bootstrap/5.3.5/js/bootstrap.min.js}"
-          src="/webjars/bootstrap/5.3.5/js/bootstrap.min.js"></script>
+  <script defer type="text/javascript" th:src="@{/webjars/bootstrap/5.3.8/js/bootstrap.min.js}"
+          src="/webjars/bootstrap/5.3.8/js/bootstrap.min.js"></script>
 </th:block>
 
 <th:block th:fragment="scriptFragment2">
 
-  <script type="text/javascript" th:src="@{/scripts/highlight/11.9.0/highlight.min.js}"
+  <script defer th:defer="immediate" type="text/javascript" th:src="@{/scripts/highlight/11.9.0/highlight.min.js}"
           src="../../static/scripts/highlight/11.9.0/highlight.min.js"></script>
 
-  <script type="text/javascript" th:src="@{/scripts/xml-formatter/3.6.6/xml-formatter-singleton.min.js}"
+  <script defer th:defer="immediate" type="text/javascript"
+          th:src="@{/scripts/xml-formatter/3.6.6/xml-formatter-singleton.min.js}"
           src="../../static/scripts/xml-formatter/3.6.6/xml-formatter-singleton.min.js"></script>
 
-  <script type="text/javascript" th:src="@{/scripts/state.js}" src="../../static/scripts/state.js"></script>
-  <script type="text/javascript" th:src="@{/scripts/main.js}" src="../../static/scripts/main.js"></script>
-  <script type="text/javascript" th:src="@{/scripts/saml-metadata.js}"
+  <script defer th:defer="immediate" type="text/javascript"
+          th:src="@{/scripts/pretty-print-json/3.0/pretty-print-json.min.js}"
+          src="../../static/scripts/pretty-print-json/3.0/pretty-print-json.min.js"></script>
+
+  <script defer th:defer="immediate" type="text/javascript" th:src="@{/scripts/state.js}"
+          src="../../static/scripts/state.js"></script>
+  <script defer th:defer="immediate" type="text/javascript" th:src="@{/scripts/main.js}"
+          src="../../static/scripts/main.js"></script>
+  <script defer th:defer="immediate" type="text/javascript" th:src="@{/scripts/saml-metadata.js}"
           src="../../static/scripts/saml-metadata.js"></script>
-  <script type="text/javascript" th:src="@{/scripts/saml-sps.js}"
+  <script defer th:defer="immediate" type="text/javascript" th:src="@{/scripts/saml-sps.js}"
           src="../../static/scripts/saml-sps.js"></script>
-  <script type="text/javascript" th:src="@{/scripts/saml-authn.js}"
+  <script defer th:defer="immediate" type="text/javascript" th:src="@{/scripts/saml-authn.js}"
           src="../../static/scripts/saml-authn.js"></script>
+  <script defer th:defer="immediate" type="text/javascript" th:src="@{/scripts/oidc-rps.js}"
+          src="../../static/scripts/oidc-rps.js"></script>
 </th:block>
 
 </body>

@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.shibboleth.shared.xml.SerializeSupport;
 import org.opensaml.core.xml.io.MarshallingException;
 import org.opensaml.xmlsec.signature.support.SignatureException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -65,10 +66,10 @@ public class SamlSpMetadataController {
    *
    * @param sps the SAML SP:s
    */
-  public SamlSpMetadataController(@Nonnull final List<SamlSp> sps) {
+  public SamlSpMetadataController(@Qualifier("testclient.saml.SpList") @Nonnull final List<SamlSp> sps) {
     Objects.requireNonNull(sps, "sps must not be null");
     this.entityDescriptors = sps.stream()
-        .collect(Collectors.toMap(SamlSp::getPathPrefix, SamlSp::getEntityDescriptorContainer));
+        .collect(Collectors.toMap(SamlSp::getPathSuffix, SamlSp::getEntityDescriptorContainer));
   }
 
   /**

@@ -40,7 +40,6 @@ import se.swedenconnect.opensaml.saml2.metadata.build.AttributeConsumingServiceB
 import se.swedenconnect.opensaml.saml2.metadata.build.EntityAttributesBuilder;
 import se.swedenconnect.opensaml.saml2.metadata.build.EntityDescriptorBuilder;
 import se.swedenconnect.opensaml.saml2.metadata.build.ExtensionsBuilder;
-import se.swedenconnect.opensaml.saml2.metadata.build.KeyDescriptorBuilder;
 import se.swedenconnect.opensaml.saml2.metadata.build.RequestedAttributeBuilder;
 import se.swedenconnect.opensaml.saml2.request.RequestGenerationException;
 import se.swedenconnect.opensaml.saml2.request.RequestHttpObject;
@@ -48,11 +47,12 @@ import se.swedenconnect.opensaml.saml2.response.ResponseProcessingException;
 import se.swedenconnect.opensaml.saml2.response.ResponseProcessingInput;
 import se.swedenconnect.opensaml.saml2.response.ResponseProcessingResult;
 import se.swedenconnect.opensaml.saml2.response.ResponseStatusErrorException;
+import se.swedenconnect.security.credential.opensaml.KeyDescriptorTransformerFunction;
 import se.swedenconnect.security.credential.opensaml.OpenSamlCredential;
 import se.swedenconnect.testclient.config.SamlSpProperties;
 import se.swedenconnect.testclient.config.SamlSpProperties.SpMetadataProperties.AttributeConsumingServiceProperties;
 import se.swedenconnect.testclient.controllers.SamlController;
-import se.swedenconnect.testclient.utils.ClientCredentials;
+import se.swedenconnect.testclient.credentials.ClientCredentials;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -76,9 +76,9 @@ public class SamlSp {
   @Getter
   private final String description;
 
-  /** Prefix for SAML paths. */
+  /** Suffix for SAML paths. */
   @Getter
-  private final String pathPrefix;
+  private final String pathSuffix;
 
   /** The SAML SP metadata. */
   @Getter
@@ -101,13 +101,13 @@ public class SamlSp {
   private final CustomResponseProcessor responseProcessor;
 
   public SamlSp(@Nonnull final String entityId, @Nonnull final String description,
-      @Nonnull final String pathPrefix, @Nonnull final ClientCredentials credentials,
+      @Nonnull final String pathSuffix, @Nonnull final ClientCredentials credentials,
       @Nonnull final EntityDescriptor entityDescriptorTemplate,
       @Nonnull final SamlSpProperties.SpMetadataProperties metadataProperties,
       @Nonnull final MetadataResolver metadataResolver) {
     this.entityId = entityId;
     this.description = description;
-    this.pathPrefix = pathPrefix;
+    this.pathSuffix = pathSuffix;
     this.credentials = credentials;
     this.metadataResolver = metadataResolver;
 
@@ -186,36 +186,32 @@ public class SamlSp {
     ssoDescriptor.getKeyDescriptors().clear();
 
     if (this.credentials.getSigning() != null || this.credentials.getEncryption() != null
-        || this.credentials.getFutureSigningCertificate() != null) {
-      if (this.credentials.getFutureSigningCertificate() != null) {
+        || this.credentials.getFutureSigning() != null) {
+      if (this.credentials.getFutureSigning() != null) {
         ssoDescriptor.getKeyDescriptors().add(
-            KeyDescriptorBuilder.builder()
-                .use(UsageType.SIGNING)
-                .certificate(this.credentials.getFutureSigningCertificate())
-                .keyName("SP Future Signing Certificate")
-                .build());
+            this.credentials.getFutureSigning().transform(
+                KeyDescriptorTransformerFunction.function()
+                    .withUsageTypeFunction(c -> UsageType.SIGNING)
+                    .withKeyNameFunction(c -> "SP Future Signing Certificate")));
       }
       ssoDescriptor.getKeyDescriptors().add(
-          KeyDescriptorBuilder.builder()
-              .use(UsageType.SIGNING)
-              .certificate(this.credentials.getCredentialForSigning().getCertificate())
-              .keyName("SP Signing Certificate")
-              .build());
+          this.credentials.getCredentialForSigning().transform(
+              KeyDescriptorTransformerFunction.function()
+                  .withUsageTypeFunction(c -> UsageType.SIGNING)
+                  .withKeyNameFunction(c -> "SP Signing Certificate")));
       ssoDescriptor.getKeyDescriptors().add(
-          KeyDescriptorBuilder.builder()
-              .use(UsageType.ENCRYPTION)
-              .certificate(Optional.ofNullable(this.credentials.getEncryption())
-                  .orElseGet(this.credentials::getDefaultCredential)
-                  .getCertificate())
-              .keyName("SP Encryption Certificate")
-              .build());
+          Optional.ofNullable(this.credentials.getEncryption())
+              .orElseGet(this.credentials::getDefaultCredential)
+              .transform(KeyDescriptorTransformerFunction.function()
+                  .withUsageTypeFunction(c -> UsageType.ENCRYPTION)
+                  .withKeyNameFunction(c -> "SP Encryption Certificate")));
     }
     else {
       ssoDescriptor.getKeyDescriptors().add(
-          KeyDescriptorBuilder.builder()
-              .certificate(this.credentials.getDefaultCredential().getCertificate())
-              .keyName("SP Signing and Encryption")
-              .build());
+          this.credentials.getDefaultCredential().transform(
+              KeyDescriptorTransformerFunction.function()
+                  .withUsageTypeFunction(c -> UsageType.UNSPECIFIED)
+                  .withKeyNameFunction(c -> "SP Signing and Encryption")));
     }
 
     if (properties.getAttributeConsumingServices() != null) {

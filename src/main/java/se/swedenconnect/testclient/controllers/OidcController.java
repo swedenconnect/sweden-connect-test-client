@@ -17,40 +17,32 @@ package se.swedenconnect.testclient.controllers;
 
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.servlet.ModelAndView;
-
-import java.util.Optional;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
- * The main controller - the start page.
- *
  * @author Martin Lindström
  */
 @Controller
-public class MainController {
+public class OidcController {
 
-  private final ApplicationModel applicationInfo;
+  /** The base path for the redirection URLs. */
+  public static final String REDIRECTION_URL_BASE = "/oidc/redirect";
 
-  public MainController(final ApplicationModel applicationModel) {
-    this.applicationInfo = applicationModel;
+  @RequestMapping(path = REDIRECTION_URL_BASE + "/{rpSuffix}", method = { RequestMethod.GET, RequestMethod.POST })
+  public void handleRedirection(@Nonnull final HttpServletRequest request,
+      @PathVariable("rpSuffix") @Nonnull final String rp) {
   }
 
-  @GetMapping("/")
-  public ModelAndView home(@Nonnull final HttpServletRequest request) {
-    final ModelAndView view = new ModelAndView("sc-client");
-    view.addObject("applicationInfo", this.applicationInfo);
+  @GetMapping(path = "/oidc/metadata/{rpSuffix}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public Object clientMetadata(@Nonnull final HttpServletRequest request,
+      @PathVariable("rpSuffix") @Nonnull final String rp) {
 
-    final HttpSession session = request.getSession();
-    Optional.ofNullable(session.getAttribute(SamlController.SESSION_NAME_SAML_RESPONSE))
-        .ifPresent(data -> {
-          view.addObject("samlResponseData", data);
-          session.removeAttribute(SamlController.SESSION_NAME_SAML_RESPONSE);
-        });
-
-    return view;
+    return null;
   }
 
 }

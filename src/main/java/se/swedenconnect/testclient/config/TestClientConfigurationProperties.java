@@ -52,16 +52,28 @@ public class TestClientConfigurationProperties implements InitializingBean {
   @Setter
   private PkiCredentialConfigurationProperties nonRegisteredCredential;
 
+  /**
+   * Client TLS settings.
+   */
+  @Getter
+  @Setter
+  private ClientTlsProperties tls;
+
   /** The SAML settings. */
   @Getter
   @NestedConfigurationProperty
   private SamlProperties saml = new SamlProperties();
+
+  /** The OIDC settings. */
+  @Getter
+  @NestedConfigurationProperty
+  private OidcProperties oidc = new OidcProperties();
 
   @Override
   public void afterPropertiesSet() {
     Assert.hasText(this.baseUrl, "testclient.base-url must not be set");
     Assert.notNull(this.nonRegisteredCredential, "testclient.non-registered-credential must not be null");
     this.saml.afterPropertiesSet();
-    this.saml.assertCredentials(this.defaultCredential);
+    this.oidc.afterPropertiesSet();
   }
 }

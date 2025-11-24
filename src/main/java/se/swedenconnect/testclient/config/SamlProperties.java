@@ -44,7 +44,7 @@ public class SamlProperties implements InitializingBean {
    */
   @Getter
   @Setter
-  private boolean enabled;
+  private boolean enabled = false;
 
   /**
    * SAML federation settings.
@@ -79,21 +79,6 @@ public class SamlProperties implements InitializingBean {
     }
   }
 
-  public void assertCredentials(@Nullable final PkiCredentialConfigurationProperties defaultCredential)
-      throws IllegalArgumentException {
-    if (defaultCredential == null) {
-      for (final SamlSpProperties sp : this.sps) {
-        if (sp.getCredentials() == null) {
-          throw new IllegalArgumentException("No credentials configured for SP %s".formatted(sp.getEntityId()));
-        }
-        if (sp.getCredentials().getSigning() == null || sp.getCredentials().getEncryption() == null) {
-          throw new IllegalArgumentException(
-              "Incomplete credentials configuration for SP %s".formatted(sp.getEntityId()));
-        }
-      }
-    }
-  }
-
   /**
    * Configuration settings for the SAML federation.
    */
@@ -112,13 +97,6 @@ public class SamlProperties implements InitializingBean {
     @Getter
     @Setter
     private Resource metadataLocation;
-
-    /**
-     * When the metadataLocation is an HTTPS resource, it is possible to configure the client TLS settings.
-     */
-    @Getter
-    @Setter
-    private ClientTlsProperties tls;
 
     /**
      * The certificate to be used for validating the signature of the downloaded metadata.

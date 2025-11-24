@@ -29,6 +29,7 @@ import org.opensaml.saml.ext.saml2mdui.DisplayName;
 import org.opensaml.saml.ext.saml2mdui.UIInfo;
 import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -76,7 +77,8 @@ public class SamlRestController {
    * @param samlSps the SAML SP:s
    * @param samlFederation the federation
    */
-  public SamlRestController(@Nonnull final UrlBuilderBean urlBuilderBean, @Nonnull final List<SamlSp> samlSps,
+  public SamlRestController(@Nonnull final UrlBuilderBean urlBuilderBean,
+      @Qualifier("testclient.saml.SpList") @Nonnull final List<SamlSp> samlSps,
       @Nonnull final SamlFederation samlFederation) {
     this.urlBuilderBean = urlBuilderBean;
     this.samlSps = samlSps;
@@ -204,7 +206,7 @@ public class SamlRestController {
   public List<SamlSpInfoModel> getSamlSpInfo() {
     return this.samlSps.stream()
         .map(sp -> new SamlSpInfoModel(sp.getEntityId(), sp.getDescription(),
-            this.urlBuilderBean.buildUrl(SamlSpMetadataController.SP_METADATA_BASEPATH, sp.getPathPrefix())))
+            this.urlBuilderBean.buildUrl(SamlSpMetadataController.SP_METADATA_BASEPATH, sp.getPathSuffix())))
         .toList();
   }
 

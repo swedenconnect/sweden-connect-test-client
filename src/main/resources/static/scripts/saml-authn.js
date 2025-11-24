@@ -168,12 +168,12 @@ class SamlAuthentication {
     if (state === SamlAuthentication.SAML_STATE_AUTHN) {
 
       // Handle that we did not get saml_responseData ...
-      if (!saml_responseData) {
+      if (!window.saml_responseData) {
         this.onRestart();
         return;
       }
       this.updateSessionState(SamlAuthentication.SAML_STATE_RESULT);
-      this.resultView.verifyResponse(saml_responseData);
+      this.resultView.verifyResponse(window.saml_responseData);
 
     }
     else { // SamlAuthentication.SAML_STATE_RESULT
