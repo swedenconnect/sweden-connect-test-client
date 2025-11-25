@@ -130,9 +130,6 @@ class State {
     }
   }
 }
-
-const OIDC_STATE = new State('sctc.oidc', 'sctc.oidc.session');
-
 class AppState {
 
   constructor() {

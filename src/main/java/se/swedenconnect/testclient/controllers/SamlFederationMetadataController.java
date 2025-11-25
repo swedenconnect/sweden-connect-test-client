@@ -24,6 +24,8 @@ import net.shibboleth.shared.resolver.ResolverException;
 import net.shibboleth.shared.xml.SerializeSupport;
 import org.opensaml.core.xml.io.MarshallingException;
 import org.opensaml.core.xml.util.XMLObjectSupport;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,6 +43,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/saml/federation")
+@ConditionalOnProperty(value = "testclient.saml.enabled", havingValue = "true")
 public class SamlFederationMetadataController {
 
   private final SamlFederation samlFederation;

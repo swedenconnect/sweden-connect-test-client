@@ -30,6 +30,7 @@ import org.opensaml.saml.ext.saml2mdui.UIInfo;
 import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -59,6 +60,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/saml")
+@ConditionalOnProperty(value = "testclient.saml.enabled", havingValue = "true")
 public class SamlRestController {
 
   /** URL builder. */

@@ -21,10 +21,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
 import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.factory.PkiCredentialFactory;
 import se.swedenconnect.testclient.controllers.OidcController;
 import se.swedenconnect.testclient.credentials.ClientCredentials;
+import se.swedenconnect.testclient.oidc.OIDCOPMetadataFetcher;
+import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcRp;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
@@ -58,6 +61,25 @@ public class OidcConfiguration {
         .toList();
   }
 
+  @Bean
+  OIDCOPMetadataFetcher metadataFetcher() {
+    return new OIDCOPMetadataFetcher(RestClient.builder().build());
+  }
+
+  @Bean("testclient.oidc.OpList")
+  List<OidcOp> oidcOps() {
+    return this.properties.getOps().stream().map(p -> OidcOp.builder()
+        .entityId(p.getEntityId())
+        .displayName(p.getDisplayName())
+        .description(p.getDescription())
+        .authorizationEndpoint(p.getAuthorizationEndpoint())
+        .metadataEndpoint(p.getMetadataEndpoint())
+        .tokenEndpoint(p.getTokenEndpoint())
+        .userInfoEndpoint(p.getUserInfoEndpoint())
+        .build()
+    ).toList();
+  }
+
   @Bean("testclient.oidc.RpList")
   List<OidcRp> oidcRps(
       @Qualifier("testclient.BaseUrl") @Nonnull final String baseUrl,
@@ -68,7 +90,7 @@ public class OidcConfiguration {
     final List<String> entityIds = new ArrayList<>();
     final List<OidcRp> rps = new ArrayList<>();
     for (final OidcRpProperties p : this.properties.getRps()) {
-      final String entityId = this.urlBuilder.buildUrl(baseUrl, p.getPathSuffix());
+      final String entityId = this.urlBuilder.buildUrl(p.getPathSuffix());
       if (entityIds.contains(entityId)) {
         throw new IllegalArgumentException("Several OIDC RP:s with the same entityId: " + entityId);
       }

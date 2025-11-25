@@ -44,10 +44,11 @@ class OidcRelyingParties {
   static setRpList(info) {
     const rpList = $('#oidc-rp-list');
     rpList.empty();
+    console.log(("SETTING INFO" + JSON.stringify(info)));
     for (let rp of info) {
       let rpDiv = $('<div>');
       rpDiv.append($('<h4>', {
-        text: rp.entity-id
+        text: rp.entity_id
       }));
       let table = $('<table>', {
         class: 'table table-hover'

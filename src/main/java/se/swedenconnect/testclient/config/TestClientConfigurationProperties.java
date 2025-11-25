@@ -71,7 +71,7 @@ public class TestClientConfigurationProperties implements InitializingBean {
 
   @Override
   public void afterPropertiesSet() {
-    Assert.hasText(this.baseUrl, "testclient.base-url must not be set");
+    Assert.hasText(this.baseUrl, "testclient.base-url must be set");
     Assert.notNull(this.nonRegisteredCredential, "testclient.non-registered-credential must not be null");
     this.saml.afterPropertiesSet();
     this.oidc.afterPropertiesSet();

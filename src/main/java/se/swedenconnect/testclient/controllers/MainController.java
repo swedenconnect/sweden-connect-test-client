@@ -50,6 +50,12 @@ public class MainController {
           session.removeAttribute(SamlController.SESSION_NAME_SAML_RESPONSE);
         });
 
+    Optional.ofNullable(session.getAttribute(OidcController.SESSION_NAME_OIDC_RESPONSE))
+        .ifPresent(data -> {
+          view.addObject("oidcResponseData", data);
+          session.removeAttribute(OidcController.SESSION_NAME_OIDC_RESPONSE);
+        });
+
     return view;
   }
 

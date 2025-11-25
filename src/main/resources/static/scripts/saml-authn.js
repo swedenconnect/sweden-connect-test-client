@@ -63,7 +63,7 @@ class SamlState extends State {
   }
 
   /**
-   * Assigns the setup data (see SetupAuthentication).
+   * Returns the setup data (see SetupAuthentication).
    * @returns {SetupAuthentication|null} the setup data.
    */
   getSetupData() {
