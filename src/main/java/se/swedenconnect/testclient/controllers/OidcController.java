@@ -141,7 +141,7 @@ public class OidcController {
     final State sentState = authRequest.getState();
 
     final MultiValueMap<String, String> tokenBody = new LinkedMultiValueMap<>();
-    tokenBody.add("grant_type", authRequest.getResponseType().toString());
+    tokenBody.add("grant_type", "authorization_code");
     tokenBody.add("code", code);
     tokenBody.add("redirect_uri", selectedRp.getMetadata().getRedirectionURI().toASCIIString());
     tokenBody.add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
