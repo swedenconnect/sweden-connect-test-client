@@ -204,7 +204,7 @@ class OIDCAuthentication {
      */
     activateAuthnRequestView() {
         $.ajax({
-                   url: '/oidc/authn/template',
+                   url: $("#base-href-id").prop('href') + '/oidc/authn/template',
                    type: 'GET',
                    data: {
                        rp: OIDC_STATE.getSelectedRp(),
@@ -258,7 +258,7 @@ class OIDCAuthentication {
      */
     onSendAuthnRequest(authnRequest) {
         $.ajax({
-                   url: '/oidc/authn/generate',
+                   url: $("#base-href-id").prop('href') + '/oidc/authn/generate',
                    type: 'POST',
                    contentType: 'application/json',
                    data: JSON.stringify(this.authnRequestView.getAuthnRequestParameters()),
@@ -344,7 +344,7 @@ class OIDCAuthenticationResult {
         };
 
         $.ajax({
-                   url: '/oidc/authn/verify',
+                   url: $("#base-href-id").prop('href') + '/oidc/authn/verify',
                    type: 'POST',
                    contentType: 'application/json',
                    data: JSON.stringify(verifyInput),
@@ -633,7 +633,7 @@ class OIDCSetupAuthentication {
         $('#oidc-view-metadata').click(function () {
             let entityId = $(this).val();
             $.ajax({
-                       url: '/oidc/rp/metadata',
+                       url: $("#base-href-id").prop('href') + '/oidc/rp/metadata',
                        type: 'GET',
                        data: {
                            rp: entityId
@@ -656,7 +656,7 @@ class OIDCSetupAuthentication {
         $('#oidc-op-view-metadata').click(function () {
             let entityId = OIDC_STATE.getSelectedOp();
             $.ajax({
-                       url: '/oidc/op/metadata',
+                       url: $("#base-href-id").prop('href') + '/oidc/op/metadata',
                        type: 'GET',
                        data: {
                            op: entityId
@@ -686,8 +686,9 @@ class OIDCSetupAuthentication {
             this.displayOps(this.oidcInfoCache.ops);
         }
         else {*/
+
         $.ajax({
-                   url: '/oidc/authn/info',
+                   url: $("#base-href-id").prop('href') + '/oidc/authn/info',
                    type: 'GET',
                    success: (info) => {
                        this.oidcInfoCache = info;

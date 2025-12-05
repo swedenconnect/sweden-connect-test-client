@@ -16,6 +16,7 @@
 package se.swedenconnect.testclient.controllers;
 
 import jakarta.annotation.Nonnull;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
@@ -33,9 +34,12 @@ import java.util.Optional;
 public class MainController {
 
   private final ApplicationModel applicationInfo;
+  private final ServletContext context;
 
-  public MainController(final ApplicationModel applicationModel) {
+  public MainController(final ApplicationModel applicationModel,
+                        final ServletContext context) {
     this.applicationInfo = applicationModel;
+    this.context = context;
   }
 
   @GetMapping("/")
@@ -55,6 +59,9 @@ public class MainController {
           view.addObject("oidcResponseData", data);
           session.removeAttribute(OidcController.SESSION_NAME_OIDC_RESPONSE);
         });
+    if (!context.getContextPath().isBlank() || !context.getContextPath().equals("/")) {
+      view.addObject("contextPath", context.getContextPath());
+    }
 
     return view;
   }

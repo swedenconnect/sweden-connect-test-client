@@ -16,7 +16,7 @@
 
 function displaySamlSps() {
   $.ajax({
-    url: '/saml/sp/info',
+    url: './saml/sp/info',
     type: 'GET',
     success: function(info) {
       let listDiv = $('#saml-sp-list');

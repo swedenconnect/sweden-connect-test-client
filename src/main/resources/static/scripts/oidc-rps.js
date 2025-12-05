@@ -26,7 +26,7 @@ class OidcRelyingParties {
     }
     else {
       $.ajax({
-        url: '/oidc/rp/info',
+        url: './oidc/rp/info',
         type: 'GET',
         success: function(info) {
           this.oidcRpInfo = info;

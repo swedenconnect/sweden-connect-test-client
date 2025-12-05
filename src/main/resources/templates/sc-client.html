@@ -15,6 +15,7 @@
   -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}" th:xmllang="${#locale.language}">
+<base id="base-href-id" th:href="${contextPath}">
 <head th:insert="~{fragments/base :: headerFragment}"></head>
 <body>
 
