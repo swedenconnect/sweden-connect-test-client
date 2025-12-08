@@ -49,6 +49,7 @@ public class OidcRp {
   private final String pathSuffix;
 
   /** The RP client credentials. */
+  @Getter
   private final ClientCredentials credentials;
 
   private final OIDCClientMetadata metadata;
@@ -86,5 +87,4 @@ public class OidcRp {
   public OIDCClientMetadata getMetadata() {
     return this.metadata;
   }
-
 }

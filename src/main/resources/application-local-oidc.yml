@@ -1,0 +1,82 @@
+#
+# Copyright 2025 Sweden Connect
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+spring:
+  thymeleaf:
+    cache: false
+  web:
+    resources:
+      cache:
+        period: 0
+      chain:
+        cache: false
+
+server:
+  port: 9110
+  ssl:
+    enabled: true
+    key-store: classpath:environments/localdev/local.dev.swedenconnect.se.p12
+    key-store-password: changeit
+    key-store-type: PKCS12
+    key-alias: 1
+    key-password: changeit
+  servlet:
+    context-path: "/mypath"
+
+testclient:
+  base-url: https://local.dev.swedenconnect.se:${server.port}
+  default-credential:
+    bundle: rsa-4096
+  tls:
+    skip-hostname-verification: true
+    default-tls-trust: TRUST_ALL
+  oidc:
+    enabled: true
+    openid-fed-authorities:
+      - https://www.dummy.com
+    ops:
+      - entity-id: https://dev.swedenconnect.se/auth/realms/BankID
+        authorization-endpoint: https://dev.swedenconnect.se/auth/realms/BankID/protocol/openid-connect/auth
+        token-endpoint: https://dev.swedenconnect.se/auth/realms/BankID/protocol/openid-connect/token
+        user-info-endpoint: https://dev.swedenconnect.se/auth/realms/BankID/protocol/openid-connect/userinfo
+        metadata-endpoint: https://dev.swedenconnect.se/auth/realms/BankID/.well-known/openid-configuration
+      - entity-id: https://dev.swedenconnect.se/auth/realms/DevSwedenConnectReferenceIdP
+        authorization-endpoint: https://dev.swedenconnect.se/auth/realms/DevSwedenConnectReferenceIdP/protocol/openid-connect/auth
+        token-endpoint: https://dev.swedenconnect.se/auth/realms/DevSwedenConnectReferenceIdP/protocol/openid-connect/token
+        user-info-endpoint: https://dev.swedenconnect.se/auth/realms/DevSwedenConnectReferenceIdP/protocol/openid-connect/userinfo
+        metadata-endpoint: https://dev.swedenconnect.se/auth/realms/DevSwedenConnectReferenceIdP/.well-known/openid-configuration
+    rps:
+      - path-suffix: "testrp1"
+        description: "Test OIDC RP 1 - RP for personal identity number authentication"
+        metadata: |
+          {
+            "response_types" : [ "code" ],
+            "grant_types" : [ "authorization_code" ],
+            "client_name" : "Sweden Connect Test-RP 1",
+            "client_name#sv" : "Sweden Connect Test-RP 1",
+            "client_name#en" : "Sweden Connect Test RP 1",
+            "contacts" : [ "operations@swedenconnect.se" ],
+            "organization_name#sv" : "Sweden Connect",
+            "organization_name#en" : "Sweden Connect",
+            "subject_type" : "public",
+            "token_endpoint_auth_method" : "private_key_jwt",
+            "require_auth_time": true
+          }
+        credentials:
+          signing:
+            bundle: rsa-4096
+  saml:
+    enabled: false

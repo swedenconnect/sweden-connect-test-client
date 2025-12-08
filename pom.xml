@@ -355,6 +355,73 @@
         </executions>
       </plugin>
 
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <from>
+            <image>amazoncorretto:25.0.1</image>
+          </from>
+          <to>
+            <image>${DOCKER_REPO}/swedenconnect/sweden-connect-test-client</image>
+            <tags>
+              <tag>${project.version}</tag>
+            </tags>
+          </to>
+          <container>
+            <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
+            <jvmFlags>
+              <jvmFlag>-Djava.net.preferIPv4Stack=true</jvmFlag>
+              <jvmFlag>-Dorg.apache.xml.security.ignoreLineBreaks=true</jvmFlag>
+            </jvmFlags>
+            <labels>
+              <org.opencontainers.image.source>
+                https://github.com/swedenconnect/sweden-connect-test-client
+              </org.opencontainers.image.source>
+              <org.opencontainers.image.description>Sweden Connect Test Client
+              </org.opencontainers.image.description>
+              <org.opencontainers.image.licenses>Apache-2.0</org.opencontainers.image.licenses>
+            </labels>
+          </container>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>none</phase>
+            <id>local</id>
+            <goals>
+              <goal>dockerBuild</goal>
+            </goals>
+            <configuration>
+              <to>
+                <image>local/${project.artifactId}</image>
+              </to>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-cli</id>
+            <phase>none</phase>
+            <goals>
+              <goal>build</goal>
+            </goals>
+            <configuration>
+              <from>
+                <platforms>
+                  <platform>
+                    <os>linux</os>
+                    <architecture>amd64</architecture>
+                  </platform>
+                  <platform>
+                    <os>linux</os>
+                    <architecture>arm64</architecture>
+                  </platform>
+                </platforms>
+              </from>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
   </build>
 

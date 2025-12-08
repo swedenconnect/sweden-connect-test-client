@@ -18,6 +18,7 @@ class TestClient {
 
   constructor() {
     this.samlAuthentication = null;
+    this.oidcAuthentication = null;
     this.oidcRelyingParties = null;
 
     $('.noscripthide').show();
@@ -55,8 +56,17 @@ class TestClient {
     });
 
     $('#menu-oidc').click((event) => {
-      appState.setSelectedFeature('oidc');
-      this.onNavbarClicked(event, 'oidc');
+      if(TestClient.isOidcEnabled()) {
+        let scrollCb = null;
+        if (this.oidcAuthentication === null) {
+          this.oidcAuthentication = new OIDCAuthentication();
+        }
+        else {
+          scrollCb = () => this.oidcAuthentication.scrollToActiveView();
+        }
+        appState.setSelectedFeature('oidc');
+        this.onNavbarClicked(event, 'oidc', scrollCb);
+      }
     });
 
     $('#menu-oidc-clients').click((event) => {
@@ -184,8 +194,7 @@ class CodeViewer {
   }
 
   displayJson(title, json) {
-
-    const formatted = prettyPrintJson.toHtmlString(json, this.jsonFormat);
+    const formatted = prettyPrintJson.toHtml(json, this.jsonFormat);
     $('#json-content').html(formatted);
 
     const jsonViewer = $('#json-viewer');
@@ -193,6 +202,13 @@ class CodeViewer {
     jsonViewer.find('.modal').modal('show');
   }
 
+  displayURL(title, text) {
+    $('#json-content').html(text.replace(/.*\?/g, '$&\n\t').replace(/&/g, '$&\n\t'));
+
+    const jsonViewer = $('#json-viewer');
+    jsonViewer.find('.modal-title').text(title);
+    jsonViewer.find('.modal').modal('show');
+  }
 }
 
 const codeViewer = new CodeViewer();

@@ -53,6 +53,13 @@ public class OidcProperties implements InitializingBean {
   @NestedConfigurationProperty
   private final List<OidcRpProperties> rps = new ArrayList<>();
 
+  /**
+   * The OpenId Providers to test.
+   */
+  @Getter
+  @NestedConfigurationProperty
+  private final List<OidcOpProperties> ops = new ArrayList<>();
+
   @Override
   public void afterPropertiesSet() {
     if (this.enabled) {
