@@ -26,6 +26,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.UrlResource;
 import org.w3c.dom.Document;
 import se.swedenconnect.opensaml.saml2.metadata.provider.AbstractMetadataProvider;
+import se.swedenconnect.opensaml.saml2.metadata.provider.CompositeMetadataProvider;
 import se.swedenconnect.opensaml.saml2.metadata.provider.FilesystemMetadataProvider;
 import se.swedenconnect.opensaml.saml2.metadata.provider.HTTPMetadataProvider;
 import se.swedenconnect.opensaml.saml2.metadata.provider.MetadataProvider;
@@ -55,9 +56,6 @@ public class SamlFederation {
   /** IdP Cache lifetime. */
   public static final Duration IDP_CACHE_LIFETIME = Duration.ofMinutes(10);
 
-  /** The metadata location. */
-  private final MetadataLocation metadataLocation;
-
   /** The textual description of the federation. */
   private final String description;
 
@@ -85,33 +83,46 @@ public class SamlFederation {
       @Nonnull final SslBundles sslBundles, @Nonnull final ClientTlsProperties clientTls) throws Exception {
 
     this.description = properties.getDescription();
-    final AbstractMetadataProvider provider;
-    if (properties.getMetadataLocation() instanceof final UrlResource urlResource && !urlResource.isFile()) {
-      this.metadataLocation = new MetadataLocation(properties.getMetadataLocation().getURL().toString(), true);
-      provider = new HTTPMetadataProvider(properties.getMetadataLocation().getURL().toString(),
-          preProcessBackupFile(properties.getBackupLocation()),
-          HttpClientUtils.createHttpClient(clientTls, sslBundles));
+    this.metadataProvider = createMetadataProvider(properties.getSource(), sslBundles, clientTls);
+    this.idpSortingOrder = properties.getIdpSorting();
+  }
+
+  @Nonnull
+  private static MetadataProvider createMetadataProvider(
+      @Nonnull final List<SamlProperties.SamlFederationProperties.FederationSource> sources,
+      @Nullable final SslBundles sslBundles, @Nonnull final ClientTlsProperties clientTls) throws Exception {
+
+    final List<MetadataProvider> providers = new ArrayList<>();
+    for (final SamlProperties.SamlFederationProperties.FederationSource md : sources) {
+      final AbstractMetadataProvider provider;
+      if (md.getMetadataLocation() instanceof final UrlResource urlResource && !urlResource.isFile()) {
+        provider = new HTTPMetadataProvider(md.getMetadataLocation().getURL().toString(),
+            preProcessBackupFile(md.getBackupLocation()), HttpClientUtils.createHttpClient(clientTls, sslBundles));
+        if (md.getValidationCertificate() != null) {
+          provider.setSignatureVerificationCertificate(md.getValidationCertificate());
+        }
+      }
+      else if (md.getMetadataLocation() instanceof FileSystemResource) {
+        provider = new FilesystemMetadataProvider(md.getMetadataLocation().getFile());
+      }
+      else {
+        final Document doc = Objects.requireNonNull(XMLObjectProviderRegistrySupport.getParserPool())
+            .parse(md.getMetadataLocation().getInputStream());
+        provider = new StaticMetadataProvider(doc.getDocumentElement());
+      }
+      provider.setPerformSchemaValidation(false);
+      provider.initialize();
+      providers.add(provider);
     }
-    else if (properties.getMetadataLocation() instanceof FileSystemResource) {
-      this.metadataLocation = new MetadataLocation(properties.getMetadataLocation().getFile().getAbsolutePath(), false);
-      provider = new FilesystemMetadataProvider(properties.getMetadataLocation().getFile());
+    if (providers.size() > 1) {
+      final CompositeMetadataProvider compositeProvider =
+          new CompositeMetadataProvider("composite-provider", providers);
+      compositeProvider.initialize();
+      return compositeProvider;
     }
     else {
-      this.metadataLocation = new MetadataLocation(properties.getMetadataLocation().toString(), false);
-
-      final Document doc = Objects.requireNonNull(XMLObjectProviderRegistrySupport.getParserPool())
-          .parse(properties.getMetadataLocation().getInputStream());
-      provider = new StaticMetadataProvider(doc.getDocumentElement());
+      return providers.getFirst();
     }
-
-    if (properties.getValidationCertificate() != null) {
-      provider.setSignatureVerificationCertificate(properties.getValidationCertificate());
-    }
-    provider.setPerformSchemaValidation(false);
-    provider.initialize();
-
-    this.metadataProvider = provider;
-    this.idpSortingOrder = properties.getIdpSorting();
   }
 
   /**
@@ -122,16 +133,6 @@ public class SamlFederation {
   @Nonnull
   public MetadataProvider getMetadataProvider() {
     return this.metadataProvider;
-  }
-
-  /**
-   * Gets the location from where federation metadata was obtained.
-   *
-   * @return metadata location
-   */
-  @Nonnull
-  public MetadataLocation getMetadataLocation() {
-    return this.metadataLocation;
   }
 
   /**
@@ -234,15 +235,6 @@ public class SamlFederation {
     catch (final IOException e) {
       throw new IllegalArgumentException("Invalid backup-location");
     }
-  }
-
-  /**
-   * Stores the metadata location.
-   *
-   * @param location the location
-   * @param isUrl whether the location is a URL
-   */
-  public record MetadataLocation(String location, @JsonProperty("is_url") boolean isUrl) {
   }
 
 }

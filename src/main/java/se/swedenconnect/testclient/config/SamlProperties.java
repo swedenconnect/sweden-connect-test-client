@@ -15,7 +15,6 @@
  */
 package se.swedenconnect.testclient.config;
 
-import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,6 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.util.Assert;
-import se.swedenconnect.security.credential.config.properties.PkiCredentialConfigurationProperties;
 
 import java.io.File;
 import java.security.cert.X509Certificate;
@@ -85,32 +83,17 @@ public class SamlProperties implements InitializingBean {
   public static class SamlFederationProperties implements InitializingBean {
 
     /**
-     * Textual description of the federation.
+     * Textual description of the federation(s).
      */
     @Getter
     @Setter
     private String description;
 
     /**
-     * The location for where to download the federation metadata.
+     * The federation source(s).
      */
     @Getter
-    @Setter
-    private Resource metadataLocation;
-
-    /**
-     * The certificate to be used for validating the signature of the downloaded metadata.
-     */
-    @Getter
-    @Setter
-    private X509Certificate validationCertificate;
-
-    /**
-     * The location to the file where downloaded metadata should be cached.
-     */
-    @Getter
-    @Setter
-    private File backupLocation;
+    private final List<FederationSource> source = new ArrayList<>();
 
     /**
      * Sorting order in UI of IdP:s.
@@ -122,18 +105,60 @@ public class SamlProperties implements InitializingBean {
     @Override
     public void afterPropertiesSet() {
       Assert.hasText(this.description, "testclient.saml.federation.description is required");
-      Assert.notNull(this.metadataLocation, "testclient.saml.federation.metadata-location is required");
-      if (this.validationCertificate == null) {
-        log.warn("testclient.saml.federation.validation-certificate is not set - "
-            + "No validation of downloaded metadata will be performed");
+      if (this.source.isEmpty()) {
+        throw new IllegalArgumentException(
+            "testclient.saml.federation.source.* is empty. At least one federation source must be configured");
       }
-      if (this.backupLocation == null) {
-        if (this.metadataLocation instanceof final UrlResource urlResource && !urlResource.isFile()) {
-          log.warn("testclient.saml.federation.backup-location is not set - "
-              + "It is strongly recommended to use a cache for downloaded metadata");
-        }
+      for (final FederationSource s : this.source) {
+        s.afterPropertiesSet();
       }
     }
+
+    /**
+     * Configuration properties for a federation source.
+     */
+    public static class FederationSource implements InitializingBean {
+
+      /**
+       * The location for where to download the federation metadata. Can be a URL or a static file.
+       */
+      @Getter
+      @Setter
+      private Resource metadataLocation;
+
+      /**
+       * The certificate to be used for validating the signature of the downloaded metadata. If not given, no validation
+       * of the metadata will be performed.
+       */
+      @Getter
+      @Setter
+      private X509Certificate validationCertificate;
+
+      /**
+       * The location to the file where downloaded metadata should be cached.
+       */
+      @Getter
+      @Setter
+      private File backupLocation;
+
+      /** {@inheritDoc} */
+      @Override
+      public void afterPropertiesSet() {
+        Assert.notNull(this.metadataLocation, "testclient.saml.federation.source[].metadata-location is required");
+        if (this.validationCertificate == null) {
+          log.warn("testclient.saml.federation.source[].validation-certificate is not set - "
+              + "No validation of downloaded metadata will be performed");
+        }
+        if (this.backupLocation == null) {
+          if (this.metadataLocation instanceof final UrlResource urlResource && !urlResource.isFile()) {
+            log.warn("testclient.saml.federation.source[].backup-location is not set - "
+                + "It is strongly recommended to use a cache for downloaded metadata");
+          }
+        }
+      }
+
+    }
+
   }
 
   /**

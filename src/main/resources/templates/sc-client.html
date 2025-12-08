@@ -20,1861 +20,1852 @@
 <body>
 
 <nav class="navbar navbar-expand-lg bg-light fixed-top" data-bs-theme="light">
-    <div class="container-fluid">
-        <a id="menu-home" class="navbar-brand" href="javascript:void(0)">
-            <img th:src="@{/images/logo-notext.svg}" src="/images/logo-notext.svg" width="30" height="30"
-                 class="d-inline-block align-top" alt="Sweden Connect"/>
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01"
-                aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarColor01">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a id="menu-saml" class="nav-link gen-saml" href="javascript:void(0)">SAML</a>
-                </li>
-                <li class="nav-item">
-                    <a id="menu-oidc" class="nav-link gen-oidc" href="javascript:void(0)">OpenID Connect</a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="javascript:void(0)"
-                       role="button"
-                       aria-haspopup="true" aria-expanded="false">Advanced</a>
-                    <div class="dropdown-menu">
-                        <a id="menu-saml-clients" class="dropdown-item" href="javascript:void(0)">SAML Clients</a>
-                        <a id="menu-saml-metadata" class="dropdown-item" href="javascript:void(0)">SAML Federation
-                            Metadata</a>
-                        <div class="dropdown-divider"></div>
-                        <a id="menu-oidc-clients" class="dropdown-item" href="javascript:void(0)">OIDC Clients</a>
-                        <a id="menu-oidc-ops" class="dropdown-item" href="javascript:void(0)">OIDC Providers</a>
-                    </div>
-                </li>
-            </ul>
-        </div>
+  <div class="container-fluid">
+    <a id="menu-home" class="navbar-brand" href="javascript:void(0)">
+      <img th:src="@{/images/logo-notext.svg}" src="/images/logo-notext.svg" width="30" height="30"
+           class="d-inline-block align-top" alt="Sweden Connect"/>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01"
+            aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarColor01">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a id="menu-saml" class="nav-link gen-saml" href="javascript:void(0)">SAML</a>
+        </li>
+        <li class="nav-item">
+          <a id="menu-oidc" class="nav-link gen-oidc" href="javascript:void(0)">OpenID Connect</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="javascript:void(0)"
+             role="button"
+             aria-haspopup="true" aria-expanded="false">Advanced</a>
+          <div class="dropdown-menu">
+            <a id="menu-saml-clients" class="dropdown-item" href="javascript:void(0)">SAML Clients</a>
+            <a id="menu-saml-metadata" class="dropdown-item" href="javascript:void(0)">SAML Federation
+              Metadata</a>
+            <div class="dropdown-divider"></div>
+            <a id="menu-oidc-clients" class="dropdown-item" href="javascript:void(0)">OIDC Clients</a>
+            <a id="menu-oidc-ops" class="dropdown-item" href="javascript:void(0)">OIDC Providers</a>
+          </div>
+        </li>
+      </ul>
     </div>
+  </div>
 </nav>
 
 <main class="container main" id="main">
 
-    <div id="main-home" class="main-div">
-        <div class="col-sm-12 content-container">
-            <div class="row">
-                <div class="col-sm-12">
-                    <h2 class="content-heading">Test Client for SAML and OpenID Connect</h2>
-                    <p>
-                        This is a test client for testing SAML Identity Providers and OpenID Providers within the Sweden
-                        Connect
-                        federation. The tool is mainly used during approval processes for IdP:s/OP:s wishing to join the
-                        federation,
-                        but is also an excellent help in the development of an IdP/OP.
-                    </p>
-                    <p id="main-description-saml-fed-info">
-                        This instance of the tool is executing against <span
-                            id="main-description-saml-fed-info-name"></span>.
-                    </p>
-                    <p>
-                        Currently, OpenID Connect support is disabled.
-                    </p>
-                    <p>
-                        To add your SAML Identity Provider to Sweden Connect, contact <a
-                            href="mailto:operations@swedenconnect.se">operations@swedenconnect.se</a>.
-                    </p>
-                </div>
-            </div>
+  <div id="main-home" class="main-div">
+    <div class="col-sm-12 content-container">
+      <div class="row">
+        <div class="col-sm-12">
+          <h2 class="content-heading">Test Client for SAML and OpenID Connect</h2>
+          <p>
+            This is a test client for testing SAML Identity Providers and OpenID Providers within the Sweden
+            Connect federation. The tool is mainly used during approval processes for IdP:s/OP:s wishing to join the
+            federation, but is also an excellent help in the development of an IdP/OP.
+          </p>
+          <p id="main-description-saml-fed-info">
+            This instance of the tool is executing against <span
+              id="main-description-saml-fed-info-name"></span>.
+          </p>
+          <p>
+            Currently, OpenID Connect support is disabled.
+          </p>
+          <p>
+            To add your SAML Identity Provider to Sweden Connect, contact <a
+              href="mailto:operations@swedenconnect.se">operations@swedenconnect.se</a>.
+          </p>
         </div>
-    </div> <!-- main-home -->
+      </div>
+    </div>
+  </div> <!-- main-home -->
 
-    <!-- SAML -->
-    <div id="main-saml" class="main-div">
-        <div class="col-sm-12 content-container">
-            <div class="row">
-                <div class="col-sm-12">
-                    <h2 class="content-heading">SAML Authentication</h2>
-                    <p>
-                        Select which SAML Service Provider you want to use when requesting SAML authentication, and then
-                        select
-                        which SAML Identity Provider to send the authentication request to.
-                    </p>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-6">
-                    <form>
-                        <div>
-                            <label for="saml-sp-select" class="form-label mt-4">Act as Service Provider ...</label>
-                            <select class="form-select" id="saml-sp-select">
-                            </select>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-sm-6" id="sp-info">
-                    <div class="mt-4">
-                        <p id="sp-description"></p>
-                        <p>
-                            Metadata URL: <a id="sp-metadata-url" href="#" target="_blank" rel="noopener"></a>
-                            <span class="bi bi-box-arrow-up-right"></span>
-                        </p>
-                        <p class="text-end">
-                            <button id="sp-view-metadata" type="button" class="btn btn-primary btn-sm">View SP Metadata
-                                >>>
-                            </button>
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-6">
-                    <form>
-                        <div>
-                            <label for="saml-idp-select" class="form-label mt-4">Select Identity Provider</label>
-                            <select class="form-select" id="saml-idp-select">
-                            </select>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-sm-6" id="idp-info">
-                    <div class="mt-4">
-                        <p id="idp-displayname"></p>
-                        <p id="idp-description"></p>
-                        <p class="text-end">
-                            <button id="idp-view-metadata" type="button" class="btn btn-primary btn-sm">View IdP
-                                Metadata >>>
-                            </button>
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div id="saml-authn-next-button-div">
-                <hr class="mt-4"/>
-                <div class="row mt-4">
-                    <div class="col-sm-6">
-                        <div class="text-left">
-                            <button id="saml-authn-next-button" type="button" class="btn btn-primary">Next</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <!-- SAML -->
+  <div id="main-saml" class="main-div">
+    <div class="col-sm-12 content-container">
+      <div class="row">
+        <div class="col-sm-12">
+          <h2 class="content-heading">SAML Authentication</h2>
+          <p>
+            Select which SAML Service Provider you want to use when requesting SAML authentication, and then
+            select
+            which SAML Identity Provider to send the authentication request to.
+          </p>
         </div>
-
-        <div id="saml-build-authn" class="hide">
-            <div class="col-sm-12 content-container">
-                <div class="row">
-                    <div class="col-sm-12">
-                        <h2 class="content-heading">Build Authentication Request</h2>
-                    </div>
-                </div>
-                <form>
-
-                    <!-- Request binding -->
-                    <div class="row">
-                        <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                             data-bs-original-title="Determines how the request is sent to the IdP (redirect or POST)">
-                            <label for="saml-request-binding-select"
-                                   class="col-form-label col-sm-12 text-sm-right">Request Binding</label>
-                        </div>
-                        <div class="col-sm-10">
-                            <select class="form-select" id="saml-request-binding-select">
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Relay state -->
-                    <div class="row mt-4">
-                        <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                             data-bs-original-title="The RelayState token is an opaque reference to state information maintained at the SP. The IdP must return this parameter unchanged.">
-                            <label class="col-form-label text-sm-right" for="saml-request-relaystate-input">Relay
-                                State</label>
-                        </div>
-                        <div class="col-sm-10">
-                            <input type="text" class="form-control" id="saml-request-relaystate-input">
-                        </div>
-                    </div>
-
-                    <!-- Signature -->
-                    <div class="form-group row mt-4">
-                        <label class="col-sm-2 col-form-label">
-              <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                    data-bs-original-title="Tells how and if a signature is applied to the request.">Signature</span>
-                        </label>
-                        <div class="col-sm-10">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
-                                       id="saml-request-signature-radio-sign" checked="" value="ok_signature">
-                                <label class="form-check-label" for="saml-request-signature-radio-sign">Signature will
-                                    be applied to the
-                                    AuthnRequest message</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
-                                       id="saml-request-signature-radio-nosign" value="no_signature">
-                                <label class="form-check-label" for="saml-request-signature-radio-nosign">No signature
-                                    will be applied
-                                    to the AuthnRequest message</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
-                                       id="saml-request-signature-radio-signother" value="other_signature">
-                                <label class="form-check-label" for="saml-request-signature-radio-signother">A signature
-                                    created with
-                                    another certificate than the one given in SP metadata will be applied</label>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="mt-4"/>
-
-                    <!-- Force Authentication -->
-                    <div class="form-group row mt-4">
-                        <label class="col-sm-2 col-form-label">
-              <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                    data-bs-original-title="Tells whether the 'force authentication'-attribute should be applied.">Force Authentication</span>
-                        </label>
-                        <div class="col-sm-10">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="saml-request-forceauthn"
-                                       id="saml-request-forceauthn-true" value="true">
-                                <label class="form-check-label" for="saml-request-forceauthn-true">True</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="saml-request-forceauthn"
-                                       id="saml-request-forceauthn-false" value="false">
-                                <label class="form-check-label" for="saml-request-forceauthn-false">False</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="saml-request-forceauthn"
-                                       id="saml-request-forceauthn-exclude" value="exclude">
-                                <label class="form-check-label" for="saml-request-forceauthn-exclude">Exclude
-                                    attribute</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Is Passive -->
-                    <div class="form-group row mt-4">
-                        <label class="col-sm-2 col-form-label">
-              <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                    data-bs-original-title="Tells whether the 'is passive'-attribute should be applied.">Is Passive?</span>
-                        </label>
-                        <div class="col-sm-10">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="saml-request-ispassive"
-                                       id="saml-request-ispassive-true" value="true">
-                                <label class="form-check-label" for="saml-request-ispassive-true">True</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="saml-request-ispassive"
-                                       id="saml-request-ispassive-false" value="false">
-                                <label class="form-check-label" for="saml-request-ispassive-false">False</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="saml-request-ispassive"
-                                       id="saml-request-ispassive-exclude" value="exclude">
-                                <label class="form-check-label" for="saml-request-ispassive-exclude">Exclude
-                                    attribute</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mt-4" id="saml-advanced-authn-request-button-div">
-                        <div class="col-sm-12">
-                            <div class="d-flex justify-content-end">
-                                <button id="saml-advanced-authn-request-button" type="button"
-                                        class="btn btn-light btn-sm">More settings
-                                    ...
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group hide" id="saml-advanced-authn-request">
-                        <!-- Destination -->
-                        <div class="row mt-4">
-                            <label class="col-sm-2 col-form-label" for="saml-request-destination">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="The destination URL to include in the request.">Destination</span>
-                            </label>
-                            <div class="col-sm-10">
-                                <input type="text" class="form-control" id="saml-request-destination">
-                            </div>
-                        </div>
-                        <!-- Issue instant -->
-                        <div class="row mt-4">
-                            <label class="col-sm-2 col-form-label" for="saml-request-issueinstant">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="The timestamp for when this request was issued.">Issue Instant</span>
-                            </label>
-                            <div class="col-sm-10">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" placeholder="Will use the time of sending"
-                                           aria-describedby="saml-request-issueinstant-button"
-                                           id="saml-request-issueinstant">
-                                    <button class="btn btn-outline-secondary" type="button"
-                                            id="saml-request-issueinstant-button">Modify
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr class="mt-4"/>
-
-                    <!-- Issuer element -->
-                    <div class="form-group">
-                        <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="The entityID of the SP issuing the request.">Issuer Element</span>
-                            </label>
-                            <div class="col-sm-6">
-                                <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="saml-request-issuer-present"
-                                           id="saml-request-issuer-present">
-                                    <label class="form-check-label ps-3" for="saml-request-issuer-present">Element
-                                        present</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row mt-4" id="saml-request-issuer-row">
-                            <label class="col-sm-2" for="saml-request-issuer">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="The entityID of the SP issuing the request.">Issuer Value</span>
-                            </label>
-                            <div class="col-sm-10">
-                                <input type="text" class="form-control" id="saml-request-issuer">
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr class="mt-4"/>
-
-                    <!-- NameID Policy element -->
-                    <div class="form-group">
-                        <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="Specifies constraints on the name identifier to be used to represent the authenticated subject.">NameID Policy Element</span>
-                            </label>
-                            <div class="col-sm-6">
-                                <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="saml-request-nip-present"
-                                           id="saml-request-nip-present">
-                                    <label class="form-check-label ps-3" for="saml-request-nip-present">Element
-                                        present</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="saml-request-nip-div">
-                            <div class="row mt-4">
-                                <label class="col-sm-2" for="saml-request-nip-format">Format</label>
-                                <div class="col-sm-10">
-                                    <select class="form-select" id="saml-request-nip-format">
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <label class="col-sm-2">Allow Create</label>
-                                <div class="col-sm-10">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="saml-request-nip-ac"
-                                               id="saml-request-nip-ac-true" value="true">
-                                        <label class="form-check-label" for="saml-request-nip-ac-true">True</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="saml-request-nip-ac"
-                                               id="saml-request-nip-ac-false" value="false">
-                                        <label class="form-check-label" for="saml-request-nip-ac-false">False</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="saml-request-nip-ac"
-                                               id="saml-request-nip-ac-exclude" value="exclude">
-                                        <label class="form-check-label" for="saml-request-nip-ac-exclude">Exclude
-                                            attribute</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <label class="col-sm-2" for="saml-request-nip-spnq">SP Name Qualifier</label>
-                                <div class="col-sm-10">
-                                    <input type="text" class="form-control" id="saml-request-nip-spnq">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr class="mt-4"/>
-
-                    <!-- Requested Authentication Context element -->
-                    <div class="form-group">
-                        <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="Specifies the authentication context URI(s) under which the authentication should be performed.">Requested Authentication Context Element</span>
-                            </label>
-                            <div class="col-sm-6">
-                                <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="saml-request-rac-present"
-                                           id="saml-request-rac-present">
-                                    <label class="form-check-label ps-3" for="saml-request-rac-present">Element
-                                        present</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="saml-request-rac-div">
-                            <div class="row mt-4">
-                                <label class="col-sm-2">Authentication Context Class Ref URIs</label>
-                                <div class="col-sm-10">
-                                    <ul class="list-group" id="saml-request-rac-list">
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-sm-2"></div>
-                                <div class="col-sm-10">
-                                    <div class="btn-group" role="group">
-                                        <button id="saml-request-rac-drop" type="button"
-                                                class="btn btn-sm btn-primary dropdown-toggle"
-                                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
-                                            URI
-                                        </button>
-                                        <div id="saml-request-rac-drop-div" class="dropdown-menu"
-                                             aria-labelledby="saml-request-rac-drop">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row mt-4" id="saml-request-rac-custom-div" style="display: none;">
-                                <label class="col-sm-2" for="saml-request-rac-custom">Custom Value</label>
-                                <div class="col-sm-10">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control"
-                                               aria-describedby="saml-request-rac-custom-button"
-                                               id="saml-request-rac-custom">
-                                        <button class="btn btn-outline-secondary" type="button"
-                                                id="saml-request-rac-custom-button">Add
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <label class="col-sm-2" for="saml-request-rac-comparison-select">
-                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                        data-bs-original-title="Tells how the IdP should treat/compare the requested URI(s).">Comparison</span>
-                                </label>
-                                <div class="col-sm-10">
-                                    <select class="form-select" id="saml-request-rac-comparison-select">
-                                        <option value="exact">Exact</option>
-                                        <option value="minimum">Minimum</option>
-                                        <option value="maximum">Maximum</option>
-                                        <option value="better">Better</option>
-                                        <option value="exclude">-- Not specified --</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="mt-4"/>
-
-                    <!-- Assertion Consumer Service URL -->
-                    <div class="form-group">
-                        <div class="row mt-4">
-                            <label class="col-sm-2 col-form-label" for="saml-request-acs-select">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="Specifies the location at which the response message must be returned.">Assertion Consumer Service URL</span>
-                            </label>
-                            <div class="col-sm-10">
-                                <select class="form-select" id="saml-request-acs-select">
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row mt-4" id="saml-request-acs-custom-div" style="display: none;">
-                            <label class="col-sm-2" for="saml-request-acs-custom">Custom Value</label>
-                            <div class="col-sm-10">
-                                <input type="text" class="form-control" id="saml-request-acs-custom">
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="mt-4"/>
-
-                    <!-- Scoping element -->
-                    <div class="form-group">
-                        <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="The Scoping element allows for adding requested IdPs/authentication methods and/or a requester ID.">Scoping Element</span>
-                            </label>
-                            <div class="col-sm-6">
-                                <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="saml-request-scoping-present"
-                                           id="saml-request-scoping-present">
-                                    <label class="form-check-label ps-3" for="saml-request-scoping-present">Element
-                                        present</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="saml-request-scoping-div">
-                            <div id="saml-request-scoping-rid-div">
-                                <div class="row mt-4">
-                                    <label class="col-sm-2" for="saml-request-scoping-requesterid">
-                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                        data-bs-original-title="If the SP acts upon another requester this field may be used.">Requester IDs</span>
-                                    </label>
-                                    <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="saml-request-scoping-requesterid">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-sm-2"></div>
-                                <div class="col-sm-10">
-                                    <button id="saml-request-scoping-rid-add-button" type="button"
-                                            class="btn btn-sm btn-primary">Add
-                                        Another Requester ID
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div id="saml-request-scoping-idps-div">
-                                <div class="row mt-4">
-                                    <label class="col-sm-2" for="saml-request-scoping-idpentry">
-                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                        data-bs-original-title="Specify one or more identifiers. This gives information to a proxy IdP on which underlying IdP/method to use.">IdP entry (part of IdP list)</span>
-                                    </label>
-                                    <div class="col-sm-10">
-                                        <input type="text" class="form-control" id="saml-request-scoping-idpentry">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-sm-2"></div>
-                                <div class="col-sm-10">
-                                    <button id="saml-request-scoping-add-button" type="button"
-                                            class="btn btn-sm btn-primary">Add Another
-                                        IdP
-                                        Entry
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="mt-4"/>
-
-                    <!-- Principal Selection Extension -->
-                    <div class="form-group">
-                        <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="The RequestedPrincipalSelection extension is used to inform the IdP about details about the user being authenticated (if known).">Requested Principal Selection Extension</span>
-                            </label>
-                            <div class="col-sm-6">
-                                <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="saml-request-pse-present"
-                                           id="saml-request-pse-present">
-                                    <label class="form-check-label ps-3" for="saml-request-pse-present">Extension
-                                        present</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="saml-request-pse-div">
-                            <div class="row mt-4">
-                                <div class="col-sm-2"></div>
-                                <div class="col-sm-10">
-                                    <div class="btn-group" role="group">
-                                        <button id="saml-request-pse-drop" type="button"
-                                                class="btn btn-sm btn-primary dropdown-toggle"
-                                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
-                                            Attribute
-                                        </button>
-                                        <div id="saml-request-pse-drop-div" class="dropdown-menu"
-                                             aria-labelledby="saml-request-pse-drop">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mt-4" id="saml-request-pse-attrs-div">
-                                <label class="col-sm-2">Attributes</label>
-                                <div class="col-sm-10" id="saml-request-pse-attrs">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="mt-4"/>
-
-                    <!-- User Message Extension -->
-                    <div class="form-group">
-                        <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="The UserMessage extension is used to supply the IdP with a message that should be displayed for the user during authentication.">User Message Extension</span>
-                            </label>
-                            <div class="col-sm-6">
-                                <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="saml-request-um-present"
-                                           id="saml-request-um-present">
-                                    <label class="form-check-label ps-3" for="saml-request-um-present">Extension
-                                        present</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="saml-request-um-div">
-                            <div class="row mt-4">
-                                <label class="col-sm-2" for="saml-request-um-mimetype-select">
-                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                        data-bs-original-title="The MIME type for all user messages.">MIME Type</span>
-                                </label>
-                                <div class="col-sm-10">
-                                    <select class="form-select" id="saml-request-um-mimetype-select">
-                                    </select>
-                                </div>
-                            </div>
-                            <div id="saml-request-um-messages-div">
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-sm-2"></div>
-                                <div class="col-sm-10">
-                                    <div class="btn-group" role="group">
-                                        <button id="saml-request-um-add-drop" type="button"
-                                                class="btn btn-sm btn-primary dropdown-toggle"
-                                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
-                                            Message
-                                        </button>
-                                        <div id="saml-request-um-add-drop-div" class="dropdown-menu"
-                                             aria-labelledby="saml-request-um-add-drop">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="mt-4"/>
-
-                    <!-- Sign Message Extension -->
-                    <div class="form-group">
-                        <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
-                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                      data-bs-original-title="The SignMessage extension is used to supply the IdP with a message that should be displayed for the user during authentication for signature.">Sign Message Extension</span>
-                            </label>
-                            <div class="col-sm-6">
-                                <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="saml-request-sm-present"
-                                           id="saml-request-sm-present">
-                                    <label class="form-check-label ps-3" for="saml-request-sm-present">Extension
-                                        present</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="saml-request-sm-div">
-                            <div class="row mt-4">
-                                <label class="col-sm-2" for="saml-request-sm-textarea">Message</label>
-                                <div class="col-sm-10 d-flex" style="position: relative;">
-                  <textarea class="form-control user-message" id="saml-request-sm-textarea" rows="3"
-                            placeholder="Enter SignMessage ..."></textarea>
-                                </div>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-sm-2"></div>
-                                <div class="col-sm-10">
-                                    <input class="form-check-input" type="checkbox" id="saml-request-sm-encrypt-cb">
-                                    <label class="form-check-label ps-2" for="saml-request-sm-encrypt-cb">Encrypt
-                                        message</label>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <label class="col-sm-2" for="saml-request-sm-mimetype-select">
-                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                        data-bs-original-title="The MIME type for the sign message.">MIME Type</span>
-                                </label>
-                                <div class="col-sm-10">
-                                    <select class="form-select" id="saml-request-sm-mimetype-select">
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <label class="col-sm-2" for="saml-request-sm-display-entity">Display Entity</label>
-                                <div class="col-sm-10">
-                                    <input type="text" class="form-control" id="saml-request-sm-display-entity">
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <label class="col-sm-2">Must Show</label>
-                                <div class="col-sm-10">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="saml-request-sm-must-show"
-                                               id="saml-request-sm-must-show-true" value="true">
-                                        <label class="form-check-label"
-                                               for="saml-request-sm-must-show-true">True</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="saml-request-sm-must-show"
-                                               id="saml-request-sm-must-show-false" value="false">
-                                        <label class="form-check-label"
-                                               for="saml-request-sm-must-show-false">False</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="saml-request-sm-must-show"
-                                               id="saml-request-sm-must-show-exclude" value="exclude">
-                                        <label class="form-check-label" for="saml-request-sm-must-show-exclude">Exclude
-                                            attribute</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-
-
-                    <hr class="mt-4"/>
-                    <div id="saml-request-submit-div">
-                        <div class="row mt-4">
-                            <div class="col-sm-12">
-                                <button id="saml-request-submit-button" type="button" class="btn btn-primary">Send
-                                    AuthnRequest
-                                </button>
-                                <button id="saml-request-restart-button" type="button" class="btn btn-primary">Restart
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                </form>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          <form>
+            <div>
+              <label for="saml-sp-select" class="form-label mt-4">Act as Service Provider ...</label>
+              <select class="form-select" id="saml-sp-select">
+              </select>
             </div>
+          </form>
         </div>
-
-        <!-- Result view of SAML authentication -->
-        <div id="saml-authn-result" class="hide">
-            <div class="col-sm-12 content-container">
-                <div class="row">
-                    <div class="col-sm-12">
-                        <h2 class="content-heading">Authentication Result</h2>
-                    </div>
-                </div>
-
-                <div id="saml-authn-result-idp-error" class="card text-white mb-3 hide">
-                    <div class="card-header">Identity Provider Error</div>
-                    <div class="card-body">
-                    </div>
-                </div>
-
-                <div class="card border-primary mb-3" id="saml-authn-result-authnrequest">
-                    <div class="card-header">Authentication Request</div>
-                    <div class="card-body">
-                        <p class="card-text">Information about the SAML authentication request that was sent to the
-                            Identity
-                            Provider.</p>
-                        <div class="row hide" id="saml-authn-result-authnrequest-details">
-                            <div class="col-md-12">
-                                <table class="table table-hover saml-table">
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <p class="text-end">
-                                <button id="saml-authn-result-view-authnrequest-details" type="button"
-                                        class="btn btn-primary btn-sm">
-                                    View Details
-                                </button>
-                                <button id="saml-authn-result-view-authnrequest" type="button"
-                                        class="btn btn-primary btn-sm">View
-                                    AuthnRequest Message
-                                </button>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card border-primary mb-3 hide" id="saml-authn-result-response">
-                    <div class="card-header">SAML Response</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <table class="table table-hover saml-table">
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <p class="text-end">
-                                <button id="saml-authn-result-view-response" type="button"
-                                        class="btn btn-primary btn-sm">View Response
-                                    Message
-                                </button>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card border-primary mb-3 hide" id="saml-authn-result-assertion">
-                    <div class="card-header">SAML Assertion</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <table class="table table-hover saml-table">
-                                    <tbody id="body-assertion">
-                                    </tbody>
-                                </table>
-                                <div id="assertions-table">
-                                    <p><strong>Attribute Statement</strong></p>
-                                    <table class="table table-hover saml-table">
-                                        <thead>
-                                        <tr>
-                                            <th scope="col" class="table-text">Name</th>
-                                            <th scope="col" class="table-text">Friendly name</th>
-                                            <th scope="col" class="table-text">Value</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody id="body-attributes">
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <p class="text-end">
-                                <button id="saml-authn-result-view-assertion" type="button"
-                                        class="btn btn-primary btn-sm">View
-                                    Assertion
-                                </button>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <hr class="mt-4"/>
-                <div class="row mt-4">
-                    <div class="col-sm-12">
-                        <button id="saml-authn-result-restart-button" type="button" class="btn btn-primary">Restart
-                        </button>
-                    </div>
-                </div>
-
+        <div class="col-sm-6" id="sp-info">
+          <div class="mt-4">
+            <p id="sp-description"></p>
+            <p>
+              Metadata URL: <a id="sp-metadata-url" href="#" target="_blank" rel="noopener"></a>
+              <span class="bi bi-box-arrow-up-right"></span>
+            </p>
+            <p class="text-end">
+              <button id="sp-view-metadata" type="button" class="btn btn-primary btn-sm">View SP Metadata
+                >>>
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          <form>
+            <div>
+              <label for="saml-idp-select" class="form-label mt-4">Select Identity Provider</label>
+              <select class="form-select" id="saml-idp-select">
+              </select>
             </div>
+          </form>
         </div>
-    </div> <!-- #main-saml -->
-
-    <!-- SAML Clients -->
-    <div id="main-saml-clients" class="main-div">
-
-        <div class="col-sm-12 content-container">
-            <div class="row">
-                <div class="col-sm-12 content-heading">
-                    <h2>SAML Service Providers</h2>
-                </div>
-                <div class="col-sm-12" id="saml-sp-list">
-                </div>
+        <div class="col-sm-6" id="idp-info">
+          <div class="mt-4">
+            <p id="idp-displayname"></p>
+            <p id="idp-description"></p>
+            <p class="text-end">
+              <button id="idp-view-metadata" type="button" class="btn btn-primary btn-sm">View IdP
+                Metadata >>>
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div id="saml-authn-next-button-div">
+        <hr class="mt-4"/>
+        <div class="row mt-4">
+          <div class="col-sm-6">
+            <div class="text-left">
+              <button id="saml-authn-next-button" type="button" class="btn btn-primary">Next</button>
             </div>
+          </div>
         </div>
+      </div>
     </div>
 
-    <!-- SAML Metadata -->
-    <div id="main-saml-metadata" class="main-div">
-
-        <div class="col-sm-12 content-container">
-            <div class="row">
-                <div class="col-sm-12 content-heading">
-                    <h2>SAML Federation Metadata</h2>
-                </div>
-                <div class="col-sm-12">
-                    <table class="table table-hover">
-                        <tbody>
-                        <tr>
-                            <th scope="row">Description</th>
-                            <td><span id="saml-metadata-description"></span></td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Location</th>
-                            <td>
-                                <span id="saml-metadata-location"></span>
-                                <a id="saml-metadata-location-url"></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Last updated</th>
-                            <td><span id="saml-metadata-last-update"></span></td>
-                        </tr>
-                        </tbody>
-                    </table>
-                    <div id="saml-metadata-view-metadata">
-                        <button type="button" class="btn btn-primary">View Metadata</button>
-                    </div>
-
-                </div>
-            </div>
+    <div id="saml-build-authn" class="hide">
+      <div class="col-sm-12 content-container">
+        <div class="row">
+          <div class="col-sm-12">
+            <h2 class="content-heading">Build Authentication Request</h2>
+          </div>
         </div>
+        <form>
 
-    </div> <!-- main-saml-metadata -->
+          <!-- Request binding -->
+          <div class="row">
+            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                 data-bs-original-title="Determines how the request is sent to the IdP (redirect or POST)">
+              <label for="saml-request-binding-select"
+                     class="col-form-label col-sm-12 text-sm-right">Request Binding</label>
+            </div>
+            <div class="col-sm-10">
+              <select class="form-select" id="saml-request-binding-select">
+              </select>
+            </div>
+          </div>
 
-    <!-- Main OIDC view -->
-    <div id="main-oidc" class="main-div">
-        <h1>OIDC</h1>
-        <div class="col-sm-12 content-container" id="oidc-request-main">
-            <div class="row">
-                <div class="col-sm-12">
-                    <h2 class="content-heading">OIDC Authentication</h2>
-                    <p>
-                        Select which OIDC Relying Party you want to use when requesting OIDC authentication, and then
-                        select
-                        which OIDC OpenId Provider to send the authentication request to.
-                    </p>
-                </div>
+          <!-- Relay state -->
+          <div class="row mt-4">
+            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                 data-bs-original-title="The RelayState token is an opaque reference to state information maintained at the SP. The IdP must return this parameter unchanged.">
+              <label class="col-form-label text-sm-right" for="saml-request-relaystate-input">Relay
+                State</label>
             </div>
-            <div class="row">
-                <div class="col-sm-6">
-                    <form>
-                        <div>
-                            <label for="oidc-rp-select" class="form-label mt-4">Act as Relying Party ...</label>
-                            <select class="form-select" id="oidc-rp-select">
-                            </select>
-                        </div>
-                    </form>
+            <div class="col-sm-10">
+              <input type="text" class="form-control" id="saml-request-relaystate-input">
+            </div>
+          </div>
+
+          <!-- Signature -->
+          <div class="form-group row mt-4">
+            <label class="col-sm-2 col-form-label">
+              <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                    data-bs-original-title="Tells how and if a signature is applied to the request.">Signature</span>
+            </label>
+            <div class="col-sm-10">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
+                       id="saml-request-signature-radio-sign" checked="" value="ok_signature">
+                <label class="form-check-label" for="saml-request-signature-radio-sign">Signature will
+                  be applied to the
+                  AuthnRequest message</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
+                       id="saml-request-signature-radio-nosign" value="no_signature">
+                <label class="form-check-label" for="saml-request-signature-radio-nosign">No signature
+                  will be applied
+                  to the AuthnRequest message</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-signature-radio"
+                       id="saml-request-signature-radio-signother" value="other_signature">
+                <label class="form-check-label" for="saml-request-signature-radio-signother">A signature
+                  created with
+                  another certificate than the one given in SP metadata will be applied</label>
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+
+          <!-- Force Authentication -->
+          <div class="form-group row mt-4">
+            <label class="col-sm-2 col-form-label">
+              <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                    data-bs-original-title="Tells whether the 'force authentication'-attribute should be applied.">Force Authentication</span>
+            </label>
+            <div class="col-sm-10">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-forceauthn"
+                       id="saml-request-forceauthn-true" value="true">
+                <label class="form-check-label" for="saml-request-forceauthn-true">True</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-forceauthn"
+                       id="saml-request-forceauthn-false" value="false">
+                <label class="form-check-label" for="saml-request-forceauthn-false">False</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-forceauthn"
+                       id="saml-request-forceauthn-exclude" value="exclude">
+                <label class="form-check-label" for="saml-request-forceauthn-exclude">Exclude
+                  attribute</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Is Passive -->
+          <div class="form-group row mt-4">
+            <label class="col-sm-2 col-form-label">
+              <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                    data-bs-original-title="Tells whether the 'is passive'-attribute should be applied.">Is Passive?</span>
+            </label>
+            <div class="col-sm-10">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-ispassive"
+                       id="saml-request-ispassive-true" value="true">
+                <label class="form-check-label" for="saml-request-ispassive-true">True</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-ispassive"
+                       id="saml-request-ispassive-false" value="false">
+                <label class="form-check-label" for="saml-request-ispassive-false">False</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="saml-request-ispassive"
+                       id="saml-request-ispassive-exclude" value="exclude">
+                <label class="form-check-label" for="saml-request-ispassive-exclude">Exclude
+                  attribute</label>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-4" id="saml-advanced-authn-request-button-div">
+            <div class="col-sm-12">
+              <div class="d-flex justify-content-end">
+                <button id="saml-advanced-authn-request-button" type="button"
+                        class="btn btn-light btn-sm">More settings
+                  ...
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="form-group hide" id="saml-advanced-authn-request">
+            <!-- Destination -->
+            <div class="row mt-4">
+              <label class="col-sm-2 col-form-label" for="saml-request-destination">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The destination URL to include in the request.">Destination</span>
+              </label>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" id="saml-request-destination">
+              </div>
+            </div>
+            <!-- Issue instant -->
+            <div class="row mt-4">
+              <label class="col-sm-2 col-form-label" for="saml-request-issueinstant">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The timestamp for when this request was issued.">Issue Instant</span>
+              </label>
+              <div class="col-sm-10">
+                <div class="input-group">
+                  <input type="text" class="form-control" placeholder="Will use the time of sending"
+                         aria-describedby="saml-request-issueinstant-button"
+                         id="saml-request-issueinstant">
+                  <button class="btn btn-outline-secondary" type="button"
+                          id="saml-request-issueinstant-button">Modify
+                  </button>
                 </div>
-                <div class="col-sm-6" id="oidc-rp-info">
-                    <div class="mt-4">
-                        <p id="oidc-rp-description"></p>
-                        <p>
-                            Metadata URL: <a id="oidc-metadata-url" href="#" target="_blank" rel="noopener"></a>
-                            <span class="bi bi-box-arrow-up-right"></span>
-                        </p>
-                        <p class="text-end">
-                            <button id="oidc-view-metadata" type="button" class="btn btn-primary btn-sm">View RP
-                                Metadata >>>
-                            </button>
-                        </p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="mt-4"/>
+
+          <!-- Issuer element -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The entityID of the SP issuing the request.">Issuer Element</span>
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-issuer-present"
+                         id="saml-request-issuer-present">
+                  <label class="form-check-label ps-3" for="saml-request-issuer-present">Element
+                    present</label>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-4" id="saml-request-issuer-row">
+              <label class="col-sm-2" for="saml-request-issuer">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The entityID of the SP issuing the request.">Issuer Value</span>
+              </label>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" id="saml-request-issuer">
+              </div>
+            </div>
+          </div>
+
+          <hr class="mt-4"/>
+
+          <!-- NameID Policy element -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="Specifies constraints on the name identifier to be used to represent the authenticated subject.">NameID Policy Element</span>
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-nip-present"
+                         id="saml-request-nip-present">
+                  <label class="form-check-label ps-3" for="saml-request-nip-present">Element
+                    present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-nip-div">
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-nip-format">Format</label>
+                <div class="col-sm-10">
+                  <select class="form-select" id="saml-request-nip-format">
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2">Allow Create</label>
+                <div class="col-sm-10">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-nip-ac"
+                           id="saml-request-nip-ac-true" value="true">
+                    <label class="form-check-label" for="saml-request-nip-ac-true">True</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-nip-ac"
+                           id="saml-request-nip-ac-false" value="false">
+                    <label class="form-check-label" for="saml-request-nip-ac-false">False</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-nip-ac"
+                           id="saml-request-nip-ac-exclude" value="exclude">
+                    <label class="form-check-label" for="saml-request-nip-ac-exclude">Exclude
+                      attribute</label>
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-nip-spnq">SP Name Qualifier</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="saml-request-nip-spnq">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="mt-4"/>
+
+          <!-- Requested Authentication Context element -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="Specifies the authentication context URI(s) under which the authentication should be performed.">Requested Authentication Context Element</span>
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-rac-present"
+                         id="saml-request-rac-present">
+                  <label class="form-check-label ps-3" for="saml-request-rac-present">Element
+                    present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-rac-div">
+              <div class="row mt-4">
+                <label class="col-sm-2">Authentication Context Class Ref URIs</label>
+                <div class="col-sm-10">
+                  <ul class="list-group" id="saml-request-rac-list">
+                  </ul>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <div class="btn-group" role="group">
+                    <button id="saml-request-rac-drop" type="button"
+                            class="btn btn-sm btn-primary dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
+                      URI
+                    </button>
+                    <div id="saml-request-rac-drop-div" class="dropdown-menu"
+                         aria-labelledby="saml-request-rac-drop">
                     </div>
+                  </div>
                 </div>
+              </div>
+
+              <div class="row mt-4" id="saml-request-rac-custom-div" style="display: none;">
+                <label class="col-sm-2" for="saml-request-rac-custom">Custom Value</label>
+                <div class="col-sm-10">
+                  <div class="input-group">
+                    <input type="text" class="form-control"
+                           aria-describedby="saml-request-rac-custom-button"
+                           id="saml-request-rac-custom">
+                    <button class="btn btn-outline-secondary" type="button"
+                            id="saml-request-rac-custom-button">Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-rac-comparison-select">
+                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        data-bs-original-title="Tells how the IdP should treat/compare the requested URI(s).">Comparison</span>
+                </label>
+                <div class="col-sm-10">
+                  <select class="form-select" id="saml-request-rac-comparison-select">
+                    <option value="exact">Exact</option>
+                    <option value="minimum">Minimum</option>
+                    <option value="maximum">Maximum</option>
+                    <option value="better">Better</option>
+                    <option value="exclude">-- Not specified --</option>
+                  </select>
+                </div>
+              </div>
             </div>
-            <div class="row">
-                <div class="col-sm-6">
-                    <form>
-                        <div>
-                            <label for="oidc-op-select" class="form-label mt-4">Select OpenId Provider</label>
-                            <select class="form-select" id="oidc-op-select">
-                            </select>
-                        </div>
-                    </form>
-                </div>
-                <div class="col-sm-6" id="oidc-op-info">
-                    <div class="mt-4">
-                        <p id="oidc-op-displayname"></p>
-                        <p id="oidc-op-description"></p>
-                        <p class="text-end">
-                            <button id="oidc-op-view-metadata" type="button" class="btn btn-primary btn-sm">View OP
-                                Metadata
-                                >>>
-                            </button>
-                        </p>
-                    </div>
-                </div>
+          </div>
+          <hr class="mt-4"/>
+
+          <!-- Assertion Consumer Service URL -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-2 col-form-label" for="saml-request-acs-select">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="Specifies the location at which the response message must be returned.">Assertion Consumer Service URL</span>
+              </label>
+              <div class="col-sm-10">
+                <select class="form-select" id="saml-request-acs-select">
+                </select>
+              </div>
             </div>
-            <div id="oidc-authn-next-button-div">
-                <hr class="mt-4"/>
+            <div class="row mt-4" id="saml-request-acs-custom-div" style="display: none;">
+              <label class="col-sm-2" for="saml-request-acs-custom">Custom Value</label>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" id="saml-request-acs-custom">
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+
+          <!-- Scoping element -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The Scoping element allows for adding requested IdPs/authentication methods and/or a requester ID.">Scoping Element</span>
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-scoping-present"
+                         id="saml-request-scoping-present">
+                  <label class="form-check-label ps-3" for="saml-request-scoping-present">Element
+                    present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-scoping-div">
+              <div id="saml-request-scoping-rid-div">
                 <div class="row mt-4">
-                    <div class="col-sm-6">
-                        <div class="text-left">
-                            <button id="oidc-authn-next-button" type="button" class="btn btn-primary">Next</button>
-                        </div>
-                    </div>
+                  <label class="col-sm-2" for="saml-request-scoping-requesterid">
+                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        data-bs-original-title="If the SP acts upon another requester this field may be used.">Requester IDs</span>
+                  </label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="saml-request-scoping-requesterid">
+                  </div>
                 </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <button id="saml-request-scoping-rid-add-button" type="button"
+                          class="btn btn-sm btn-primary">Add
+                    Another Requester ID
+                  </button>
+                </div>
+              </div>
+
+              <div id="saml-request-scoping-idps-div">
+                <div class="row mt-4">
+                  <label class="col-sm-2" for="saml-request-scoping-idpentry">
+                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        data-bs-original-title="Specify one or more identifiers. This gives information to a proxy IdP on which underlying IdP/method to use.">IdP entry (part of IdP list)</span>
+                  </label>
+                  <div class="col-sm-10">
+                    <input type="text" class="form-control" id="saml-request-scoping-idpentry">
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <button id="saml-request-scoping-add-button" type="button"
+                          class="btn btn-sm btn-primary">Add Another
+                    IdP
+                    Entry
+                  </button>
+                </div>
+              </div>
             </div>
+          </div>
+          <hr class="mt-4"/>
+
+          <!-- Principal Selection Extension -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The RequestedPrincipalSelection extension is used to inform the IdP about details about the user being authenticated (if known).">Requested Principal Selection Extension</span>
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-pse-present"
+                         id="saml-request-pse-present">
+                  <label class="form-check-label ps-3" for="saml-request-pse-present">Extension
+                    present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-pse-div">
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <div class="btn-group" role="group">
+                    <button id="saml-request-pse-drop" type="button"
+                            class="btn btn-sm btn-primary dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
+                      Attribute
+                    </button>
+                    <div id="saml-request-pse-drop-div" class="dropdown-menu"
+                         aria-labelledby="saml-request-pse-drop">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4" id="saml-request-pse-attrs-div">
+                <label class="col-sm-2">Attributes</label>
+                <div class="col-sm-10" id="saml-request-pse-attrs">
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+
+          <!-- User Message Extension -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The UserMessage extension is used to supply the IdP with a message that should be displayed for the user during authentication.">User Message Extension</span>
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-um-present"
+                         id="saml-request-um-present">
+                  <label class="form-check-label ps-3" for="saml-request-um-present">Extension
+                    present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-um-div">
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-um-mimetype-select">
+                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        data-bs-original-title="The MIME type for all user messages.">MIME Type</span>
+                </label>
+                <div class="col-sm-10">
+                  <select class="form-select" id="saml-request-um-mimetype-select">
+                  </select>
+                </div>
+              </div>
+              <div id="saml-request-um-messages-div">
+              </div>
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <div class="btn-group" role="group">
+                    <button id="saml-request-um-add-drop" type="button"
+                            class="btn btn-sm btn-primary dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
+                      Message
+                    </button>
+                    <div id="saml-request-um-add-drop-div" class="dropdown-menu"
+                         aria-labelledby="saml-request-um-add-drop">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+
+          <!-- Sign Message Extension -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
+                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                      data-bs-original-title="The SignMessage extension is used to supply the IdP with a message that should be displayed for the user during authentication for signature.">Sign Message Extension</span>
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="saml-request-sm-present"
+                         id="saml-request-sm-present">
+                  <label class="form-check-label ps-3" for="saml-request-sm-present">Extension
+                    present</label>
+                </div>
+              </div>
+            </div>
+            <div id="saml-request-sm-div">
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-sm-textarea">Message</label>
+                <div class="col-sm-10 d-flex" style="position: relative;">
+                  <textarea class="form-control user-message" id="saml-request-sm-textarea" rows="3"
+                            placeholder="Enter SignMessage ..."></textarea>
+                </div>
+              </div>
+              <div class="row mt-2">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <input class="form-check-input" type="checkbox" id="saml-request-sm-encrypt-cb">
+                  <label class="form-check-label ps-2" for="saml-request-sm-encrypt-cb">Encrypt
+                    message</label>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-sm-mimetype-select">
+                  <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                        data-bs-original-title="The MIME type for the sign message.">MIME Type</span>
+                </label>
+                <div class="col-sm-10">
+                  <select class="form-select" id="saml-request-sm-mimetype-select">
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2" for="saml-request-sm-display-entity">Display Entity</label>
+                <div class="col-sm-10">
+                  <input type="text" class="form-control" id="saml-request-sm-display-entity">
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2">Must Show</label>
+                <div class="col-sm-10">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-sm-must-show"
+                           id="saml-request-sm-must-show-true" value="true">
+                    <label class="form-check-label"
+                           for="saml-request-sm-must-show-true">True</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-sm-must-show"
+                           id="saml-request-sm-must-show-false" value="false">
+                    <label class="form-check-label"
+                           for="saml-request-sm-must-show-false">False</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="saml-request-sm-must-show"
+                           id="saml-request-sm-must-show-exclude" value="exclude">
+                    <label class="form-check-label" for="saml-request-sm-must-show-exclude">Exclude
+                      attribute</label>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+
+          <hr class="mt-4"/>
+          <div id="saml-request-submit-div">
+            <div class="row mt-4">
+              <div class="col-sm-12">
+                <button id="saml-request-submit-button" type="button" class="btn btn-primary">Send
+                  AuthnRequest
+                </button>
+                <button id="saml-request-restart-button" type="button" class="btn btn-primary">Restart
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <!-- Result view of SAML authentication -->
+    <div id="saml-authn-result" class="hide">
+      <div class="col-sm-12 content-container">
+        <div class="row">
+          <div class="col-sm-12">
+            <h2 class="content-heading">Authentication Result</h2>
+          </div>
         </div>
 
-        <div id="oidc-build-authn" class="hide">
-            <div class="col-sm-12 content-container">
-                <div class="row">
-                    <div class="col-sm-12">
-                        <h2 class="content-heading">Build Authentication Request</h2>
-                    </div>
+        <div id="saml-authn-result-idp-error" class="card text-white mb-3 hide">
+          <div class="card-header">Identity Provider Error</div>
+          <div class="card-body">
+          </div>
+        </div>
+
+        <div class="card border-primary mb-3" id="saml-authn-result-authnrequest">
+          <div class="card-header">Authentication Request</div>
+          <div class="card-body">
+            <p class="card-text">Information about the SAML authentication request that was sent to the
+              Identity
+              Provider.</p>
+            <div class="row hide" id="saml-authn-result-authnrequest-details">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="row">
+              <p class="text-end">
+                <button id="saml-authn-result-view-authnrequest-details" type="button"
+                        class="btn btn-primary btn-sm">
+                  View Details
+                </button>
+                <button id="saml-authn-result-view-authnrequest" type="button"
+                        class="btn btn-primary btn-sm">View
+                  AuthnRequest Message
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="card border-primary mb-3 hide" id="saml-authn-result-response">
+          <div class="card-header">SAML Response</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="row">
+              <p class="text-end">
+                <button id="saml-authn-result-view-response" type="button"
+                        class="btn btn-primary btn-sm">View Response
+                  Message
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="card border-primary mb-3 hide" id="saml-authn-result-assertion">
+          <div class="card-header">SAML Assertion</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody id="body-assertion">
+                  </tbody>
+                </table>
+                <div id="assertions-table">
+                  <p><strong>Attribute Statement</strong></p>
+                  <table class="table table-hover saml-table">
+                    <thead>
+                    <tr>
+                      <th scope="col" class="table-text">Name</th>
+                      <th scope="col" class="table-text">Friendly name</th>
+                      <th scope="col" class="table-text">Value</th>
+                    </tr>
+                    </thead>
+                    <tbody id="body-attributes">
+                    </tbody>
+                  </table>
                 </div>
-                <form>
-                    <div class="row mt-4" id="oidc-client_id-row">
-                        <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                             data-bs-original-title="The client_id identifies the client making the authentication request.">
-                            <label class="col-form-label text-sm-right"
-                                   for="oidc-request-client_id-input">Client ID</label>
-                        </div>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" id="oidc-request-client_id-input">
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-client_id-request-body">
-                            <label for="oidc-request-client_id-request-body">
-                                In Request Body
-                            </label>
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-client_id-present">
-                            <label for="oidc-request-client_id-present">
-                                Parameter is present
-                            </label>
-                        </div>
-                    </div>
-                    <div class="row mt-4" id="oidc-redirect-row">
-                        <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                             data-bs-original-title="The endpoint where the Relying Party will receive the authentication response.">
-                            <label class="col-form-label text-sm-right" for="oidc-request-redirect-input">Redirect
-                                URI</label>
-                        </div>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" id="oidc-request-redirect-input">
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-redirect-request-body">
-                            <label for="oidc-request-redirect-request-body">
-                                In Request Body
-                            </label>
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-redirect-present">
-                            <label for="oidc-request-redirect-present">
-                                Parameter is present
-                            </label>
-                        </div>
-                    </div>
-                    <div class="row mt-4" id="oidc-scope-row">
-                        <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                             data-bs-original-title="The RelayState token is an opaque reference to state information maintained at the SP. The IdP must return this parameter unchanged.">
-                            <label class="col-form-label text-sm-right" for="oidc-request-scope-input">Scope</label>
-                        </div>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" id="oidc-request-scope-input">
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-scope-request-body">
-                            <label for="oidc-request-scope-request-body">
-                                In Request Body
-                            </label>
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-scope-present">
-                            <label for="oidc-request-scope-present">
-                                Parameter is present
-                            </label>
-                        </div>
-                    </div>
-                    <div class="row mt-4" id="oidc-acr_values-row">
-                        <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                             data-bs-original-title="Requested Authentication Context Class Reference (acr_values) ">
-                            <label class="col-form-label text-sm-right"
-                                   for="oidc-request-acr_values-input">ACR values</label>
-                        </div>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" id="oidc-request-acr_values-input">
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-acr_values-request-body">
-                            <label for="oidc-request-acr_values-request-body">
-                                In Request Body
-                            </label>
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-acr_values-present">
-                            <label for="oidc-request-acr_values-present">
-                                Parameter is present
-                            </label>
-                        </div>
-                    </div>
-                    <hr class="mt-4"/>
-                    <div id="oidc-claims-table">
-                        <div class="row mt-4" id="oidc-claims-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="Parameter for requesting individual claims and specifying parameters that apply to the requested claims.">
-                                <label class="col-form-label text-sm-right"
-                                       for="oidc-request-claims-textarea">Claims</label>
-                            </div>
-                            <div class="col-sm-6">
+              </div>
+            </div>
+            <div class="row">
+              <p class="text-end">
+                <button id="saml-authn-result-view-assertion" type="button"
+                        class="btn btn-primary btn-sm">View
+                  Assertion
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="mt-4"/>
+        <div class="row mt-4">
+          <div class="col-sm-12">
+            <button id="saml-authn-result-restart-button" type="button" class="btn btn-primary">Restart
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div> <!-- #main-saml -->
+
+  <!-- SAML Clients -->
+  <div id="main-saml-clients" class="main-div">
+
+    <div class="col-sm-12 content-container">
+      <div class="row">
+        <div class="col-sm-12 content-heading">
+          <h2>SAML Service Providers</h2>
+        </div>
+        <div class="col-sm-12" id="saml-sp-list">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAML Metadata -->
+  <div id="main-saml-metadata" class="main-div">
+
+    <div class="col-sm-12 content-container">
+      <div class="row">
+        <div class="col-sm-12 content-heading">
+          <h2>SAML Federation Metadata</h2>
+        </div>
+        <div class="col-sm-12">
+          <table class="table table-hover">
+            <tbody>
+            <tr>
+              <th scope="row">Description</th>
+              <td><span id="saml-metadata-description"></span></td>
+            </tr>
+            <tr>
+              <th scope="row">Last updated</th>
+              <td><span id="saml-metadata-last-update"></span></td>
+            </tr>
+            </tbody>
+          </table>
+          <div id="saml-metadata-view-metadata">
+            <button type="button" class="btn btn-primary">View Metadata</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- main-saml-metadata -->
+
+  <!-- Main OIDC view -->
+  <div id="main-oidc" class="main-div">
+    <h1>OIDC</h1>
+    <div class="col-sm-12 content-container" id="oidc-request-main">
+      <div class="row">
+        <div class="col-sm-12">
+          <h2 class="content-heading">OIDC Authentication</h2>
+          <p>
+            Select which OIDC Relying Party you want to use when requesting OIDC authentication, and then
+            select
+            which OIDC OpenId Provider to send the authentication request to.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          <form>
+            <div>
+              <label for="oidc-rp-select" class="form-label mt-4">Act as Relying Party ...</label>
+              <select class="form-select" id="oidc-rp-select">
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="col-sm-6" id="oidc-rp-info">
+          <div class="mt-4">
+            <p id="oidc-rp-description"></p>
+            <p>
+              Metadata URL: <a id="oidc-metadata-url" href="#" target="_blank" rel="noopener"></a>
+              <span class="bi bi-box-arrow-up-right"></span>
+            </p>
+            <p class="text-end">
+              <button id="oidc-view-metadata" type="button" class="btn btn-primary btn-sm">View RP
+                Metadata >>>
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-6">
+          <form>
+            <div>
+              <label for="oidc-op-select" class="form-label mt-4">Select OpenId Provider</label>
+              <select class="form-select" id="oidc-op-select">
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="col-sm-6" id="oidc-op-info">
+          <div class="mt-4">
+            <p id="oidc-op-displayname"></p>
+            <p id="oidc-op-description"></p>
+            <p class="text-end">
+              <button id="oidc-op-view-metadata" type="button" class="btn btn-primary btn-sm">View OP
+                Metadata
+                >>>
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div id="oidc-authn-next-button-div">
+        <hr class="mt-4"/>
+        <div class="row mt-4">
+          <div class="col-sm-6">
+            <div class="text-left">
+              <button id="oidc-authn-next-button" type="button" class="btn btn-primary">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="oidc-build-authn" class="hide">
+      <div class="col-sm-12 content-container">
+        <div class="row">
+          <div class="col-sm-12">
+            <h2 class="content-heading">Build Authentication Request</h2>
+          </div>
+        </div>
+        <form>
+          <div class="row mt-4" id="oidc-client_id-row">
+            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                 data-bs-original-title="The client_id identifies the client making the authentication request.">
+              <label class="col-form-label text-sm-right"
+                     for="oidc-request-client_id-input">Client ID</label>
+            </div>
+            <div class="col-sm-6">
+              <input type="text" class="form-control" id="oidc-request-client_id-input">
+            </div>
+            <div class="col-sm-2">
+              <input type="checkbox" class="form-check-input" id="oidc-request-client_id-request-body">
+              <label for="oidc-request-client_id-request-body">
+                In Request Body
+              </label>
+            </div>
+            <div class="col-sm-2">
+              <input type="checkbox" class="form-check-input" id="oidc-request-client_id-present">
+              <label for="oidc-request-client_id-present">
+                Parameter is present
+              </label>
+            </div>
+          </div>
+          <div class="row mt-4" id="oidc-redirect-row">
+            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                 data-bs-original-title="The endpoint where the Relying Party will receive the authentication response.">
+              <label class="col-form-label text-sm-right" for="oidc-request-redirect-input">Redirect
+                URI</label>
+            </div>
+            <div class="col-sm-6">
+              <input type="text" class="form-control" id="oidc-request-redirect-input">
+            </div>
+            <div class="col-sm-2">
+              <input type="checkbox" class="form-check-input" id="oidc-request-redirect-request-body">
+              <label for="oidc-request-redirect-request-body">
+                In Request Body
+              </label>
+            </div>
+            <div class="col-sm-2">
+              <input type="checkbox" class="form-check-input" id="oidc-request-redirect-present">
+              <label for="oidc-request-redirect-present">
+                Parameter is present
+              </label>
+            </div>
+          </div>
+          <div class="row mt-4" id="oidc-scope-row">
+            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                 data-bs-original-title="The RelayState token is an opaque reference to state information maintained at the SP. The IdP must return this parameter unchanged.">
+              <label class="col-form-label text-sm-right" for="oidc-request-scope-input">Scope</label>
+            </div>
+            <div class="col-sm-6">
+              <input type="text" class="form-control" id="oidc-request-scope-input">
+            </div>
+            <div class="col-sm-2">
+              <input type="checkbox" class="form-check-input" id="oidc-request-scope-request-body">
+              <label for="oidc-request-scope-request-body">
+                In Request Body
+              </label>
+            </div>
+            <div class="col-sm-2">
+              <input type="checkbox" class="form-check-input" id="oidc-request-scope-present">
+              <label for="oidc-request-scope-present">
+                Parameter is present
+              </label>
+            </div>
+          </div>
+          <div class="row mt-4" id="oidc-acr_values-row">
+            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                 data-bs-original-title="Requested Authentication Context Class Reference (acr_values) ">
+              <label class="col-form-label text-sm-right"
+                     for="oidc-request-acr_values-input">ACR values</label>
+            </div>
+            <div class="col-sm-6">
+              <input type="text" class="form-control" id="oidc-request-acr_values-input">
+            </div>
+            <div class="col-sm-2">
+              <input type="checkbox" class="form-check-input" id="oidc-request-acr_values-request-body">
+              <label for="oidc-request-acr_values-request-body">
+                In Request Body
+              </label>
+            </div>
+            <div class="col-sm-2">
+              <input type="checkbox" class="form-check-input" id="oidc-request-acr_values-present">
+              <label for="oidc-request-acr_values-present">
+                Parameter is present
+              </label>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+          <div id="oidc-claims-table">
+            <div class="row mt-4" id="oidc-claims-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="Parameter for requesting individual claims and specifying parameters that apply to the requested claims.">
+                <label class="col-form-label text-sm-right"
+                       for="oidc-request-claims-textarea">Claims</label>
+              </div>
+              <div class="col-sm-6">
                             <textarea class="form-control user-message" id="oidc-request-claims-textarea" rows="15"
                                       placeholder="{}"></textarea>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-claims-request-body">
-                                <label for="oidc-request-claims-request-body">
-                                    In Request Body
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-claims-present">
-                                <label for="oidc-request-claims-present">
-                                    Parameter is present
-                                </label>
-                            </div>
-                        </div>
-                        <hr class="mt-4"/>
-                        <div class="row mt-4" id="oidc-id-claims-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="Parameter for requesting individual claims and specifying parameters that apply to the requested claims.">
-                                <label class="col-form-label text-sm-right"
-                                       for="oidc-request-claims-textarea">Id Token Claims</label>
-                            </div>
-                            <div class="row mt-4" id="oidc-request-claims-id-button-div">
-                                <div class="col-sm-8"></div>
-                                <div class="col-sm-2">
-                                    <div class="d-flex justify-content-end">
-                                        <button id="oidc-request-claims-id-add-button" type="button"
-                                                class="btn btn-light btn-sm">
-                                            Add claim
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-sm-2">
-                                    <div class="d-flex justify-content-end">
-                                        <button id="oidc-request-claims-id-remove-button" type="button"
-                                                class="btn btn-light btn-sm">
-                                            Remove claim
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="oidc-id-claims-table">
-                            <div class="row mt-4 claim-row template" id="id-claims-row-template" hidden="hidden">
-                                <div class="col-sm-4" id="id-claims-template-key-column">
-                                    <input type="text" class="form-control" id="id-claims-template-key">
-                                    <label for="id-claims-template-key">
-                                        Claim
-                                    </label>
-                                </div>
-                                <div class="col-sm-4" id="id-claims-template-value-column">
-                                    <input type="text" class="form-control" id="id-claims-template-value">
-                                    <label for="id-claims-template-value" id="id-claims-template-value-label">
-                                        Value
-                                    </label>
-                                </div>
-                                <div class="col-sm-1">
-                                    <input type="checkbox" class="form-check-input" id="id-claims-template-essential">
-                                    <label for="id-claims-template-essential">
-                                        Essential
-                                    </label>
-                                </div>
-                                <div class="col-sm-1">
-                                    <input type="checkbox" class="form-check-input"
-                                           id="id-claims-template-with-value">
-                                    <label for="id-claims-template-with-value" data-bs-toggle="tooltip"
-                                           data-bs-placement="bottom"
-                                           data-bs-original-title="Toggles to specify expected value(s). To specify multiple values separate them with a (',') character (CSV)">
-                                        With value
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <hr class="mt-4"/>
-                        <div class="row mt-4" id="oidc-userinfo-claims-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="Parameter for requesting individual claims and specifying parameters that apply to the requested claims.">
-                                <label class="col-form-label text-sm-right"
-                                       for="oidc-request-claims-textarea">Userinfo Claims</label>
-                            </div>
-                            <div class="row mt-4" id="oidc-request-claims-userinfo-button-div">
-                                <div class="col-sm-8"></div>
-                                <div class="col-sm-2">
-                                    <div class="d-flex justify-content-end">
-                                        <button id="oidc-request-claims-userinfo-add-button" type="button"
-                                                class="btn btn-light btn-sm">
-                                            Add claim
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-sm-2">
-                                    <div class="d-flex justify-content-end">
-                                        <button id="oidc-request-claims-userinfo-remove-button" type="button"
-                                                class="btn btn-light btn-sm">
-                                            Remove claim
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="oidc-userinfo-claims-table">
-                            <div class="row mt-4 claim-row template" id="userinfo-claims-row-template" hidden="hidden">
-                                <div class="col-sm-4" id="userinfo-claims-template-key-column">
-                                    <input type="text" class="form-control" id="userinfo-claims-template-key">
-                                    <label for="userinfo-claims-template-key">
-                                        Claim
-                                    </label>
-                                </div>
-                                <div class="col-sm-4" id="userinfo-claims-template-value-column">
-                                    <input type="text" class="form-control" id="userinfo-claims-template-value">
-                                    <label for="userinfo-claims-template-value"
-                                           id="userinfo-claims-template-value-label">
-                                        Value
-                                    </label>
-                                </div>
-                                <div class="col-sm-1">
-                                    <input type="checkbox" class="form-check-input"
-                                           id="userinfo-claims-template-essential">
-                                    <label for="userinfo-claims-template-essential">
-                                        Essential
-                                    </label>
-                                </div>
-                                <div class="col-sm-1">
-                                    <input type="checkbox" class="form-check-input"
-                                           id="userinfo-claims-template-with-value">
-                                    <label for="userinfo-claims-template-with-value" data-bs-toggle="tooltip"
-                                           data-bs-placement="bottom"
-                                           data-bs-original-title="Toggles to specify expected value(s). To specify multiple values separate them with a (',') character (CSV)">
-                                        With value
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="mt-4"/>
-                    <div class="row mt-4" id="oidc-request-options-button-div">
-                        <label class="col-sm-6 col-form-label">
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input" id="oidc-request-claims-request-body">
+                <label for="oidc-request-claims-request-body">
+                  In Request Body
+                </label>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input" id="oidc-request-claims-present">
+                <label for="oidc-request-claims-present">
+                  Parameter is present
+                </label>
+              </div>
+            </div>
+            <hr class="mt-4"/>
+            <div class="row mt-4" id="oidc-id-claims-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="Parameter for requesting individual claims and specifying parameters that apply to the requested claims.">
+                <label class="col-form-label text-sm-right"
+                       for="oidc-request-claims-textarea">Id Token Claims</label>
+              </div>
+              <div class="row mt-4" id="oidc-request-claims-id-button-div">
+                <div class="col-sm-8"></div>
+                <div class="col-sm-2">
+                  <div class="d-flex justify-content-end">
+                    <button id="oidc-request-claims-id-add-button" type="button"
+                            class="btn btn-light btn-sm">
+                      Add claim
+                    </button>
+                  </div>
+                </div>
+                <div class="col-sm-2">
+                  <div class="d-flex justify-content-end">
+                    <button id="oidc-request-claims-id-remove-button" type="button"
+                            class="btn btn-light btn-sm">
+                      Remove claim
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="oidc-id-claims-table">
+              <div class="row mt-4 claim-row template" id="id-claims-row-template" hidden="hidden">
+                <div class="col-sm-4" id="id-claims-template-key-column">
+                  <input type="text" class="form-control" id="id-claims-template-key">
+                  <label for="id-claims-template-key">
+                    Claim
+                  </label>
+                </div>
+                <div class="col-sm-4" id="id-claims-template-value-column">
+                  <input type="text" class="form-control" id="id-claims-template-value">
+                  <label for="id-claims-template-value" id="id-claims-template-value-label">
+                    Value
+                  </label>
+                </div>
+                <div class="col-sm-1">
+                  <input type="checkbox" class="form-check-input" id="id-claims-template-essential">
+                  <label for="id-claims-template-essential">
+                    Essential
+                  </label>
+                </div>
+                <div class="col-sm-1">
+                  <input type="checkbox" class="form-check-input"
+                         id="id-claims-template-with-value">
+                  <label for="id-claims-template-with-value" data-bs-toggle="tooltip"
+                         data-bs-placement="bottom"
+                         data-bs-original-title="Toggles to specify expected value(s). To specify multiple values separate them with a (',') character (CSV)">
+                    With value
+                  </label>
+                </div>
+              </div>
+            </div>
+            <hr class="mt-4"/>
+            <div class="row mt-4" id="oidc-userinfo-claims-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="Parameter for requesting individual claims and specifying parameters that apply to the requested claims.">
+                <label class="col-form-label text-sm-right"
+                       for="oidc-request-claims-textarea">Userinfo Claims</label>
+              </div>
+              <div class="row mt-4" id="oidc-request-claims-userinfo-button-div">
+                <div class="col-sm-8"></div>
+                <div class="col-sm-2">
+                  <div class="d-flex justify-content-end">
+                    <button id="oidc-request-claims-userinfo-add-button" type="button"
+                            class="btn btn-light btn-sm">
+                      Add claim
+                    </button>
+                  </div>
+                </div>
+                <div class="col-sm-2">
+                  <div class="d-flex justify-content-end">
+                    <button id="oidc-request-claims-userinfo-remove-button" type="button"
+                            class="btn btn-light btn-sm">
+                      Remove claim
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="oidc-userinfo-claims-table">
+              <div class="row mt-4 claim-row template" id="userinfo-claims-row-template" hidden="hidden">
+                <div class="col-sm-4" id="userinfo-claims-template-key-column">
+                  <input type="text" class="form-control" id="userinfo-claims-template-key">
+                  <label for="userinfo-claims-template-key">
+                    Claim
+                  </label>
+                </div>
+                <div class="col-sm-4" id="userinfo-claims-template-value-column">
+                  <input type="text" class="form-control" id="userinfo-claims-template-value">
+                  <label for="userinfo-claims-template-value"
+                         id="userinfo-claims-template-value-label">
+                    Value
+                  </label>
+                </div>
+                <div class="col-sm-1">
+                  <input type="checkbox" class="form-check-input"
+                         id="userinfo-claims-template-essential">
+                  <label for="userinfo-claims-template-essential">
+                    Essential
+                  </label>
+                </div>
+                <div class="col-sm-1">
+                  <input type="checkbox" class="form-check-input"
+                         id="userinfo-claims-template-with-value">
+                  <label for="userinfo-claims-template-with-value" data-bs-toggle="tooltip"
+                         data-bs-placement="bottom"
+                         data-bs-original-title="Toggles to specify expected value(s). To specify multiple values separate them with a (',') character (CSV)">
+                    With value
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
+          <div class="row mt-4" id="oidc-request-options-button-div">
+            <label class="col-sm-6 col-form-label">
                                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                                         data-bs-original-title="Request Options allow you to configure specific parameters or behaviors for the authentication request.">
                                     Request object options
                                   </span>
-                        </label>
-                        <div class="col-sm-6">
-                            <div class="d-flex justify-content-end">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-advanced-request-object-options">
-                                <label for="oidc-advanced-request-object-options">
-                                    Enable
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mt-4" id="oidc-request-options-tooltip-row">
-                        <div class="form-group hide" id="oidc-request-options">
-                            <div class="row mt-4" id="oidc-additional-request-options-row">
-                                <div class="col-sm-2">
-                                    <input type="checkbox" class="form-check-input" id="oidc-request-sign-request-body">
-                                    <label for="oidc-request-sign-request-body">
-                                        Sign Request
-                                    </label>
-                                </div>
-                                <div class="col-sm-2">
-                                    <input type="checkbox" class="form-check-input"
-                                           id="oidc-request-encrypt-request-body">
-                                    <label for="oidc-request-sign-request-body">
-                                        Encrypt Request
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="row mt-4" id="oidc-issuer-row">
-                                <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                     data-bs-original-title="The RelayState token is an opaque reference to state information maintained at the SP. The IdP must return this parameter unchanged.">
-                                    <label class="col-form-label text-sm-right"
-                                           for="oidc-request-issuer-input">Issuer</label>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="oidc-request-issuer-input">
-                                        <button class="btn btn-outline-secondary" type="button"
-                                                id="oidc-request-issuer-button">Modify
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-sm-2">
-                                    <input type="checkbox" class="form-check-input"
-                                           id="oidc-request-issuer-request-body">
-                                    <label for="oidc-request-issuer-request-body">
-                                        In Request Body
-                                    </label>
-                                </div>
-                                <div class="col-sm-2">
-                                    <input type="checkbox" class="form-check-input" id="oidc-request-issuer-present">
-                                    <label for="oidc-request-issuer-present">
-                                        Parameter is present
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="row mt-4" id="oidc-aud-row">
-                                <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                     data-bs-original-title="The 'aud' (audience) claim identifies the recipients that the token is intended for.">
-                                    <label class="col-form-label text-sm-right"
-                                           for="oidc-request-aud-input">Audience</label>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="oidc-request-aud-input">
-                                        <button class="btn btn-outline-secondary" type="button"
-                                                id="oidc-request-aud-button">Modify
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-sm-2">
-                                    <input type="checkbox" class="form-check-input" id="oidc-request-aud-request-body">
-                                    <label for="oidc-request-aud-request-body">
-                                        In Request Body
-                                    </label>
-                                </div>
-                                <div class="col-sm-2">
-                                    <input type="checkbox" class="form-check-input" id="oidc-request-aud-present">
-                                    <label for="oidc-request-aud-present">
-                                        Parameter is present
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+            </label>
+            <div class="col-sm-6">
+              <div class="d-flex justify-content-end">
+                <input type="checkbox" class="form-check-input"
+                       id="oidc-advanced-request-object-options">
+                <label for="oidc-advanced-request-object-options">
+                  Enable
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-4" id="oidc-request-options-tooltip-row">
+            <div class="form-group hide" id="oidc-request-options">
+              <div class="row mt-4" id="oidc-additional-request-options-row">
+                <div class="col-sm-2">
+                  <input type="checkbox" class="form-check-input" id="oidc-request-sign-request-body">
+                  <label for="oidc-request-sign-request-body">
+                    Sign Request
+                  </label>
+                </div>
+                <div class="col-sm-2">
+                  <input type="checkbox" class="form-check-input"
+                         id="oidc-request-encrypt-request-body">
+                  <label for="oidc-request-sign-request-body">
+                    Encrypt Request
+                  </label>
+                </div>
+              </div>
+              <div class="row mt-4" id="oidc-issuer-row">
+                <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                     data-bs-original-title="The RelayState token is an opaque reference to state information maintained at the SP. The IdP must return this parameter unchanged.">
+                  <label class="col-form-label text-sm-right"
+                         for="oidc-request-issuer-input">Issuer</label>
+                </div>
+                <div class="col-sm-6">
+                  <div class="input-group">
+                    <input type="text" class="form-control" id="oidc-request-issuer-input">
+                    <button class="btn btn-outline-secondary" type="button"
+                            id="oidc-request-issuer-button">Modify
+                    </button>
+                  </div>
+                </div>
+                <div class="col-sm-2">
+                  <input type="checkbox" class="form-check-input"
+                         id="oidc-request-issuer-request-body">
+                  <label for="oidc-request-issuer-request-body">
+                    In Request Body
+                  </label>
+                </div>
+                <div class="col-sm-2">
+                  <input type="checkbox" class="form-check-input" id="oidc-request-issuer-present">
+                  <label for="oidc-request-issuer-present">
+                    Parameter is present
+                  </label>
+                </div>
+              </div>
+              <div class="row mt-4" id="oidc-aud-row">
+                <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                     data-bs-original-title="The 'aud' (audience) claim identifies the recipients that the token is intended for.">
+                  <label class="col-form-label text-sm-right"
+                         for="oidc-request-aud-input">Audience</label>
+                </div>
+                <div class="col-sm-6">
+                  <div class="input-group">
+                    <input type="text" class="form-control" id="oidc-request-aud-input">
+                    <button class="btn btn-outline-secondary" type="button"
+                            id="oidc-request-aud-button">Modify
+                    </button>
+                  </div>
+                </div>
+                <div class="col-sm-2">
+                  <input type="checkbox" class="form-check-input" id="oidc-request-aud-request-body">
+                  <label for="oidc-request-aud-request-body">
+                    In Request Body
+                  </label>
+                </div>
+                <div class="col-sm-2">
+                  <input type="checkbox" class="form-check-input" id="oidc-request-aud-present">
+                  <label for="oidc-request-aud-present">
+                    Parameter is present
+                  </label>
+                </div>
+              </div>
+            </div>
 
-                    </div>
-                    <hr class="mt-4"/>
+          </div>
+          <hr class="mt-4"/>
 
 
-                    <div class="row mt-4" id="oidc-advanced-authn-request-button-div">
-                        <label class="col-sm-6 col-form-label">
+          <div class="row mt-4" id="oidc-advanced-authn-request-button-div">
+            <label class="col-sm-6 col-form-label">
                                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                                         data-bs-original-title="Request Options allow you to configure specific parameters or behaviors for the authentication request.">
                                     Advanced request options
                                   </span>
-                        </label>
-                        <div class="col-sm-6">
-                            <div class="d-flex justify-content-end">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-advanced-authn-options">
-                                <label for="oidc-advanced-authn-options">
-                                    Enable
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group hide" id="oidc-advanced-authn-request">
-                        <div class="row mt-4" id="oidc-responsetype-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The response type.">
-                                <label class="col-form-label text-sm-right"
-                                       for="oidc-request-responsetype-select">Response
-                                    Type</label>
-                            </div>
-                            <div class="col-sm-6">
-                                <select class="form-select" id="oidc-request-responsetype-select">
-                                    <option value="code">Code</option>
-                                    <option value="id_token">ID Token</option>
-                                    <option value="id_token token">ID Token + Token</option>
-                                    <option value="code id_token">Code + ID Token</option>
-                                    <option value="code token">Code + Token</option>
-                                    <option value="code id_token token">Code + ID Token + Token</option>
-                                </select>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-request-responsetype-request-body">
-                                <label for="oidc-request-responsetype-request-body">
-                                    In Request Body
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-responsetype-present">
-                                <label for="oidc-request-responsetype-present">
-                                    Parameter is present
-                                </label>
-                            </div>
-                        </div>
-                        <div class="row mt-4" id="oidc-state-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The state parameter is used to maintain state between the request and callback.">
-                                <label class="col-form-label text-sm-right" for="oidc-request-state-input">State</label>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="oidc-request-state-input">
-                                    <button class="btn btn-outline-secondary" type="button"
-                                            id="oidc-request-state-button">Modify
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-state-request-body">
-                                <label for="oidc-request-state-request-body">
-                                    In Request Body
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-state-present">
-                                <label for="oidc-request-state-present">
-                                    Parameter is present
-                                </label>
-                            </div>
-                        </div>
-                        <div class="row mt-4" id="oidc-nonce-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The nonce parameter is used to associate a client session with an ID Token.">
-                                <label class="col-form-label text-sm-right" for="oidc-request-nonce-input">Nonce</label>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="oidc-request-nonce-input">
-                                    <button class="btn btn-outline-secondary" type="button"
-                                            id="oidc-request-nonce-button">Modify
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-nonce-request-body">
-                                <label for="oidc-request-nonce-request-body">
-                                    In Request Body
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-nonce-present">
-                                <label for="oidc-request-nonce-present">
-                                    Parameter is present
-                                </label>
-                            </div>
-                        </div>
-                        <div class="row mt-4" id="oidc-prompt-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The prompt parameter specifies whether the Authorization Server should prompt the user for reauthentication or consent.">
-                                <label class="col-form-label text-sm-right"
-                                       for="oidc-request-prompt-input">Prompt</label>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="oidc-request-prompt-input">
-                                    <button class="btn btn-outline-secondary" type="button"
-                                            id="oidc-request-prompt-button">Modify
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-prompt-request-body">
-                                <label for="oidc-request-prompt-request-body">
-                                    In Request Body
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-prompt-present">
-                                <label for="oidc-request-prompt-present">
-                                    Parameter is present
-                                </label>
-                            </div>
-                        </div>
-                        <div class="row mt-4" id="oidc-login_hint-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The login_hint parameter can be used to pre-fill the username or otherwise guide the login process for the user.">
-                                <label class="col-form-label text-sm-right" for="oidc-request-login_hint-input">Login
-                                    Hint
-                                </label>
-                            </div>
-                            <div class="col-sm-6">
-                                <input type="text" class="form-control" id="oidc-request-login_hint-input">
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-request-login_hint-request-body">
-                                <label for="oidc-request-login_hint-request-body">
-                                    In Request Body
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-login_hint-present">
-                                <label for="oidc-request-login_hint-present">
-                                    Parameter is present
-                                </label>
-                            </div>
-                        </div>
-                        <div class="row mt-4" id="oidc-code_challenge_method-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The code_challenge_method indicates the transformation method used to generate the code_challenge (typically 'S256' or 'plain').">
-                                <label class="col-form-label text-sm-right"
-                                       for="oidc-request-code_challenge_method-select">Code Challenge Method</label>
-                            </div>
-                            <div class="col-sm-6">
-                                <select class="form-select" id="oidc-request-code_challenge_method-select">
-                                    <option value="plain">Plain</option>
-                                    <option value="S256">S256</option>
-                                </select>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-request-code_challenge_method-request-body">
-                                <label for="oidc-request-code_challenge_method-request-body">
-                                    In Request Body
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-request-code_challenge_method-present">
-                                <label for="oidc-request-code_challenge_method-present">
-                                    Parameter is present
-                                </label>
-                            </div>
-                        </div>
-                        <div class="row mt-4" id="oidc-code_challenge-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The code_challenge is a hashed value derived from the code_verifier, used in PKCE to secure the authorization code flow.">
-                                <label class="col-form-label text-sm-right"
-                                       for="oidc-request-code_challenge-input">Code Challenge
-                                </label>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="oidc-request-code_challenge-input">
-                                    <button class="btn btn-outline-secondary" type="button"
-                                            id="oidc-request-code_challenge-button">Modify
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-request-code_challenge-request-body">
-                                <label for="oidc-request-code_challenge-request-body">
-                                    In Request Body
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-request-code_challenge-present">
-                                <label for="oidc-request-code_challenge-present">
-                                    Parameter is present
-                                </label>
-                            </div>
-                        </div>
-                    </div>
+            </label>
+            <div class="col-sm-6">
+              <div class="d-flex justify-content-end">
+                <input type="checkbox" class="form-check-input"
+                       id="oidc-advanced-authn-options">
+                <label for="oidc-advanced-authn-options">
+                  Enable
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="form-group hide" id="oidc-advanced-authn-request">
+            <div class="row mt-4" id="oidc-responsetype-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="The response type.">
+                <label class="col-form-label text-sm-right"
+                       for="oidc-request-responsetype-select">Response
+                  Type</label>
+              </div>
+              <div class="col-sm-6">
+                <select class="form-select" id="oidc-request-responsetype-select">
+                  <option value="code">Code</option>
+                  <option value="id_token">ID Token</option>
+                  <option value="id_token token">ID Token + Token</option>
+                  <option value="code id_token">Code + ID Token</option>
+                  <option value="code token">Code + Token</option>
+                  <option value="code id_token token">Code + ID Token + Token</option>
+                </select>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input"
+                       id="oidc-request-responsetype-request-body">
+                <label for="oidc-request-responsetype-request-body">
+                  In Request Body
+                </label>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input" id="oidc-request-responsetype-present">
+                <label for="oidc-request-responsetype-present">
+                  Parameter is present
+                </label>
+              </div>
+            </div>
+            <div class="row mt-4" id="oidc-state-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="The state parameter is used to maintain state between the request and callback.">
+                <label class="col-form-label text-sm-right" for="oidc-request-state-input">State</label>
+              </div>
+              <div class="col-sm-6">
+                <div class="input-group">
+                  <input type="text" class="form-control" id="oidc-request-state-input">
+                  <button class="btn btn-outline-secondary" type="button"
+                          id="oidc-request-state-button">Modify
+                  </button>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input" id="oidc-request-state-request-body">
+                <label for="oidc-request-state-request-body">
+                  In Request Body
+                </label>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input" id="oidc-request-state-present">
+                <label for="oidc-request-state-present">
+                  Parameter is present
+                </label>
+              </div>
+            </div>
+            <div class="row mt-4" id="oidc-nonce-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="The nonce parameter is used to associate a client session with an ID Token.">
+                <label class="col-form-label text-sm-right" for="oidc-request-nonce-input">Nonce</label>
+              </div>
+              <div class="col-sm-6">
+                <div class="input-group">
+                  <input type="text" class="form-control" id="oidc-request-nonce-input">
+                  <button class="btn btn-outline-secondary" type="button"
+                          id="oidc-request-nonce-button">Modify
+                  </button>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input" id="oidc-request-nonce-request-body">
+                <label for="oidc-request-nonce-request-body">
+                  In Request Body
+                </label>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input" id="oidc-request-nonce-present">
+                <label for="oidc-request-nonce-present">
+                  Parameter is present
+                </label>
+              </div>
+            </div>
+            <div class="row mt-4" id="oidc-prompt-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="The prompt parameter specifies whether the Authorization Server should prompt the user for reauthentication or consent.">
+                <label class="col-form-label text-sm-right"
+                       for="oidc-request-prompt-input">Prompt</label>
+              </div>
+              <div class="col-sm-6">
+                <div class="input-group">
+                  <input type="text" class="form-control" id="oidc-request-prompt-input">
+                  <button class="btn btn-outline-secondary" type="button"
+                          id="oidc-request-prompt-button">Modify
+                  </button>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input" id="oidc-request-prompt-request-body">
+                <label for="oidc-request-prompt-request-body">
+                  In Request Body
+                </label>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input" id="oidc-request-prompt-present">
+                <label for="oidc-request-prompt-present">
+                  Parameter is present
+                </label>
+              </div>
+            </div>
+            <div class="row mt-4" id="oidc-login_hint-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="The login_hint parameter can be used to pre-fill the username or otherwise guide the login process for the user.">
+                <label class="col-form-label text-sm-right" for="oidc-request-login_hint-input">Login
+                  Hint
+                </label>
+              </div>
+              <div class="col-sm-6">
+                <input type="text" class="form-control" id="oidc-request-login_hint-input">
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input"
+                       id="oidc-request-login_hint-request-body">
+                <label for="oidc-request-login_hint-request-body">
+                  In Request Body
+                </label>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input" id="oidc-request-login_hint-present">
+                <label for="oidc-request-login_hint-present">
+                  Parameter is present
+                </label>
+              </div>
+            </div>
+            <div class="row mt-4" id="oidc-code_challenge_method-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="The code_challenge_method indicates the transformation method used to generate the code_challenge (typically 'S256' or 'plain').">
+                <label class="col-form-label text-sm-right"
+                       for="oidc-request-code_challenge_method-select">Code Challenge Method</label>
+              </div>
+              <div class="col-sm-6">
+                <select class="form-select" id="oidc-request-code_challenge_method-select">
+                  <option value="plain">Plain</option>
+                  <option value="S256">S256</option>
+                </select>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input"
+                       id="oidc-request-code_challenge_method-request-body">
+                <label for="oidc-request-code_challenge_method-request-body">
+                  In Request Body
+                </label>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input"
+                       id="oidc-request-code_challenge_method-present">
+                <label for="oidc-request-code_challenge_method-present">
+                  Parameter is present
+                </label>
+              </div>
+            </div>
+            <div class="row mt-4" id="oidc-code_challenge-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="The code_challenge is a hashed value derived from the code_verifier, used in PKCE to secure the authorization code flow.">
+                <label class="col-form-label text-sm-right"
+                       for="oidc-request-code_challenge-input">Code Challenge
+                </label>
+              </div>
+              <div class="col-sm-6">
+                <div class="input-group">
+                  <input type="text" class="form-control" id="oidc-request-code_challenge-input">
+                  <button class="btn btn-outline-secondary" type="button"
+                          id="oidc-request-code_challenge-button">Modify
+                  </button>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input"
+                       id="oidc-request-code_challenge-request-body">
+                <label for="oidc-request-code_challenge-request-body">
+                  In Request Body
+                </label>
+              </div>
+              <div class="col-sm-2">
+                <input type="checkbox" class="form-check-input"
+                       id="oidc-request-code_challenge-present">
+                <label for="oidc-request-code_challenge-present">
+                  Parameter is present
+                </label>
+              </div>
+            </div>
+          </div>
 
-                    <hr class="mt-4"/>
+          <hr class="mt-4"/>
 
-                    <div class="row mt-4" id="oidc-advanced-keys-request-button-div">
-                        <label class="col-sm-6 col-form-label">
+          <div class="row mt-4" id="oidc-advanced-keys-request-button-div">
+            <label class="col-sm-6 col-form-label">
                                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                                         data-bs-original-title="Request Options allow you to configure specific parameters or behaviors for the authentication request.">
                                     Key options
                                   </span>
-                        </label>
-                        <div class="col-sm-6">
-                            <div class="d-flex justify-content-end">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-advanced-keys-request-check">
-                                <label for="oidc-advanced-keys-request-check">
-                                    Enable
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group hide" id="oidc-advanced-keys-request">
-                        <div class="row mt-4" id="oidc-advanced-keys-signkey-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The response type.">
-                                <label class="col-form-label text-sm-right"
-                                       for="oidc-request-advanced-signkey-select">Sign Key
-                                </label>
-                            </div>
-                            <div class="col-sm-10">
-                                <select class="form-select" id="oidc-request-advanced-signkey-select">
-                                    <option value="exact">RP Private Key</option>
-                                    <option value="minimum">Other Key</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row mt-4" id="oidc-advanced-keys-enckey-row">
-                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The response type.">
-                                <label class="col-form-label text-sm-right"
-                                       for="oidc-request-advanced-signkey-select">Encryption Key
-                                </label>
-                            </div>
-                            <div class="col-sm-10">
-                                <select class="form-select" id="oidc-request-advanced-enckey-select">
-                                    <option value="exact">OP Public Key</option>
-                                    <option value="minimum">Other Key</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="mt-4"/>
+            </label>
+            <div class="col-sm-6">
+              <div class="d-flex justify-content-end">
+                <input type="checkbox" class="form-check-input"
+                       id="oidc-advanced-keys-request-check">
+                <label for="oidc-advanced-keys-request-check">
+                  Enable
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="form-group hide" id="oidc-advanced-keys-request">
+            <div class="row mt-4" id="oidc-advanced-keys-signkey-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="The response type.">
+                <label class="col-form-label text-sm-right"
+                       for="oidc-request-advanced-signkey-select">Sign Key
+                </label>
+              </div>
+              <div class="col-sm-10">
+                <select class="form-select" id="oidc-request-advanced-signkey-select">
+                  <option value="exact">RP Private Key</option>
+                  <option value="minimum">Other Key</option>
+                </select>
+              </div>
+            </div>
+            <div class="row mt-4" id="oidc-advanced-keys-enckey-row">
+              <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   data-bs-original-title="The response type.">
+                <label class="col-form-label text-sm-right"
+                       for="oidc-request-advanced-signkey-select">Encryption Key
+                </label>
+              </div>
+              <div class="col-sm-10">
+                <select class="form-select" id="oidc-request-advanced-enckey-select">
+                  <option value="exact">OP Public Key</option>
+                  <option value="minimum">Other Key</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
 
-                    <!-- User Message Extension -->
-                    <div class="form-group">
-                        <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
+          <!-- User Message Extension -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
                 <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                       data-bs-original-title="The UserMessage extension is used to supply the IdP with a message that should be displayed for the user during authentication.">User Message Extension</span>
-                            </label>
-                            <div class="col-sm-6">
-                                <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="oidc-request-um-present"
-                                           id="oidc-request-um-present" disabled="disabled">
-                                    <label class="form-check-label ps-3" for="oidc-request-um-present">Extension
-                                        present</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="oidc-request-um-div">
-                            <div class="row mt-4">
-                                <label class="col-sm-2" for="oidc-request-um-mimetype-select">
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="oidc-request-um-present"
+                         id="oidc-request-um-present" disabled="disabled">
+                  <label class="form-check-label ps-3" for="oidc-request-um-present">Extension
+                    present</label>
+                </div>
+              </div>
+            </div>
+            <div id="oidc-request-um-div">
+              <div class="row mt-4">
+                <label class="col-sm-2" for="oidc-request-um-mimetype-select">
                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                         data-bs-original-title="The MIME type for all user messages.">MIME Type</span>
-                                </label>
-                                <div class="col-sm-10">
-                                    <select class="form-select" id="oidc-request-um-mimetype-select">
-                                    </select>
-                                </div>
-                            </div>
-                            <div id="oidc-request-um-messages-div">
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-sm-2"></div>
-                                <div class="col-sm-10">
-                                    <div class="btn-group" role="group">
-                                        <button id="oidc-request-um-add-drop" type="button"
-                                                class="btn btn-sm btn-primary dropdown-toggle"
-                                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
-                                            Message
-                                        </button>
-                                        <div id="oidc-request-um-add-drop-div" class="dropdown-menu"
-                                             aria-labelledby="oidc-request-um-add-drop">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                </label>
+                <div class="col-sm-10">
+                  <select class="form-select" id="oidc-request-um-mimetype-select">
+                  </select>
+                </div>
+              </div>
+              <div id="oidc-request-um-messages-div">
+              </div>
+              <div class="row mt-4">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <div class="btn-group" role="group">
+                    <button id="oidc-request-um-add-drop" type="button"
+                            class="btn btn-sm btn-primary dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
+                      Message
+                    </button>
+                    <div id="oidc-request-um-add-drop-div" class="dropdown-menu"
+                         aria-labelledby="oidc-request-um-add-drop">
                     </div>
-                    <hr class="mt-4"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr class="mt-4"/>
 
-                    <!-- Sign Message Extension -->
-                    <div class="form-group">
-                        <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
+          <!-- Sign Message Extension -->
+          <div class="form-group">
+            <div class="row mt-4">
+              <label class="col-sm-6 col-form-label">
                 <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                       data-bs-original-title="The SignMessage extension is used to supply the OP with a message that should be displayed for the user during authentication for signature.">Sign Message Extension</span>
-                            </label>
-                            <div class="col-sm-6">
-                                <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="oidc-request-sm-present"
-                                           id="oidc-request-sm-present" disabled="disabled">
-                                    <label class="form-check-label ps-3" for="oidc-request-sm-present">Extension
-                                        present</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="oidc-request-sm-div">
-                            <div class="row mt-4">
-                                <label class="col-sm-2" for="oidc-request-sm-textarea">Message</label>
-                                <div class="col-sm-10 d-flex" style="position: relative;">
+              </label>
+              <div class="col-sm-6">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="oidc-request-sm-present"
+                         id="oidc-request-sm-present" disabled="disabled">
+                  <label class="form-check-label ps-3" for="oidc-request-sm-present">Extension
+                    present</label>
+                </div>
+              </div>
+            </div>
+            <div id="oidc-request-sm-div">
+              <div class="row mt-4">
+                <label class="col-sm-2" for="oidc-request-sm-textarea">Message</label>
+                <div class="col-sm-10 d-flex" style="position: relative;">
                   <textarea class="form-control user-message" id="oidc-request-sm-textarea" rows="3"
                             placeholder="Enter SignMessage ..."></textarea>
-                                </div>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-sm-2"></div>
-                                <div class="col-sm-10">
-                                    <input class="form-check-input" type="checkbox" id="oidc-request-sm-encrypt-cb">
-                                    <label class="form-check-label ps-2" for="oidc-request-sm-encrypt-cb">Encrypt
-                                        message</label>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <label class="col-sm-2" for="oidc-request-sm-mimetype-select">
+                </div>
+              </div>
+              <div class="row mt-2">
+                <div class="col-sm-2"></div>
+                <div class="col-sm-10">
+                  <input class="form-check-input" type="checkbox" id="oidc-request-sm-encrypt-cb">
+                  <label class="form-check-label ps-2" for="oidc-request-sm-encrypt-cb">Encrypt
+                    message</label>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <label class="col-sm-2" for="oidc-request-sm-mimetype-select">
                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                         data-bs-original-title="The MIME type for the sign message.">MIME Type</span>
-                                </label>
-                                <div class="col-sm-10">
-                                    <select class="form-select" id="oidc-request-sm-mimetype-select">
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-
-                    <hr class="mt-4"/>
-                    <div id="oidc-request-submit-div">
-                        <div class="row mt-4">
-                            <div class="col-sm-12">
-                                <button id="oidc-request-submit-button" type="button" class="btn btn-primary">Send
-                                    AuthnRequest
-                                </button>
-                                <button id="oidc-request-restart-button" type="button" class="btn btn-primary">Restart
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                </form>
+                </label>
+                <div class="col-sm-10">
+                  <select class="form-select" id="oidc-request-sm-mimetype-select">
+                  </select>
+                </div>
+              </div>
             </div>
-        </div>
-        <!-- Result view of OIDC authentication -->
-        <div id="oidc-authn-result" class="hide">
-            <div class="col-sm-12 content-container">
-                <div class="row">
-                    <div class="col-sm-12">
-                        <h2 class="content-heading">Authentication Result</h2>
-                    </div>
-                </div>
-
-                <div id="oidc-authn-result-op-error" class="card text-white mb-3 hide">
-                    <div class="card-header">Identity Provider Error</div>
-                    <div class="card-body">
-                    </div>
-                </div>
-
-                <div class="card border-primary mb-3" id="oidc-authn-result-authnrequest">
-                    <div class="card-header">Authentication Request</div>
-                    <div class="card-body">
-                        <p class="card-text">Information about the OIDC authentication request that was sent to the OP.</p>
-                        <div class="row hide" id="oidc-authn-result-authnrequest-details">
-                            <div class="col-md-12">
-                                <table class="table table-hover saml-table">
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <p class="text-end">
-                                <button id="oidc-authn-result-view-authnrequest-details" type="button"
-                                        class="btn btn-primary btn-sm">
-                                    View Details
-                                </button>
-                                <button id="oidc-authn-result-view-authnrequest" type="button"
-                                        class="btn btn-primary btn-sm">View
-                                    AuthnRequest
-                                </button>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card border-primary mb-3 hide" id="oidc-authn-result-response">
-                    <div class="card-header">OIDC Response</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <table class="table table-hover saml-table">
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <p class="text-end">
-                                <button id="oidc-authn-result-view-response" type="button"
-                                        class="btn btn-primary btn-sm">View Response
-                                </button>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card border-primary mb-3 hide" id="oidc-authn-result-access-token">
-                    <div class="card-header">OIDC Access Token</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <table class="table table-hover saml-table">
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card border-primary mb-3 hide" id="oidc-authn-result-id-token">
-                    <div class="card-header">OIDC ID Token</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <table class="table table-hover saml-table">
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card border-primary mb-3 hide" id="oidc-authn-result-userinfo">
-                    <div class="card-header">OIDC UserInfo</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <table class="table table-hover saml-table">
-                                    <tbody>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+          </div>
 
 
-                <hr class="mt-4"/>
-                <div class="row mt-4">
-                    <div class="col-sm-12">
-                        <button id="oidc-authn-result-restart-button" type="button" class="btn btn-primary">Restart
-                        </button>
-                    </div>
-                </div>
-
+          <hr class="mt-4"/>
+          <div id="oidc-request-submit-div">
+            <div class="row mt-4">
+              <div class="col-sm-12">
+                <button id="oidc-request-submit-button" type="button" class="btn btn-primary">Send
+                  AuthnRequest
+                </button>
+                <button id="oidc-request-restart-button" type="button" class="btn btn-primary">Restart
+                </button>
+              </div>
             </div>
-        </div>
+          </div>
+
+        </form>
+      </div>
     </div>
+    <!-- Result view of OIDC authentication -->
+    <div id="oidc-authn-result" class="hide">
+      <div class="col-sm-12 content-container">
+        <div class="row">
+          <div class="col-sm-12">
+            <h2 class="content-heading">Authentication Result</h2>
+          </div>
+        </div>
 
-    <!-- OIDC Clients -->
-    <div id="main-oidc-clients" class="main-div">
+        <div id="oidc-authn-result-op-error" class="card text-white mb-3 hide">
+          <div class="card-header">Identity Provider Error</div>
+          <div class="card-body">
+          </div>
+        </div>
 
-        <div class="col-sm-12 content-container">
+        <div class="card border-primary mb-3" id="oidc-authn-result-authnrequest">
+          <div class="card-header">Authentication Request</div>
+          <div class="card-body">
+            <p class="card-text">Information about the OIDC authentication request that was sent to the OP.</p>
+            <div class="row hide" id="oidc-authn-result-authnrequest-details">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <div class="row">
-                <div class="col-sm-12 content-heading">
-                    <h2>OpenID Connect Relying Parties</h2>
-                </div>
-                <div class="col-sm-12" id="oidc-rp-list">
-                </div>
+              <p class="text-end">
+                <button id="oidc-authn-result-view-authnrequest-details" type="button"
+                        class="btn btn-primary btn-sm">
+                  View Details
+                </button>
+                <button id="oidc-authn-result-view-authnrequest" type="button"
+                        class="btn btn-primary btn-sm">View
+                  AuthnRequest
+                </button>
+              </p>
             </div>
+          </div>
         </div>
-    </div>
+        <div class="card border-primary mb-3 hide" id="oidc-authn-result-response">
+          <div class="card-header">OIDC Response</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="row">
+              <p class="text-end">
+                <button id="oidc-authn-result-view-response" type="button"
+                        class="btn btn-primary btn-sm">View Response
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="card border-primary mb-3 hide" id="oidc-authn-result-access-token">
+          <div class="card-header">OIDC Access Token</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card border-primary mb-3 hide" id="oidc-authn-result-id-token">
+          <div class="card-header">OIDC ID Token</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card border-primary mb-3 hide" id="oidc-authn-result-userinfo">
+          <div class="card-header">OIDC UserInfo</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <table class="table table-hover saml-table">
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <div id="xml-viewer">
-        <div class="modal">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Modal title</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true"></span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
+
+        <hr class="mt-4"/>
+        <div class="row mt-4">
+          <div class="col-sm-12">
+            <button id="oidc-authn-result-restart-button" type="button" class="btn btn-primary">Restart
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- OIDC Clients -->
+  <div id="main-oidc-clients" class="main-div">
+
+    <div class="col-sm-12 content-container">
+      <div class="row">
+        <div class="col-sm-12 content-heading">
+          <h2>OpenID Connect Relying Parties</h2>
+        </div>
+        <div class="col-sm-12" id="oidc-rp-list">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="xml-viewer">
+    <div class="modal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Modal title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="modal-body">
             <pre>
               <code id="xml-content" class="language-xml hljs"></code>
             </pre>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 
-    <div id="json-viewer">
-        <div class="modal">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Modal title</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true"></span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
+  <div id="json-viewer">
+    <div class="modal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Modal title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="modal-body">
 
             <pre>
               <code id="json-content" class="language-json hljs"></code>
             </pre>
 
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 
-    <div id="error-modal" class="modal">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Error</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true"></span>
-                    </button>
-                </div>
-                <div id="error-modal-contents" class="modal-body">
-                    <p>Modal body text goes here.</p>
-                </div>
-            </div>
+  <div id="error-modal" class="modal">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Error</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true"></span>
+          </button>
         </div>
+        <div id="error-modal-contents" class="modal-body">
+          <p>Modal body text goes here.</p>
+        </div>
+      </div>
     </div>
+  </div>
 
 
 </main>
@@ -1883,9 +1874,9 @@
 
 <script th:defer="immediate" th:inline="javascript">
 
-    window.saml_responseData = /*[[${samlResponseData}]]*/ null;
-    window.oidc_responseData = /*[[${oidcResponseData}]]*/ null;
-    window.app_info = /*[[${applicationInfo}]]*/ null;
+  window.saml_responseData = /*[[${samlResponseData}]]*/ null;
+  window.oidc_responseData = /*[[${oidcResponseData}]]*/ null;
+  window.app_info = /*[[${applicationInfo}]]*/ null;
 
 </script>
 
