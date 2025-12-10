@@ -217,6 +217,14 @@ function redirectBrowser(url) {
   window.location.href = url;
 }
 
+function buildUrl(path) {
+  var base = $("#base-href-id").prop('href');
+  if (base.endsWith('/')) {
+    base = base.slice(0, -1);
+  }
+  return base + path;
+}
+
 function postBrowser(url, pars) {
   let form = $('<form>', {
     action: url,

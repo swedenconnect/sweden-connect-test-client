@@ -205,7 +205,7 @@ class SamlAuthentication {
    */
   activateAuthnRequestView() {
     $.ajax({
-      url: $("#base-href-id").prop('href') + '/saml/authn/template',
+      url: buildUrl('/saml/authn/template'),
       type: 'GET',
       data: {
         sp: SAML_STATE.getSelectedSp(),
@@ -258,7 +258,7 @@ class SamlAuthentication {
   onSendAuthnRequest(authnRequest) {
 
     $.ajax({
-      url: $("#base-href-id").prop('href') + '/saml/authn/generate',
+      url: buildUrl('/saml/authn/generate'),
       type: 'POST',
       contentType: 'application/json',
       data: JSON.stringify(authnRequest),
@@ -356,7 +356,7 @@ class AuthenticationResult {
     };
 
     $.ajax({
-      url: $("#base-href-id").prop('href') + '/saml/authn/verify',
+      url: buildUrl('/saml/authn/verify'),
       type: 'POST',
       contentType: 'application/json',
       data: JSON.stringify(verifyInput),
@@ -640,8 +640,7 @@ class SetupAuthentication {
     $('#sp-view-metadata').click(function() {
       let entityId = $(this).val();
       $.ajax({
-        url: $("#base-href-id").prop('href') + '/saml/sp/metadata',
-        type: 'GET',
+        url: buildUrl('/saml/sp/metadata'),
         data: {
           sp: entityId
         },
@@ -663,7 +662,7 @@ class SetupAuthentication {
     $('#idp-view-metadata').click(function() {
       let entityId = $(this).val();
       $.ajax({
-        url: $("#base-href-id").prop('href') + '/saml/idp/metadata',
+        url: buildUrl('/saml/idp/metadata'),
         type: 'GET',
         data: {
           idp: entityId
@@ -694,7 +693,7 @@ class SetupAuthentication {
     }
     else {
       $.ajax({
-        url: $("#base-href-id").prop('href') + '/saml/authn/info',
+        url: buildUrl('/saml/authn/info'),
         type: 'GET',
         success: (info) => {
           this.infoCache = info;
