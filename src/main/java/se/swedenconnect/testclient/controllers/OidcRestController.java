@@ -35,6 +35,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,6 +65,7 @@ import java.util.function.Function;
  */
 @RestController
 @RequestMapping("/oidc")
+@ConditionalOnProperty(value = "testclient.oidc.enabled", havingValue = "true")
 public class OidcRestController {
   /**
    * OIDC RP:s.
