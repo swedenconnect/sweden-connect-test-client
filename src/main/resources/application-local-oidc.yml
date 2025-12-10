@@ -37,7 +37,7 @@ server:
     context-path: "/mypath"
 
 testclient:
-  base-url: https://local.dev.swedenconnect.se:${server.port}
+  base-url: https://local.dev.swedenconnect.se:${server.port}${server.servlet.context-path}
   default-credential:
     bundle: rsa-4096
   tls:

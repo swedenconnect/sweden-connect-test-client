@@ -17,9 +17,15 @@ package se.swedenconnect.testclient.saml;
 
 import jakarta.annotation.Nonnull;
 import net.shibboleth.shared.component.ComponentInitializationException;
+import org.opensaml.saml.common.assertion.ValidationContext;
 import org.opensaml.saml.metadata.resolver.MetadataResolver;
+import org.opensaml.saml.saml2.core.Assertion;
+import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.security.credential.Credential;
+import se.swedenconnect.opensaml.saml2.response.ResponseProcessingInput;
 import se.swedenconnect.opensaml.saml2.response.replay.InMemoryReplayChecker;
+import se.swedenconnect.opensaml.saml2.response.validation.ResponseValidationException;
 import se.swedenconnect.opensaml.saml2.response.validation.ResponseValidationSettings;
 import se.swedenconnect.opensaml.sweid.saml2.validation.SwedishEidResponseProcessorImpl;
 import se.swedenconnect.opensaml.xmlsec.encryption.support.SAMLObjectDecrypter;
