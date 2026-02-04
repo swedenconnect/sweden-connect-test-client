@@ -72,9 +72,6 @@
               id="main-description-saml-fed-info-name"></span>.
           </p>
           <p>
-            Currently, OpenID Connect support is disabled.
-          </p>
-          <p>
             To add your SAML Identity Provider to Sweden Connect, contact <a
               href="mailto:operations@swedenconnect.se">operations@swedenconnect.se</a>.
           </p>
@@ -1022,7 +1019,7 @@
           </div>
           <div class="row mt-4" id="oidc-scope-row">
             <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                 data-bs-original-title="The RelayState token is an opaque reference to state information maintained at the SP. The IdP must return this parameter unchanged.">
+                 data-bs-original-title="Scopes to be sent to OpenId Provider, must containt openid">
               <label class="col-form-label text-sm-right" for="oidc-request-scope-input">Scope</label>
             </div>
             <div class="col-sm-6">
@@ -1408,14 +1405,16 @@
               <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                    data-bs-original-title="The prompt parameter specifies whether the Authorization Server should prompt the user for reauthentication or consent.">
                 <label class="col-form-label text-sm-right"
-                       for="oidc-request-prompt-input">Prompt</label>
+                       for="oidc-request-prompt-select">Prompt</label>
               </div>
               <div class="col-sm-6">
                 <div class="input-group">
-                  <input type="text" class="form-control" id="oidc-request-prompt-input">
-                  <button class="btn btn-outline-secondary" type="button"
-                          id="oidc-request-prompt-button">Modify
-                  </button>
+                  <select class="form-select" id="oidc-request-prompt-select">
+                    <option value="none">None</option>
+                    <option value="login">Login</option>
+                    <option value="consent">Consent</option>
+                    <option value="select_account">Select Account</option>
+                  </select>
                 </div>
               </div>
               <div class="col-sm-2">

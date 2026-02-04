@@ -639,7 +639,12 @@ class OIDCSetupAuthentication {
           rp: entityId
         },
         success: (metadata) => {
-          codeViewer.displayJson(entityId, metadata);
+          const sortedMetadata = Object.fromEntries(
+              Object.entries(metadata).sort(([keyA], [keyB]) =>
+                                           keyA.localeCompare(keyB)
+              )
+          );
+          codeViewer.displayJson(entityId, sortedMetadata);
         },
         error: (error) => {
           console.error("Failed to get RP metadata: " + JSON.stringify(error));
@@ -1232,6 +1237,7 @@ class OIDCAuthnRequest {
     fieldPresentCheckbox.click(function() {
       parent.pars[valueReference[0]][valueReference[1]]["valuePresent"] = fieldPresentCheckbox.prop("checked");
     });
+    input.prop("value", parent.pars[valueReference[0]][valueReference[1]]["value"]);
     input.prop("disabled", true);
     $(buttonSelector).click(function() {
       input.prop("disabled", false);
@@ -1261,9 +1267,8 @@ class OIDCAuthnRequest {
         "#oidc-request-nonce-present",
         [ "advanced", "nonce" ]
     );
-    this.initServerGeneratedField(
-        "#oidc-request-prompt-input",
-        "#oidc-request-prompt-button",
+    this.initModuleSelector(
+        "#oidc-request-prompt-select",
         "#oidc-request-prompt-request-body",
         "#oidc-request-prompt-present",
         [ "advanced", "prompt" ]

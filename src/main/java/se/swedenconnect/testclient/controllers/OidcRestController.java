@@ -24,7 +24,9 @@ import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.Nonce;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
@@ -209,10 +211,10 @@ public class OidcRestController {
         .acrValues(new ModelParameter("", false, false))
         .claimInRequestBody(false)
         .advanced(AdvancedOptionsParamterModel.builder()
-            .state(ModelParameter.builder().valuePresent(true).requestBody(false).build())
-            .nonce(ModelParameter.builder().valuePresent(true).requestBody(false).build())
-            .prompt(ModelParameter.builder().valuePresent(false).requestBody(false).build())
-            .loginHint(ModelParameter.builder().value("value").valuePresent(false).requestBody(false).build())
+            .state(ModelParameter.builder().value(new State().getValue()).valuePresent(true).requestBody(false).build())
+            .nonce(ModelParameter.builder().value(new Nonce().getValue()).valuePresent(true).requestBody(false).build())
+            .prompt(ModelParameter.builder().value("none").valuePresent(false).requestBody(false).build())
+            .loginHint(ModelParameter.builder().value("").valuePresent(false).requestBody(false).build())
             .responseType(ModelParameter.builder().value("code").valuePresent(true).requestBody(false).build())
             .codeChallenge(ModelParameter.builder().valuePresent(false).requestBody(false).build())
             .codeChallengeMethod(ModelParameter.builder().value("plain").valuePresent(false).requestBody(false).build())
@@ -224,8 +226,8 @@ public class OidcRestController {
             .signKey(signKey.getKeyID())
             .moduleEnabled(true).build())
         .requestObject(RequestObjectParamterModel.builder()
-            .issuer(new ModelParameter("issuer", true, true))
-            .audience(new ModelParameter("audience", true, true))
+            .issuer(new ModelParameter(selectedRp.getEntityId(), true, true))
+            .audience(new ModelParameter(selectedOp.getTokenEndpoint(), true, true))
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false).build())
