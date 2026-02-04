@@ -118,6 +118,20 @@ class TestClient {
     else {
       testClient.onNavbarClicked(null, 'home');
     }
+
+    const copyButton = $('#copy-to-clipboard-button');
+    copyButton
+        .off('click')
+        .on('click', function () {
+          let json = $('#json-content').prop('json')
+          navigator.clipboard.writeText(json);
+          const toast = document.getElementById('copy-toast');
+          toast.classList.add('show');
+
+          setTimeout(() => {
+            toast.classList.remove('show');
+          }, 1500);
+        });
   }
 
   static isSamlEnabled() {
@@ -195,7 +209,9 @@ class CodeViewer {
 
   displayJson(title, json) {
     const formatted = prettyPrintJson.toHtml(json, this.jsonFormat);
-    $('#json-content').html(formatted);
+    const content = $('#json-content');
+    content.html(formatted);
+    content.prop('json', json);
 
     const jsonViewer = $('#json-viewer');
     jsonViewer.find('.modal-title').text(title);

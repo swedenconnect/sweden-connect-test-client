@@ -956,10 +956,18 @@
       <div id="oidc-authn-next-button-div">
         <hr class="mt-4"/>
         <div class="row mt-4">
-          <div class="col-sm-6">
+          <div class="col-sm-1">
             <div class="text-left">
               <button id="oidc-authn-next-button" type="button" class="btn btn-primary">Next</button>
             </div>
+          </div>
+          <div class="col-sm-1">
+            <div class="text-left">
+              <button id="oidc-authn-import-button" type="button" class="btn btn-primary">Import</button>
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <input type="text" class="form-control" id="oidc-import-input">
           </div>
         </div>
       </div>
@@ -1667,6 +1675,8 @@
                 </button>
                 <button id="oidc-request-restart-button" type="button" class="btn btn-primary">Restart
                 </button>
+                <button id="oidc-request-export-button" type="button" class="btn btn-primary">Export
+                </button>
               </div>
             </div>
           </div>
@@ -1836,6 +1846,7 @@
             </button>
           </div>
           <div class="modal-body">
+            <div id="copy-toast" class="toast">Copied!</div>
 
             <pre>
               <code id="json-content" class="language-json hljs"></code>
@@ -1844,6 +1855,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button id="copy-to-clipboard-button" type="button" class="btn btn-secondary">Copy to clipboard</button>
           </div>
         </div>
       </div>
