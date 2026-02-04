@@ -91,7 +91,6 @@ public class OidcController {
                                         @RequestParam(value = "iss", required = false) final String iss,
                                         @RequestParam(value = "code", required = false) final String code) throws JOSEException,
       ParseException, JsonProcessingException {
-
     final AuthenticationRequest authRequest = (AuthenticationRequest) httpSession.getAttribute("auth_request");
     final OidcOp selectedOp = (OidcOp) httpSession.getAttribute("selected_op");
     final OidcRp selectedRp = (OidcRp) httpSession.getAttribute("selected_rp");

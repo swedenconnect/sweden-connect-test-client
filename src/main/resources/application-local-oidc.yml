@@ -33,8 +33,7 @@ server:
     key-store-type: PKCS12
     key-alias: 1
     key-password: changeit
-  servlet:
-    context-path: "/mypath"
+
 
 testclient:
   base-url: https://local.dev.swedenconnect.se:${server.port}

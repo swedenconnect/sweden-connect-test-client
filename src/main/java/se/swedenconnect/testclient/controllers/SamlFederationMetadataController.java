@@ -56,7 +56,6 @@ public class SamlFederationMetadataController {
   public SamlMetadataInfoModel getFederationInfo() {
     return new SamlMetadataInfoModel(
         this.samlFederation.getDescription(),
-        this.samlFederation.getMetadataLocation(),
         this.samlFederation.getLastUpdate());
   }
 
@@ -79,7 +78,6 @@ public class SamlFederationMetadataController {
   @AllArgsConstructor
   public static class SamlMetadataInfoModel {
     private String description;
-    private SamlFederation.MetadataLocation location;
 
     @JsonProperty("last_update")
     private Instant lastUpdate;

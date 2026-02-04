@@ -42,7 +42,7 @@ testclient:
     skip-hostname-verification: true
     default-tls-trust: TRUST_ALL
   oidc:
-    enabled: true
+    enabled: false
     openid-fed-authorities:
       - https://www.dummy.com
     rps:
@@ -69,10 +69,10 @@ testclient:
     enabled: true
     federation:
       description: "Sweden Connect Local Development Federation"
-      #metadata-location: classpath:environments/localdev/metadata.xml
-      metadata-location: https://local.dev.swedenconnect.se:9000/metadata/mdx/role/idp.xml
-      validation-certificate: classpath:environments/localdev/metadata.crt
-      backup-location: target/metadata.xml
+      source:
+        - metadata-location: https://local.dev.swedenconnect.se:9000/metadata/mdx/role/idp.xml
+          validation-certificate: classpath:environments/localdev/metadata.crt
+          backup-location: target/metadata.xml
     common-metadata:
       metadata-template: classpath:saml-metadata-template.xml
       default-entity-categories:
