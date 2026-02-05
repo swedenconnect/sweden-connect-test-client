@@ -1090,9 +1090,56 @@ class OIDCAuthnRequest {
         });
         umCheckbox.change();
         umMimeType.change();
+
+        let sigDiv = $('#oidc-request-sig-div');
+
+        let sigAddMessageDiv = $('#oidc-request-sig-add-drop-div');
+        sigAddMessageDiv.empty();
+
+        let sigMessagesDiv = $('#oidc-request-sig-messages-div');
+
+        for (let lang of AuthnRequest.UM_POSSIBLE_LANGUAGES) {
+            sigAddMessageDiv.append($('<a>', {
+                href: 'javascript:void(0)',
+                class: 'dropdown-item',
+                text: lang.code ? (lang.text + ' (' + lang.code + ')') : lang.text,
+                click: function (event) {
+                    event.preventDefault();
+
+                    let obj = {
+                        lang_code: lang.code,
+                        language: lang.text,
+                        message: ''
+                    };
+                    let msgDiv = thisObj.createUserMessageDiv(obj, true);
+                    if (msgDiv) {
+                        sigMessagesDiv.append(msgDiv);
+                    }
+                }
+            }));
+        }
+
+        let sigCheckbox = $('#oidc-request-sig-present');
+        sigCheckbox.change(function () {
+            sigDiv.toggle(this.checked);
+            parent.pars["signMessage"]["valuePresent"] = this.checked;
+        });
+
+        let sigRbCheckbox = $('#oidc-request-sig-request-body');
+        sigRbCheckbox.change(function () {
+            parent.pars["signMessage"]["requestBody"] = this.checked;
+        });
+
+        let sigMimeType = $('#oidc-request-sig-mimetype-select');
+        sigMimeType.change(function () {
+            parent.pars["signMessage"]["mime_type"] = sigMimeType.prop('value');
+        });
+
+        sigCheckbox.change();
+        sigMimeType.change();
     }
 
-    createUserMessageDiv(msg) {
+    createUserMessageDiv(msg, sig = false) {
 
         let msgId = generateRandomId();
 
@@ -1125,11 +1172,15 @@ class OIDCAuthnRequest {
         });
         textAreaDiv.append(textArea);
         let parent = this
-        textArea.change(function () {
-            console.log(msg.lang_code+" "+ textArea.prop('value'))
-            parent.pars.userMessage["message#"+msg.lang_code] = textArea.prop('value');
-        });
-
+        if (sig) {
+            textArea.change(function () {
+                parent.pars["signMessage"]["signMessage"]["message#"+msg.lang_code] = textArea.prop('value');
+            });
+        } else {
+            textArea.change(function () {
+                parent.pars.userMessage["message#"+msg.lang_code] = textArea.prop('value');
+            });
+        }
         let textAreaCloseButton = $('<button>', {
             type: 'button',
             class: 'btn-close align-self-start p-2',

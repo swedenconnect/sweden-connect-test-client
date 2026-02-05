@@ -205,7 +205,7 @@ public class OidcRestController {
     return OIDCAuthnRequestParameterModel.builder()
         .op(op)
         .rp(rp)
-        .signatureParameterModel(SignatureParameterModel.builder().requestBody(false).valuePresent(false).build())
+        .signMessage(SignatureParameterModel.builder().signMessage(OidcMessageParameterModel.builder().build()).requestBody(false).valuePresent(false).build())
         .userMessage(OidcMessageParameterModel.builder().messageSwedish("msg").valuePresent(false).requestBody(false).build())
         .scope(new ModelParameter("openid", false, true))
         .redirectUri(new ModelParameter(selectedRp.getMetadata().getRedirectionURI().toASCIIString(), false, true))
