@@ -1579,10 +1579,17 @@
                 <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                       data-bs-original-title="The UserMessage extension is used to supply the IdP with a message that should be displayed for the user during authentication.">User Message Extension</span>
               </label>
-              <div class="col-sm-6">
+              <div class="col-sm-3">
+                <div class="form-check d-flex justify-content-end">
+                  <input class="form-check-input" type="checkbox" name="oidc-request-um-request-body"
+                         id="oidc-request-um-request-body">
+                  <label class="form-check-label ps-3" for="oidc-request-um-request-body">In Request Body</label>
+                </div>
+              </div>
+              <div class="col-sm-3">
                 <div class="form-check d-flex justify-content-end">
                   <input class="form-check-input" type="checkbox" name="oidc-request-um-present"
-                         id="oidc-request-um-present" disabled="disabled">
+                         id="oidc-request-um-present">
                   <label class="form-check-label ps-3" for="oidc-request-um-present">Extension
                     present</label>
                 </div>
@@ -1596,6 +1603,9 @@
                 </label>
                 <div class="col-sm-10">
                   <select class="form-select" id="oidc-request-um-mimetype-select">
+                    <option value="text/plain">text/plain</option>
+                    <option value="text/markdown">text/markdown</option>
+                    <option value="text/dummy">text/dummy</option>
                   </select>
                 </div>
               </div>

@@ -1045,6 +1045,103 @@ class OIDCAuthnRequest {
         $('#oidc-request-export-button').click(() => {
             this.export();
         });
+
+        let umDiv = $('#oidc-request-um-div');
+
+        let umAddMessageDiv = $('#oidc-request-um-add-drop-div');
+        umAddMessageDiv.empty();
+        let umMessagesDiv = $("#oidc-request-um-messages-div");
+        let thisObj = this;
+
+        for (let lang of AuthnRequest.UM_POSSIBLE_LANGUAGES) {
+            umAddMessageDiv.append($('<a>', {
+                href: 'javascript:void(0)',
+                class: 'dropdown-item',
+                text: lang.code ? (lang.text + ' (' + lang.code + ')') : lang.text,
+                click: function(event) {
+                    event.preventDefault();
+
+                    let obj = {
+                        lang_code: lang.code,
+                        language: lang.text,
+                        message: ''
+                    };
+                    let msgDiv = thisObj.createUserMessageDiv(obj);
+                    if (msgDiv) {
+                        umMessagesDiv.append(msgDiv);
+                    }
+                }
+            }));
+        }
+
+
+        let umCheckbox = $("#oidc-request-um-present");
+        umCheckbox.change(function() {
+            umDiv.toggle(this.checked);
+            parent.pars["userMessage"]["valuePresent"] = this.checked;
+        });
+        let rbCheckbox = $('#oidc-request-um-request-body');
+        rbCheckbox.change(function () {
+            parent.pars["userMessage"]["requestBody"] = this.checked;
+        });
+        umCheckbox.change();
+
+    }
+
+    createUserMessageDiv(msg) {
+
+        let msgId = generateRandomId();
+
+        let msgDiv = $('<div>', {
+            class: 'row mt-4'
+        });
+
+        let msgLabel = $('<label>', {
+            class: 'col-sm-2',
+            'data-langcode': msg.lang_code,
+            for: msgId
+        });
+        if (msg.lang_code) {
+            msgLabel.text(msg.language + ' (' + msg.lang_code + ')');
+        }
+        else {
+            msgLabel.text("No language code added (error case)");
+        }
+        msgDiv.append(msgLabel);
+
+        let textAreaDiv = $('<div>', {
+            class: 'col-sm-10 d-flex',
+        }).css({ "position": "relative" });
+
+        let textArea = $('<textarea>', {
+            class: 'form-control user-message flex-grow-1',
+            id: msgId,
+            rows: '3',
+            text: msg.message || ''
+        });
+        textAreaDiv.append(textArea);
+        let parent = this
+        textArea.change(function () {
+            console.log(msg.lang_code+" "+ textArea.prop('value'))
+            parent.pars.userMessage["message#"+msg.lang_code] = textArea.prop('value');
+        });
+
+        let textAreaCloseButton = $('<button>', {
+            type: 'button',
+            class: 'btn-close align-self-start p-2',
+            click: function() {
+                msgDiv.remove();
+            }
+        }).css({
+                   "position": "absolute",
+                   "top": "0",
+                   "right": "14px"
+               });
+        textAreaDiv.append(textAreaCloseButton);
+
+        msgDiv.append(textAreaDiv);
+
+        return msgDiv;
     }
 
     getClaimElement(currentIndex, templateIdentifier) {
