@@ -1084,8 +1084,12 @@ class OIDCAuthnRequest {
         rbCheckbox.change(function () {
             parent.pars["userMessage"]["requestBody"] = this.checked;
         });
+        let umMimeType = $('#oidc-request-um-mimetype-select');
+        umMimeType.change(function () {
+            parent.pars["userMessage"]["mime_type"] = umMimeType.prop("value");
+        });
         umCheckbox.change();
-
+        umMimeType.change();
     }
 
     createUserMessageDiv(msg) {

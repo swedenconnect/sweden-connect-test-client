@@ -88,6 +88,18 @@ public class AuthorizationParameterResolver {
     return scope;
   }
 
+  public Optional<OidcMessageParameterModel> getUserMessage() {
+    return Optional.ofNullable(this.model.getUserMessage()).flatMap(um -> {
+      if (um.getValuePresent() && !forRequestBody) {
+        return Optional.of(um);
+      }
+      if (um.getRequestBody() && forRequestBody) {
+        return Optional.of(um);
+      }
+      return Optional.empty();
+    });
+  }
+
   public Optional<ResponseType> getResponseType() {
     return this.getValue(this.model.getAdvanced().getResponseType(), rt -> {
       return new ResponseType(rt.split(" "));

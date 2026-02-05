@@ -11,9 +11,7 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.util.Pair;
 import com.nimbusds.jwt.EncryptedJWT;
-import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.id.Identifier;
@@ -40,8 +38,8 @@ public class RequestObjectFactory {
   }
 
   public static EncryptedJWT getEncryptedPlainJwt(final OIDCAuthnRequestParameterModel model,
-                                                   final Function<String, JWK> getJwkFromKid,
-                                                   final JWTClaimsSet jwtClaimsSet) throws JOSEException {
+                                                  final Function<String, JWK> getJwkFromKid,
+                                                  final JWTClaimsSet jwtClaimsSet) throws JOSEException {
     final JWK encKey = getJwkFromKid.apply(model.getKeys().getEncKey());
     final JWEHeader header = new JWEHeader.Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM)
         .contentType("JWT")
@@ -63,6 +61,7 @@ public class RequestObjectFactory {
     if (model.getRequestObject().getIssuer().getRequestBody()) {
       builder.issuer(model.getRequestObject().getIssuer().getValue());
     }
+    resolver.getUserMessage().ifPresent(um -> builder.claim("https://id.oidc.se/param/userMessage", um));
     resolver.getNonce().ifPresent(nonce -> builder.claim("nonce", nonce.getValue()));
     resolver.getState().ifPresent(state -> builder.claim("state", state.getValue()));
     resolver.getRedirectionURI().ifPresent(uri -> builder.claim("redirection_uri", uri.toASCIIString()));
