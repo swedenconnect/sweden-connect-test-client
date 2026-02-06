@@ -25,4 +25,6 @@ public class OIDCAuthnRequestParameterModel {
   private RequestObjectParamterModel requestObject;
   private AdvancedOptionsParamterModel advanced;
   private KeyOptionsParameterModel keys;
+  private OidcMessageParameterModel userMessage;
+  private SignatureParameterModel signMessage;
 }

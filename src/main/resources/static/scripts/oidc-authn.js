@@ -1045,6 +1045,170 @@ class OIDCAuthnRequest {
         $('#oidc-request-export-button').click(() => {
             this.export();
         });
+
+        let umDiv = $('#oidc-request-um-div');
+
+        let umAddMessageDiv = $('#oidc-request-um-add-drop-div');
+        umAddMessageDiv.empty();
+        let umMessagesDiv = $("#oidc-request-um-messages-div");
+        let thisObj = this;
+
+        for (let lang of AuthnRequest.UM_POSSIBLE_LANGUAGES) {
+            umAddMessageDiv.append($('<a>', {
+                href: 'javascript:void(0)',
+                class: 'dropdown-item',
+                text: lang.code ? (lang.text + ' (' + lang.code + ')') : lang.text,
+                click: function(event) {
+                    event.preventDefault();
+
+                    let obj = {
+                        lang_code: lang.code,
+                        language: lang.text,
+                        message: ''
+                    };
+                    let msgDiv = thisObj.createUserMessageDiv(obj);
+                    if (msgDiv) {
+                        umMessagesDiv.append(msgDiv);
+                    }
+                }
+            }));
+        }
+
+
+        let umCheckbox = $("#oidc-request-um-present");
+        let um64 = $('#oidc-request-um-b64');
+        um64.prop("checked", parent.pars["userMessage"]["b64Encode"]);
+        um64.change(function () {
+            parent.pars["userMessage"]["b64Encode"] = this.checked;
+        })
+        umCheckbox.change(function() {
+            umDiv.toggle(this.checked);
+            parent.pars["userMessage"]["valuePresent"] = this.checked;
+        });
+        let rbCheckbox = $('#oidc-request-um-request-body');
+        rbCheckbox.change(function () {
+            parent.pars["userMessage"]["requestBody"] = this.checked;
+        });
+        let umMimeType = $('#oidc-request-um-mimetype-select');
+        umMimeType.change(function () {
+            parent.pars["userMessage"]["mime_type"] = umMimeType.prop("value");
+        });
+        umCheckbox.change();
+        umMimeType.change();
+
+        let sigDiv = $('#oidc-request-sig-div');
+
+        let sigAddMessageDiv = $('#oidc-request-sig-add-drop-div');
+        sigAddMessageDiv.empty();
+
+        let sigMessagesDiv = $('#oidc-request-sig-messages-div');
+
+        for (let lang of AuthnRequest.UM_POSSIBLE_LANGUAGES) {
+            sigAddMessageDiv.append($('<a>', {
+                href: 'javascript:void(0)',
+                class: 'dropdown-item',
+                text: lang.code ? (lang.text + ' (' + lang.code + ')') : lang.text,
+                click: function (event) {
+                    event.preventDefault();
+
+                    let obj = {
+                        lang_code: lang.code,
+                        language: lang.text,
+                        message: ''
+                    };
+                    let msgDiv = thisObj.createUserMessageDiv(obj, true);
+                    if (msgDiv) {
+                        sigMessagesDiv.append(msgDiv);
+                    }
+                }
+            }));
+        }
+
+        let sigCheckbox = $('#oidc-request-sig-present');
+        let sigb64Checkbox = $('#oidc-request-sig-b64')
+        let sigRbCheckbox = $('#oidc-request-sig-request-body');
+        sigb64Checkbox.prop("checked", parent.pars["signMessage"]["b64Encode"]);
+        sigb64Checkbox.change(function () {
+            parent.pars["signMessage"]["b64Encode"] = this.checked;
+        })
+        sigCheckbox.change(function () {
+            sigDiv.prop("hidden", !(this.checked || sigRbCheckbox.prop("checked")));
+            parent.pars["signMessage"]["valuePresent"] = this.checked;
+        });
+
+
+        sigRbCheckbox.change(function () {
+            sigDiv.prop("hidden", !(this.checked || sigCheckbox.prop("checked")));
+            parent.pars["signMessage"]["requestBody"] = this.checked;
+        });
+
+        let sigMimeType = $('#oidc-request-sig-mimetype-select');
+        sigMimeType.change(function () {
+            parent.pars["signMessage"]["mime_type"] = sigMimeType.prop('value');
+        });
+
+        sigCheckbox.change();
+        sigMimeType.change();
+    }
+
+    createUserMessageDiv(msg, sig = false) {
+
+        let msgId = generateRandomId();
+
+        let msgDiv = $('<div>', {
+            class: 'row mt-4'
+        });
+
+        let msgLabel = $('<label>', {
+            class: 'col-sm-2',
+            'data-langcode': msg.lang_code,
+            for: msgId
+        });
+        if (msg.lang_code) {
+            msgLabel.text(msg.language + ' (' + msg.lang_code + ')');
+        }
+        else {
+            msgLabel.text("No language code added (error case)");
+        }
+        msgDiv.append(msgLabel);
+
+        let textAreaDiv = $('<div>', {
+            class: 'col-sm-10 d-flex',
+        }).css({ "position": "relative" });
+
+        let textArea = $('<textarea>', {
+            class: 'form-control user-message flex-grow-1',
+            id: msgId,
+            rows: '3',
+            text: msg.message || ''
+        });
+        textAreaDiv.append(textArea);
+        let parent = this
+        if (sig) {
+            textArea.change(function () {
+                parent.pars["signMessage"]["signMessage"]["message#"+msg.lang_code] = textArea.prop('value');
+            });
+        } else {
+            textArea.change(function () {
+                parent.pars.userMessage["message#"+msg.lang_code] = textArea.prop('value');
+            });
+        }
+        let textAreaCloseButton = $('<button>', {
+            type: 'button',
+            class: 'btn-close align-self-start p-2',
+            click: function() {
+                msgDiv.remove();
+            }
+        }).css({
+                   "position": "absolute",
+                   "top": "0",
+                   "right": "14px"
+               });
+        textAreaDiv.append(textAreaCloseButton);
+
+        msgDiv.append(textAreaDiv);
+
+        return msgDiv;
     }
 
     getClaimElement(currentIndex, templateIdentifier) {
@@ -1120,12 +1284,25 @@ class OIDCAuthnRequest {
         presentElement.prop("checked", parent.pars[valueReference[0]][valueReference[1]]["valuePresent"]);
         requestBodyElement.prop("checked", parent.pars[valueReference[0]][valueReference[1]]["requestBody"]);
         requestBodyElement.click(function () {
+            let isChecked = presentElement.prop('checked');
             parent.pars[valueReference[0]][valueReference[1]]["requestBody"] = requestBodyElement.prop("checked");
+            let isRbChecked = requestBodyElement.prop('checked');
+            let disabled = !(isChecked || isRbChecked);
+            inputElement.prop('disabled', disabled);
+            if (disabled) {
+                inputElement.prop('value', '');
+            }
+            else {
+                inputElement.prop('value', parent.pars[valueReference[0]][valueReference[1]]["value"]);
+            }
         });
         let onClickFunction = function () {
             let isChecked = presentElement.prop('checked');
-            inputElement.prop('disabled', !isChecked);
-            if (!isChecked) {
+            parent.pars[valueReference[0]][valueReference[1]]["valuePresent"] = isChecked;
+            let isRbChecked = requestBodyElement.prop('checked');
+            let disabled = !(isChecked || isRbChecked);
+            inputElement.prop('disabled', disabled);
+            if (disabled) {
                 inputElement.prop('value', '');
             }
             else {
@@ -1155,12 +1332,24 @@ class OIDCAuthnRequest {
         presentElement.prop("checked", parent.pars[valueReference]["valuePresent"]);
         requestBodyElement.prop("checked", parent.pars[valueReference]["requestBody"]);
         requestBodyElement.click(function () {
+            let isChecked = presentElement.prop('checked');
+            let isRbchecked = requestBodyElement.prop("checked");
+            let disabled = !(isChecked || isRbchecked);
+            inputElement.prop('disabled', disabled);
+            if (disabled) {
+                inputElement.prop('value', '');
+            }
+            else {
+                inputElement.prop('value', parent.pars[valueReference]["value"]);
+            }
             parent.pars[valueReference]["requestBody"] = requestBodyElement.prop("checked");
         });
         let onClickFunction = function () {
             let isChecked = presentElement.prop('checked');
-            inputElement.prop('disabled', !isChecked);
-            if (!isChecked) {
+            let isRbchecked = requestBodyElement.prop("checked");
+            let disabled = !(isChecked || isRbchecked);
+            inputElement.prop('disabled', disabled);
+            if (disabled) {
                 inputElement.prop('value', '');
             }
             else {
