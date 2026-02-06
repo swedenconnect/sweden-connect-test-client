@@ -893,19 +893,20 @@ class OIDCAuthnRequest {
                 $('#oidc-advanced-keys-request').hide();
             }
         });
-        $('#oidc-request-claims-id-remove-button').click(function () {
-            let lastElement = $('#oidc-id-claims-table').children().last()[0];
-            if (!lastElement.id.includes('template')) {
-                lastElement.remove();
-                parent.computeClaims();
-            }
+        $('#oidc-request-claims-id-remove-button')
+            .off()
+            .on("click", function () {
+                let lastElement = $('#oidc-id-claims-table').children().last()[0];
+                if (!lastElement.id.includes('template')) {
+                    lastElement.remove();
+                    parent.computeClaims();
+                }
+            });
+        $('#oidc-request-claims-present').click(function () {
+            parent.computeClaims();
         });
-        $('#oidc-request-claims-userinfo-remove-button').click(function () {
-            let lastElement = $('#oidc-userinfo-claims-table').children().last()[0];
-            if (!lastElement.id.includes('template')) {
-                lastElement.remove();
-                parent.computeClaims();
-            }
+        $('#oidc-request-claims-request-body').click(function () {
+            parent.computeClaims();
         });
         this.claimIdentifiers = {
             "id": {
@@ -915,23 +916,16 @@ class OIDCAuthnRequest {
                 "essential-checkbox": "id-claims-template-essential",
                 "value-input": "id-claims-template-value",
                 "key-input": "id-claims-template-key",
-                "value-column": "id-claims-template-value-column"
-            },
-            "userinfo": {
-                "table": "oidc-userinfo-claims-table",
-                "row": "userinfo-claims-row-template",
-                "value-checkbox": "userinfo-claims-template-with-value",
-                "essential-checkbox": "userinfo-claims-template-essential",
-                "value-input": "userinfo-claims-template-value",
-                "key-input": "userinfo-claims-template-key",
-                "value-column": "userinfo-claims-template-value-column"
+                "value-column": "id-claims-template-value-column",
+                "id-token-checkbox": "id-claims-template-id-token",
+                "userinfo-checkbox": "id-claims-template-userinfo"
             }
         }
         let addClaimFunction = function (type, currentIndex) {
-            let rowTemplate = parent.getClaimElement('template', parent.claimIdentifiers[type]["row"]);
+            let rowTemplate = parent.getClaimElement('template', parent.claimIdentifiers["id"]["row"]);
             let clone = rowTemplate.clone(true, true);
             // Find all elements with IDs in the clone
-            clone.attr('id', parent.claimIdentifiers[type]["row"].replace("template", currentIndex));
+            clone.attr('id', parent.claimIdentifiers["id"]["row"].replace("template", currentIndex));
             clone.find('[id]').each(function () {
                 let oldId = $(this).attr('id');
                 let newId = oldId.replace('template', currentIndex);
@@ -939,26 +933,29 @@ class OIDCAuthnRequest {
             });
             clone.removeAttr("hidden");
             clone.removeClass("template");
-            rowTemplate.after(clone);
+
+            $("#oidc-id-claims-table > div:last").after(clone);
+
             let valueCheckbox = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["value-checkbox"]);
             let keyInput = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["key-input"]);
             let valueInput = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["value-input"]);
             let essentialCheckBox = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["essential-checkbox"]);
+            let idTokenCheckbox = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["id-token-checkbox"]);
+            let userinfoCheckbox = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["userinfo-checkbox"]);
+            idTokenCheckbox.click(function () {
+                parent.computeClaims();
+            })
+            userinfoCheckbox.click(function () {
+                parent.computeClaims();
+            })
             let checkboxFunction = function () {
                 let isChecked = valueCheckbox.prop("checked");
                 let valueColumn = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["value-column"]);
                 valueColumn.prop('disabled', !isChecked);
-                valueColumn.prop('hidden', !isChecked);
                 if (isChecked) {
                     essentialCheckBox.prop("checked", false);
-                    keyInput.addClass("col-sm-4");
-                    keyInput.removeClass("col-sm-8");
-                    valueColumn.addClass('col-sm-4');
                 }
                 else {
-                    keyInput.removeClass("col-sm-4");
-                    keyInput.addClass("col-sm-8");
-                    valueColumn.removeClass('col-sm-4');
                     valueColumn.prop("value", '');
                 }
                 parent.computeClaims();
@@ -982,13 +979,7 @@ class OIDCAuthnRequest {
         $('#oidc-request-claims-id-add-button')
             .off('click')
             .on('click', function () {
-                addClaimFunction('id', $('#oidc-id-claims-table').children().length + 1);
-            });
-
-        $('#oidc-request-claims-userinfo-add-button')
-            .off('click')
-            .on('click', function () {
-                addClaimFunction('id', $('#oidc-userinfo-claims-table').children().length + 1);
+                addClaimFunction('id', $('#oidc-id-claims-table').children().length);
             });
 
         this.initField(
@@ -1019,7 +1010,6 @@ class OIDCAuthnRequest {
             'acrValues'
         );
 
-        $("#oidc-request-claims-present").prop('disabled', true);
         $("#oidc-request-claims-textarea").prop('disabled', true);
 
 
@@ -1058,7 +1048,7 @@ class OIDCAuthnRequest {
                 href: 'javascript:void(0)',
                 class: 'dropdown-item',
                 text: lang.code ? (lang.text + ' (' + lang.code + ')') : lang.text,
-                click: function(event) {
+                click: function (event) {
                     event.preventDefault();
 
                     let obj = {
@@ -1081,7 +1071,7 @@ class OIDCAuthnRequest {
         um64.change(function () {
             parent.pars["userMessage"]["b64Encode"] = this.checked;
         })
-        umCheckbox.change(function() {
+        umCheckbox.change(function () {
             umDiv.toggle(this.checked);
             parent.pars["userMessage"]["valuePresent"] = this.checked;
         });
@@ -1174,7 +1164,7 @@ class OIDCAuthnRequest {
 
         let textAreaDiv = $('<div>', {
             class: 'col-sm-10 d-flex',
-        }).css({ "position": "relative" });
+        }).css({"position": "relative"});
 
         let textArea = $('<textarea>', {
             class: 'form-control user-message flex-grow-1',
@@ -1186,17 +1176,18 @@ class OIDCAuthnRequest {
         let parent = this
         if (sig) {
             textArea.change(function () {
-                parent.pars["signMessage"]["signMessage"]["message#"+msg.lang_code] = textArea.prop('value');
+                parent.pars["signMessage"]["signMessage"]["message#" + msg.lang_code] = textArea.prop('value');
             });
-        } else {
+        }
+        else {
             textArea.change(function () {
-                parent.pars.userMessage["message#"+msg.lang_code] = textArea.prop('value');
+                parent.pars.userMessage["message#" + msg.lang_code] = textArea.prop('value');
             });
         }
         let textAreaCloseButton = $('<button>', {
             type: 'button',
             class: 'btn-close align-self-start p-2',
-            click: function() {
+            click: function () {
                 msgDiv.remove();
             }
         }).css({
@@ -1217,57 +1208,86 @@ class OIDCAuthnRequest {
 
     computeClaims() {
         let outerClaims = {};
-        let idTokenClaims = {};
-        let userInfoClaims = {};
         let parent = this;
 
-        function computeChild(child, type, claims) {
+        function computeChild(child, claims) {
             if (child.attr("class").includes('claim-row') && !child.attr("class").includes('template')) {
                 let split = child.attr("id").split("-");
                 let index = parseInt(split[3], 10);
-                let keyInput = parent.getClaimElement(index, parent.claimIdentifiers[type]["key-input"]);
-                let isEssential = parent.getClaimElement(index, parent.claimIdentifiers[type]["essential-checkbox"]).prop("checked");
-                let isValue = parent.getClaimElement(index, parent.claimIdentifiers[type]["value-checkbox"]).prop("checked");
-                if (isEssential) {
-                    claims[keyInput.val()] = {"essential": true};
-                }
-                else if (isValue) {
-                    let valueInput = parent.getClaimElement(index, parent.claimIdentifiers[type]["value-input"]);
-                    let value = valueInput.prop("value");
-                    if (value.includes(",")) {
-                        let values = value.split(",");
-                        claims[keyInput.val()] = {"values": values};
+                let keyInput = parent.getClaimElement(index, parent.claimIdentifiers["id"]["key-input"]);
+                let isEssential = parent.getClaimElement(index, parent.claimIdentifiers["id"]["essential-checkbox"]).prop("checked");
+                let isValue = parent.getClaimElement(index, parent.claimIdentifiers["id"]["value-checkbox"]).prop("checked");
+                let isIdTokenClaim = parent.getClaimElement(index, parent.claimIdentifiers["id"]["id-token-checkbox"]).prop("checked");
+                let isUserInfoClaim = parent.getClaimElement(index, parent.claimIdentifiers["id"]["userinfo-checkbox"]).prop("checked");
+                if (isIdTokenClaim) {
+                    if (!claims["id_token"]) {
+                        claims["id_token"] = {};
+                    }
+                    claims["id_token"][keyInput.val()] = {};
+                    if (isEssential) {
+                        claims["id_token"][keyInput.val()] = {"essential": true};
+                    }
+                    else if (isValue) {
+                        let valueInput = parent.getClaimElement(index, parent.claimIdentifiers["id"]["value-input"]);
+                        let value = valueInput.prop("value");
+                        if (value.includes(",")) {
+                            let values = value.split(",");
+                            claims["id_token"][keyInput.val()] = {"values": values};
+                        }
+                        else {
+                            claims["id_token"][keyInput.val()] = {"value": value};
+                        }
                     }
                     else {
-                        claims[keyInput.val()] = {"value": value};
+                        claims["id_token"][keyInput.val()] = null;
                     }
                 }
-                else {
-                    claims[keyInput.val()] = null;
+                if (isUserInfoClaim) {
+                    if (!claims["userinfo"]) {
+                        claims["userinfo"] = {};
+                    }
+                    claims["userinfo"][keyInput.val()] = {};
+                    if (isEssential) {
+                        claims["userinfo"][keyInput.val()] = {"essential": true};
+                    }
+                    else if (isValue) {
+                        let valueInput = parent.getClaimElement(index, parent.claimIdentifiers["id"]["value-input"]);
+                        let value = valueInput.prop("value");
+                        if (value.includes(",")) {
+                            let values = value.split(",");
+                            claims["userinfo"][keyInput.val()] = {"values": values};
+                        }
+                        else {
+                            claims["userinfo"][keyInput.val()] = {"value": value};
+                        }
+                    }
+                    else {
+                        claims["userinfo"][keyInput.val()] = null;
+                    }
                 }
             }
         }
 
         $("#oidc-id-claims-table").children().each(function () {
             let child = $(this);
-            computeChild(child, "id", idTokenClaims);
+            computeChild(child, outerClaims);
         });
-        $("#oidc-userinfo-claims-table").children().each(function () {
-            let child = $(this);
-            computeChild(child, "userinfo", userInfoClaims);
-        });
-        if (Object.keys(idTokenClaims).length !== 0) {
-            outerClaims["id_token"] = idTokenClaims;
-        }
-        if (Object.keys(userInfoClaims).length !== 0) {
-            outerClaims["userinfo"] = userInfoClaims;
-        }
-        $("#oidc-request-claims-present").prop("checked", Object.keys(outerClaims).length !== 0);
         let claimsTextArea = $("#oidc-request-claims-textarea");
         let json = JSON.stringify(outerClaims, null, 2);
-        claimsTextArea.prop("value", json);
-        claimsTextArea.prop("placeholder", json);
-        this.pars.claims = outerClaims;
+
+        let inRequest = $("#oidc-request-claims-present").prop("checked");
+        let inRequestBody = $("#oidc-request-claims-request-body").prop("checked");
+
+        let disabled = !(inRequest || inRequestBody);
+        if (!disabled) {
+            claimsTextArea.prop("value", json);
+            claimsTextArea.prop("placeholder", json);
+            this.pars.claims = outerClaims;
+        }
+        else {
+            claimsTextArea.prop("value", "{}");
+            claimsTextArea.prop("placeholder", "No claims will be sent");
+        }
     }
 
     initNestedField(
