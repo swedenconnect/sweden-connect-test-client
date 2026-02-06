@@ -57,10 +57,13 @@ public class AuthorizationParameterResolver {
   }
 
   private <T> Optional<T> getValue(final ModelParameter parameter, final Function<String, T> transformFunction) {
-    if (!parameter.getValuePresent() || parameter.getRequestBody() != this.forRequestBody) {
-      return Optional.empty();
+    if (parameter.getValuePresent() && !this.forRequestBody) {
+      return Optional.of(transformFunction.apply(parameter.getValue()));
     }
-    return Optional.of(transformFunction.apply(parameter.getValue()));
+    if (parameter.getRequestBody() && this.forRequestBody) {
+      return Optional.of(transformFunction.apply(parameter.getValue()));
+    }
+    return Optional.empty();
   }
 
   public Optional<State> getState() {
@@ -95,6 +98,18 @@ public class AuthorizationParameterResolver {
       }
       if (um.getRequestBody() && forRequestBody) {
         return Optional.of(um);
+      }
+      return Optional.empty();
+    });
+  }
+
+  public Optional<SignatureParameterModel> getSignMessage() {
+    return Optional.ofNullable(this.model.getSignMessage()).flatMap(sm -> {
+      if (sm.getValuePresent() && !forRequestBody) {
+        return Optional.of(sm);
+      }
+      if (sm.getRequestBody() && forRequestBody) {
+        return Optional.of(sm);
       }
       return Optional.empty();
     });

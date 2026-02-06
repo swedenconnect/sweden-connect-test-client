@@ -19,23 +19,29 @@ class OidcMessageSerializer extends TypeAdapter<OidcMessageParameterModel> {
 
     out.beginObject();
 
-    writeEncoded(out, "message#sv", value.getMessageSwedish());
-    writeEncoded(out, "message#en", value.getMessageEnglish());
-    writeEncoded(out, "message#de", value.getMessageGerman());
-    writeEncoded(out, "message#fr", value.getMessageFrench());
-    writeEncoded(out, "message#es", value.getMessageSpanish());
-    writeEncoded(out, "message#xx", value.getMessageDummy());
-    writeEncoded(out, "message", value.getMessage());
+    write(out, "message#sv", value.getMessageSwedish(), value.getB64Encode());
+    write(out, "message#en", value.getMessageEnglish(), value.getB64Encode());
+    write(out, "message#de", value.getMessageGerman(), value.getB64Encode());
+    write(out, "message#fr", value.getMessageFrench(), value.getB64Encode());
+    write(out, "message#es", value.getMessageSpanish(), value.getB64Encode());
+    write(out, "message#xx", value.getMessageDummy(), value.getB64Encode());
+    write(out, "message", value.getMessage(), value.getB64Encode());
 
     out.name("mime_type").value(value.getMimeType());
 
     out.endObject();
   }
 
-  private void writeEncoded(JsonWriter out, String name, String value) throws IOException {
+  private void write(JsonWriter out, String name, String value, Boolean encode) throws IOException {
     if (value != null) {
-      out.name(name)
-          .value(Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8)));
+      if (encode) {
+        out.name(name)
+            .value(Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8)));
+      } else {
+        out.name(name)
+            .value(value);
+      }
+
     }
   }
 

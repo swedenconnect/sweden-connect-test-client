@@ -44,4 +44,5 @@ public class OidcMessageParameterModel {
   private String mimeType;
   private Boolean requestBody;
   private Boolean valuePresent;
+  private Boolean b64Encode;
 }

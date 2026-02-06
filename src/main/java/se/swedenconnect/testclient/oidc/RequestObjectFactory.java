@@ -20,6 +20,8 @@ import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import se.swedenconnect.testclient.controllers.AuthorizationParameterResolver;
 import se.swedenconnect.testclient.controllers.OIDCAuthnRequestParameterModel;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -62,6 +64,11 @@ public class RequestObjectFactory {
       builder.issuer(model.getRequestObject().getIssuer().getValue());
     }
     resolver.getUserMessage().ifPresent(um -> builder.claim("https://id.oidc.se/param/userMessage", um));
+    resolver.getSignMessage().ifPresent(sig -> {
+      final String tbsData = Base64.getEncoder().encodeToString(sig.getPreferredMessage().getBytes(StandardCharsets.UTF_8));
+      sig.setTbsData(tbsData);
+      builder.claim("https://id.oidc.se/param/userMessage", sig);
+    });
     resolver.getNonce().ifPresent(nonce -> builder.claim("nonce", nonce.getValue()));
     resolver.getState().ifPresent(state -> builder.claim("state", state.getValue()));
     resolver.getRedirectionURI().ifPresent(uri -> builder.claim("redirection_uri", uri.toASCIIString()));

@@ -1076,6 +1076,11 @@ class OIDCAuthnRequest {
 
 
         let umCheckbox = $("#oidc-request-um-present");
+        let um64 = $('#oidc-request-um-b64');
+        um64.prop("checked", parent.pars["userMessage"]["b64Encode"]);
+        um64.change(function () {
+            parent.pars["userMessage"]["b64Encode"] = this.checked;
+        })
         umCheckbox.change(function() {
             umDiv.toggle(this.checked);
             parent.pars["userMessage"]["valuePresent"] = this.checked;
@@ -1120,13 +1125,20 @@ class OIDCAuthnRequest {
         }
 
         let sigCheckbox = $('#oidc-request-sig-present');
+        let sigb64Checkbox = $('#oidc-request-sig-b64')
+        let sigRbCheckbox = $('#oidc-request-sig-request-body');
+        sigb64Checkbox.prop("checked", parent.pars["signMessage"]["b64Encode"]);
+        sigb64Checkbox.change(function () {
+            parent.pars["signMessage"]["b64Encode"] = this.checked;
+        })
         sigCheckbox.change(function () {
-            sigDiv.toggle(this.checked);
+            sigDiv.prop("hidden", !(this.checked || sigRbCheckbox.prop("checked")));
             parent.pars["signMessage"]["valuePresent"] = this.checked;
         });
 
-        let sigRbCheckbox = $('#oidc-request-sig-request-body');
+
         sigRbCheckbox.change(function () {
+            sigDiv.prop("hidden", !(this.checked || sigCheckbox.prop("checked")));
             parent.pars["signMessage"]["requestBody"] = this.checked;
         });
 
@@ -1272,12 +1284,25 @@ class OIDCAuthnRequest {
         presentElement.prop("checked", parent.pars[valueReference[0]][valueReference[1]]["valuePresent"]);
         requestBodyElement.prop("checked", parent.pars[valueReference[0]][valueReference[1]]["requestBody"]);
         requestBodyElement.click(function () {
+            let isChecked = presentElement.prop('checked');
             parent.pars[valueReference[0]][valueReference[1]]["requestBody"] = requestBodyElement.prop("checked");
+            let isRbChecked = requestBodyElement.prop('checked');
+            let disabled = !(isChecked || isRbChecked);
+            inputElement.prop('disabled', disabled);
+            if (disabled) {
+                inputElement.prop('value', '');
+            }
+            else {
+                inputElement.prop('value', parent.pars[valueReference[0]][valueReference[1]]["value"]);
+            }
         });
         let onClickFunction = function () {
             let isChecked = presentElement.prop('checked');
-            inputElement.prop('disabled', !isChecked);
-            if (!isChecked) {
+            parent.pars[valueReference[0]][valueReference[1]]["valuePresent"] = isChecked;
+            let isRbChecked = requestBodyElement.prop('checked');
+            let disabled = !(isChecked || isRbChecked);
+            inputElement.prop('disabled', disabled);
+            if (disabled) {
                 inputElement.prop('value', '');
             }
             else {
@@ -1307,12 +1332,24 @@ class OIDCAuthnRequest {
         presentElement.prop("checked", parent.pars[valueReference]["valuePresent"]);
         requestBodyElement.prop("checked", parent.pars[valueReference]["requestBody"]);
         requestBodyElement.click(function () {
+            let isChecked = presentElement.prop('checked');
+            let isRbchecked = requestBodyElement.prop("checked");
+            let disabled = !(isChecked || isRbchecked);
+            inputElement.prop('disabled', disabled);
+            if (disabled) {
+                inputElement.prop('value', '');
+            }
+            else {
+                inputElement.prop('value', parent.pars[valueReference]["value"]);
+            }
             parent.pars[valueReference]["requestBody"] = requestBodyElement.prop("checked");
         });
         let onClickFunction = function () {
             let isChecked = presentElement.prop('checked');
-            inputElement.prop('disabled', !isChecked);
-            if (!isChecked) {
+            let isRbchecked = requestBodyElement.prop("checked");
+            let disabled = !(isChecked || isRbchecked);
+            inputElement.prop('disabled', disabled);
+            if (disabled) {
                 inputElement.prop('value', '');
             }
             else {
