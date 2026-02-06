@@ -123,7 +123,12 @@ class TestClient {
     copyButton
         .off('click')
         .on('click', function () {
-          let json = $('#json-content').prop('json')
+          let json = $("#json-content").prop("json");
+
+          if (typeof json === "object" && json !== null) {
+            json = JSON.stringify(json);
+          }
+
           navigator.clipboard.writeText(json);
           const toast = document.getElementById('copy-toast');
           toast.classList.add('show');
