@@ -47,16 +47,16 @@ testclient:
     openid-fed-authorities:
       - https://www.dummy.com
     ops:
-      - entity-id: https://dev.swedenconnect.se/auth/realms/BankID
-        authorization-endpoint: https://dev.swedenconnect.se/auth/realms/BankID/protocol/openid-connect/auth
-        token-endpoint: https://dev.swedenconnect.se/auth/realms/BankID/protocol/openid-connect/token
-        user-info-endpoint: https://dev.swedenconnect.se/auth/realms/BankID/protocol/openid-connect/userinfo
-        metadata-endpoint: https://dev.swedenconnect.se/auth/realms/BankID/.well-known/openid-configuration
-      - entity-id: https://dev.swedenconnect.se/auth/realms/DevSwedenConnectReferenceIdP
-        authorization-endpoint: https://dev.swedenconnect.se/auth/realms/DevSwedenConnectReferenceIdP/protocol/openid-connect/auth
-        token-endpoint: https://dev.swedenconnect.se/auth/realms/DevSwedenConnectReferenceIdP/protocol/openid-connect/token
-        user-info-endpoint: https://dev.swedenconnect.se/auth/realms/DevSwedenConnectReferenceIdP/protocol/openid-connect/userinfo
-        metadata-endpoint: https://dev.swedenconnect.se/auth/realms/DevSwedenConnectReferenceIdP/.well-known/openid-configuration
+      - entity-id: https://dev.swedenconnect.se/proxy/realms/BankID
+        authorization-endpoint: https://dev.swedenconnect.se/proxy/realms/BankID/protocol/openid-connect/auth
+        token-endpoint: https://dev.swedenconnect.se/proxy/realms/BankID/protocol/openid-connect/token
+        user-info-endpoint: https://dev.swedenconnect.se/proxy/realms/BankID/protocol/openid-connect/userinfo
+        metadata-endpoint: https://dev.swedenconnect.se/proxy/realms/BankID/.well-known/openid-configuration
+      - entity-id: https://dev.swedenconnect.se/proxy/realms/DevSwedenConnectReferenceIdP
+        authorization-endpoint: https://dev.swedenconnect.se/proxy/realms/DevSwedenConnectReferenceIdP/protocol/openid-connect/auth
+        token-endpoint: https://dev.swedenconnect.se/proxy/realms/DevSwedenConnectReferenceIdP/protocol/openid-connect/token
+        user-info-endpoint: https://dev.swedenconnect.se/proxy/realms/DevSwedenConnectReferenceIdP/protocol/openid-connect/userinfo
+        metadata-endpoint: https://dev.swedenconnect.se/proxy/realms/DevSwedenConnectReferenceIdP/.well-known/openid-configuration
     rps:
       - path-suffix: "testrp1"
         description: "Test OIDC RP 1 - RP for personal identity number authentication"
