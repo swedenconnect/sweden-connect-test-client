@@ -845,6 +845,42 @@ class OIDCSetupAuthentication {
  */
 class OIDCAuthnRequest {
 
+    static AUTHN_CONTEXT_CLASS_REF_URIS = [
+        "http://id.elegnamnden.se/loa/1.0/loa1",
+        "http://id.elegnamnden.se/loa/1.0/loa2",
+        "http://id.swedenconnect.se/loa/1.0/loa2-nonresident",
+        "http://id.swedenconnect.se/loa/1.0/uncertified-loa2",
+        "http://id.elegnamnden.se/loa/1.0/loa3",
+        "http://id.swedenconnect.se/loa/1.0/loa3-nonresident",
+        "http://id.swedenconnect.se/loa/1.0/uncertified-loa3",
+        "http://id.elegnamnden.se/loa/1.0/loa4",
+        "http://id.swedenconnect.se/loa/1.0/loa4-nonresident",
+        "http://id.elegnamnden.se/loa/1.0/eidas-low",
+        "http://id.elegnamnden.se/loa/1.0/eidas-nf-low",
+        "http://id.swedenconnect.se/loa/1.0/uncertified-eidas-low",
+        "http://id.elegnamnden.se/loa/1.0/eidas-sub",
+        "http://id.elegnamnden.se/loa/1.0/eidas-nf-sub",
+        "http://id.swedenconnect.se/loa/1.0/uncertified-eidas-sub",
+        "http://id.elegnamnden.se/loa/1.0/eidas-high",
+        "http://id.elegnamnden.se/loa/1.0/eidas-nf-high",
+        "http://id.swedenconnect.se/loa/1.0/uncertified-eidas-high",
+        "http://eidas.europa.eu/LoA/test"
+    ];
+
+    static addSelectedAcrValue(list, uri) {
+        if (list.children("li").length === 1) {
+            let firstChild = list.find('li:first');
+            if (firstChild.text().trim().startsWith('--')) {
+                firstChild.remove();
+            }
+        }
+        let liElm = $('<li>')
+            .addClass('list-group-item d-flex justify-content-between align-items-center')
+            .append($('<span>').text(uri))
+            .append($('<button>').attr('type', 'button').addClass('btn-close'));
+        list.append(liElm);
+    }
+
     /**
      * Constructor that initializes all elements for the OIDC AuthnRequest.
      * @param template the AuthnRequest template
@@ -1003,12 +1039,7 @@ class OIDCAuthnRequest {
             "clientId"
         );
 
-        this.initField(
-            '#oidc-request-acr_values-present',
-            "#oidc-request-acr_values-request-body",
-            '#oidc-request-acr_values-input',
-            'acrValues'
-        );
+        this.initAcrValues(this.pars.acrValues);
 
         $("#oidc-request-claims-textarea").prop('disabled', true);
 
@@ -1610,4 +1641,128 @@ class OIDCAuthnRequest {
             parent.pars[valueReference[0]][valueReference[1]]["valuePresent"] = presentCheckbox.prop("checked");
         })
     }
+
+    /**
+     * Initializes the ACR values element.
+     * @param acr the ACR object
+     */
+    initAcrValues(acr) {
+        let oidcRequestAcrCheckbox = $('#oidc-request-acr-present');
+        let oidcRequestAcrRequestBodyCheckbox = $('#oidc-request-acr-request-body');
+
+        let oidcRequestAcrList = $('#oidc-request-acr-list');
+        let oidcRequestAcrAddDiv = $('#oidc-request-acr-drop-div');
+        let oidcRequestAcrCustomDiv = $('#oidc-request-acr-custom-div');
+
+        let parent = this;
+
+        // Helper function to update pars.acrValues.value from the list
+        let updateAcrValue = function() {
+            let uris = [];
+            $('#oidc-request-acr-list li span').each(function() {
+                uris.push($(this).text());
+            });
+            parent.pars.acrValues.value = uris.join(' ');
+        };
+
+        let assignedUris = [];
+
+        if (acr && acr.value) {
+            assignedUris = acr.value.split(' ').filter(uri => uri.trim() !== '');
+        }
+
+        oidcRequestAcrList.empty();
+        for (let uri of assignedUris) {
+            OIDCAuthnRequest.addSelectedAcrValue(oidcRequestAcrList, uri);
+        }
+        if (assignedUris.length === 0) {
+            oidcRequestAcrList.append($('<li>')
+                .text("-- No URIs assigned --")
+                .addClass('list-group-item d-flex justify-content-between align-items-center'));
+        }
+
+        oidcRequestAcrAddDiv.empty();
+        for (let uri of OIDCAuthnRequest.AUTHN_CONTEXT_CLASS_REF_URIS) {
+            let option = $('<a>', {
+                href: 'javascript:void(0)',
+                class: 'dropdown-item',
+                'data-acr-attr': uri,
+                text: uri,
+                click: function(event) {
+                    event.preventDefault();
+
+                    if ($(this).hasClass('disabled')) {
+                        return;
+                    }
+
+                    oidcRequestAcrCustomDiv.hide();
+                    OIDCAuthnRequest.addSelectedAcrValue(oidcRequestAcrList, uri);
+                    $(this).addClass('disabled');
+                    updateAcrValue();
+                }
+            });
+
+            if (assignedUris.includes(uri)) {
+                option.addClass('disabled');
+            }
+            oidcRequestAcrAddDiv.append(option);
+        }
+        oidcRequestAcrAddDiv.append($('<a>', {
+            href: 'javascript:void(0)',
+            class: 'dropdown-item',
+            'data-acr-attr': 'other',
+            text: "Enter other URI ...",
+            click: function(event) {
+                event.preventDefault();
+                oidcRequestAcrCustomDiv.show();
+            }
+        }));
+
+        if (acr) {
+            oidcRequestAcrCheckbox.prop('checked', acr.valuePresent || false);
+            oidcRequestAcrRequestBodyCheckbox.prop('checked', acr.requestBody || false);
+        }
+        else {
+            oidcRequestAcrCheckbox.prop('checked', false);
+            oidcRequestAcrRequestBodyCheckbox.prop('checked', false);
+        }
+
+        oidcRequestAcrCheckbox.change(function() {
+            parent.pars.acrValues.valuePresent = oidcRequestAcrCheckbox.prop('checked');
+        });
+
+        oidcRequestAcrRequestBodyCheckbox.change(function() {
+            parent.pars.acrValues.requestBody = oidcRequestAcrRequestBodyCheckbox.prop('checked');
+        });
+
+        oidcRequestAcrList.on('click', 'button.btn-close', function() {
+            let ul = $(this).closest('ul');
+            let uri = $(this).closest('li').find('span').text();
+            $(this).closest('li').remove();
+
+            let link = oidcRequestAcrAddDiv.find('a[data-acr-attr="' + uri + '"]');
+            if (link.length > 0) {
+                link.removeClass('disabled');
+            }
+
+            if (ul.children('li').length === 0) {
+                ul.append($('<li>')
+                    .text("-- No URIs assigned --")
+                    .addClass('list-group-item d-flex justify-content-between align-items-center'));
+            }
+            updateAcrValue();
+        });
+
+        $('#oidc-request-acr-custom-button').click(function() {
+            let oidcRequestAcrCustom = $('#oidc-request-acr-custom');
+            let uri = oidcRequestAcrCustom.val().trim();
+            if (uri !== '') {
+                OIDCAuthnRequest.addSelectedAcrValue(oidcRequestAcrList, uri);
+                oidcRequestAcrCustom.val('');
+                oidcRequestAcrCustomDiv.hide();
+                updateAcrValue();
+            }
+        });
+    }
+
 }

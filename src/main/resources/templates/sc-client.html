@@ -1065,18 +1065,19 @@
                             </label>
                         </div>
                     </div>
+                    <!-- ACR values -->
                     <div class="row mt-4" id="oidc-acr_values-row">
                         <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                             data-bs-original-title="Requested Authentication Context Class Reference (acr_values) ">
-                            <label class="col-form-label text-sm-right"
-                                   for="oidc-request-acr_values-input">ACR values</label>
+                             data-bs-original-title="Requested Authentication Context Class Reference (acr_values)">
+                            <label class="col-form-label text-sm-right">ACR values</label>
                         </div>
                         <div class="col-sm-6">
-                            <input type="text" class="form-control" id="oidc-request-acr_values-input">
+                            <ul class="list-group" id="oidc-request-acr-list">
+                            </ul>
                         </div>
                         <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-acr_values-request-body">
-                            <label for="oidc-request-acr_values-request-body">
+                            <input type="checkbox" class="form-check-input" id="oidc-request-acr-request-body">
+                            <label for="oidc-request-acr-request-body">
                                 <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                                       data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                     In Request Body
@@ -1084,14 +1085,40 @@
                             </label>
                         </div>
                         <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-acr_values-present">
-                            <label for="oidc-request-acr_values-present">
-                                                                                                            <span data-bs-toggle="tooltip"
-                                                                                                                  data-bs-placement="bottom"
-                                                                                                                  data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                            <input type="checkbox" class="form-check-input" id="oidc-request-acr-present">
+                            <label for="oidc-request-acr-present">
+                                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
                                     In Request
-                                                                                                            </span>
+                                </span>
                             </label>
+                        </div>
+                    </div>
+                    <div class="row mt-4" id="oidc-request-acr-controls">
+                        <div class="col-sm-2"></div>
+                        <div class="col-sm-10">
+                            <div class="btn-group" role="group">
+                                <button id="oidc-request-acr-drop" type="button"
+                                        class="btn btn-sm btn-primary dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add URI
+                                </button>
+                                <div id="oidc-request-acr-drop-div" class="dropdown-menu"
+                                     aria-labelledby="oidc-request-acr-drop">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4" id="oidc-request-acr-custom-div" style="display: none;">
+                        <label class="col-sm-2" for="oidc-request-acr-custom">Custom Value</label>
+                        <div class="col-sm-10">
+                            <div class="input-group">
+                                <input type="text" class="form-control"
+                                       aria-describedby="oidc-request-acr-custom-button"
+                                       id="oidc-request-acr-custom">
+                                <button class="btn btn-outline-secondary" type="button"
+                                        id="oidc-request-acr-custom-button">Add
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <hr class="mt-4"/>

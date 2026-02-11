@@ -122,7 +122,7 @@ public class AuthorizationParameterResolver {
   }
 
   public Optional<List<ACR>> getAcrValues() {
-    return this.getValue(this.model.getAcrValues(), value -> Arrays.stream(value.split(",")).map(ACR::new).toList());
+    return this.getValue(this.model.getAcrValues(), value -> Arrays.stream(value.split("\\s+")).map(ACR::new).toList());
   }
 
   public Optional<Prompt> getPrompt() {
