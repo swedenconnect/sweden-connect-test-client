@@ -1040,11 +1040,12 @@
                     </div>
                     <div class="row mt-4" id="oidc-scope-row">
                         <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                             data-bs-original-title="Scopes to be sent to OpenId Provider, must containt openid">
-                            <label class="col-form-label text-sm-right" for="oidc-request-scope-input">Scope</label>
+                             data-bs-original-title="Scopes to be sent to OpenId Provider, must contain openid">
+                            <label class="col-form-label text-sm-right">Scope</label>
                         </div>
                         <div class="col-sm-6">
-                            <input type="text" class="form-control" id="oidc-request-scope-input">
+                            <ul class="list-group" id="oidc-request-scope-list">
+                            </ul>
                         </div>
                         <div class="col-sm-2">
                             <input type="checkbox" class="form-check-input" id="oidc-request-scope-request-body">
@@ -1058,11 +1059,38 @@
                         <div class="col-sm-2">
                             <input type="checkbox" class="form-check-input" id="oidc-request-scope-present">
                             <label for="oidc-request-scope-present">
-                                                                                                            <span data-bs-toggle="tooltip"
-                                                                                                                  data-bs-placement="bottom"
-                                                                                                                  data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
                                     In Request
+                                </span>
                             </label>
+                        </div>
+                    </div>
+                    <div class="row mt-4" id="oidc-request-scope-controls">
+                        <div class="col-sm-2"></div>
+                        <div class="col-sm-10">
+                            <div class="btn-group" role="group">
+                                <button id="oidc-request-scope-drop" type="button"
+                                        class="btn btn-sm btn-primary dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add Scope
+                                </button>
+                                <div id="oidc-request-scope-drop-div" class="dropdown-menu"
+                                     aria-labelledby="oidc-request-scope-drop">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4" id="oidc-request-scope-custom-div" style="display: none;">
+                        <label class="col-sm-2" for="oidc-request-scope-custom">Custom Value</label>
+                        <div class="col-sm-10">
+                            <div class="input-group">
+                                <input type="text" class="form-control"
+                                       aria-describedby="oidc-request-scope-custom-button"
+                                       id="oidc-request-scope-custom">
+                                <button class="btn btn-outline-secondary" type="button"
+                                        id="oidc-request-scope-custom-button">Add
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <!-- ACR values -->

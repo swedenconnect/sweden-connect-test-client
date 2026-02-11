@@ -881,6 +881,26 @@ class OIDCAuthnRequest {
         list.append(liElm);
     }
 
+    static SCOPE_URIS = [
+        "https://id.oidc.se/scope/naturalPersonInfo",
+        "https://id.oidc.se/scope/naturalPersonNumber",
+        "https://id.oidc.se/scope/naturalPersonOrgId"
+    ];
+
+    static addSelectedScopeValue(list, uri) {
+        if (list.children("li").length === 1) {
+            let firstChild = list.find('li:first');
+            if (firstChild.text().trim().startsWith('--')) {
+                firstChild.remove();
+            }
+        }
+        let liElm = $('<li>')
+            .addClass('list-group-item d-flex justify-content-between align-items-center')
+            .append($('<span>').text(uri))
+            .append($('<button>').attr('type', 'button').addClass('btn-close'));
+        list.append(liElm);
+    }
+
     /**
      * Constructor that initializes all elements for the OIDC AuthnRequest.
      * @param template the AuthnRequest template
@@ -1018,12 +1038,7 @@ class OIDCAuthnRequest {
                 addClaimFunction('id', $('#oidc-id-claims-table').children().length);
             });
 
-        this.initField(
-            '#oidc-request-scope-present',
-            "#oidc-request-scope-request-body",
-            '#oidc-request-scope-input',
-            "scope"
-        );
+        this.initScopeValues(this.pars.scope);
 
         this.initField(
             '#oidc-request-redirect-present',
@@ -1761,6 +1776,129 @@ class OIDCAuthnRequest {
                 oidcRequestAcrCustom.val('');
                 oidcRequestAcrCustomDiv.hide();
                 updateAcrValue();
+            }
+        });
+    }
+
+    /**
+     * Initializes the Scope values element.
+     * @param scope the scope object
+     */
+    initScopeValues(scope) {
+        let oidcRequestScopeCheckbox = $('#oidc-request-scope-present');
+        let oidcRequestScopeRequestBodyCheckbox = $('#oidc-request-scope-request-body');
+
+        let oidcRequestScopeList = $('#oidc-request-scope-list');
+        let oidcRequestScopeAddDiv = $('#oidc-request-scope-drop-div');
+        let oidcRequestScopeCustomDiv = $('#oidc-request-scope-custom-div');
+
+        let parent = this;
+
+        // Helper function to update pars.scope.value from the list
+        let updateScopeValue = function() {
+            let uris = [];
+            $('#oidc-request-scope-list li span').each(function() {
+                uris.push($(this).text());
+            });
+            parent.pars.scope.value = uris.join(' ');
+        };
+
+        let assignedUris = [];
+
+        if (scope && scope.value) {
+            assignedUris = scope.value.split(' ').filter(uri => uri.trim() !== '');
+        }
+
+        oidcRequestScopeList.empty();
+        for (let uri of assignedUris) {
+            OIDCAuthnRequest.addSelectedScopeValue(oidcRequestScopeList, uri);
+        }
+        if (assignedUris.length === 0) {
+            oidcRequestScopeList.append($('<li>')
+                .text("-- No scopes assigned --")
+                .addClass('list-group-item d-flex justify-content-between align-items-center'));
+        }
+
+        oidcRequestScopeAddDiv.empty();
+        for (let uri of OIDCAuthnRequest.SCOPE_URIS) {
+            let option = $('<a>', {
+                href: 'javascript:void(0)',
+                class: 'dropdown-item',
+                'data-scope-attr': uri,
+                text: uri,
+                click: function(event) {
+                    event.preventDefault();
+
+                    if ($(this).hasClass('disabled')) {
+                        return;
+                    }
+
+                    oidcRequestScopeCustomDiv.hide();
+                    OIDCAuthnRequest.addSelectedScopeValue(oidcRequestScopeList, uri);
+                    $(this).addClass('disabled');
+                    updateScopeValue();
+                }
+            });
+
+            if (assignedUris.includes(uri)) {
+                option.addClass('disabled');
+            }
+            oidcRequestScopeAddDiv.append(option);
+        }
+        oidcRequestScopeAddDiv.append($('<a>', {
+            href: 'javascript:void(0)',
+            class: 'dropdown-item',
+            'data-scope-attr': 'other',
+            text: "Enter other scope ...",
+            click: function(event) {
+                event.preventDefault();
+                oidcRequestScopeCustomDiv.show();
+            }
+        }));
+
+        if (scope) {
+            oidcRequestScopeCheckbox.prop('checked', scope.valuePresent || false);
+            oidcRequestScopeRequestBodyCheckbox.prop('checked', scope.requestBody || false);
+        }
+        else {
+            oidcRequestScopeCheckbox.prop('checked', false);
+            oidcRequestScopeRequestBodyCheckbox.prop('checked', false);
+        }
+
+        oidcRequestScopeCheckbox.change(function() {
+            parent.pars.scope.valuePresent = oidcRequestScopeCheckbox.prop('checked');
+        });
+
+        oidcRequestScopeRequestBodyCheckbox.change(function() {
+            parent.pars.scope.requestBody = oidcRequestScopeRequestBodyCheckbox.prop('checked');
+        });
+
+        oidcRequestScopeList.on('click', 'button.btn-close', function() {
+            let ul = $(this).closest('ul');
+            let uri = $(this).closest('li').find('span').text();
+            $(this).closest('li').remove();
+
+            let link = oidcRequestScopeAddDiv.find('a[data-scope-attr="' + uri + '"]');
+            if (link.length > 0) {
+                link.removeClass('disabled');
+            }
+
+            if (ul.children('li').length === 0) {
+                ul.append($('<li>')
+                    .text("-- No scopes assigned --")
+                    .addClass('list-group-item d-flex justify-content-between align-items-center'));
+            }
+            updateScopeValue();
+        });
+
+        $('#oidc-request-scope-custom-button').click(function() {
+            let oidcRequestScopeCustom = $('#oidc-request-scope-custom');
+            let uri = oidcRequestScopeCustom.val().trim();
+            if (uri !== '') {
+                OIDCAuthnRequest.addSelectedScopeValue(oidcRequestScopeList, uri);
+                oidcRequestScopeCustom.val('');
+                oidcRequestScopeCustomDiv.hide();
+                updateScopeValue();
             }
         });
     }
