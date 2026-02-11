@@ -35,6 +35,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -65,6 +66,7 @@ import java.util.function.Function;
  *
  * @author Martin Lindström
  */
+@Slf4j
 @RestController
 @RequestMapping("/oidc")
 @ConditionalOnProperty(value = "testclient.oidc.enabled", havingValue = "true")
@@ -215,7 +217,7 @@ public class OidcRestController {
         .advanced(AdvancedOptionsParamterModel.builder()
             .state(ModelParameter.builder().value(new State().getValue()).valuePresent(true).requestBody(false).build())
             .nonce(ModelParameter.builder().value(new Nonce().getValue()).valuePresent(true).requestBody(false).build())
-            .prompt(ModelParameter.builder().value("none").valuePresent(false).requestBody(false).build())
+            .prompt(ModelParameter.builder().value("login").valuePresent(true).requestBody(false).build())
             .loginHint(ModelParameter.builder().value("").valuePresent(false).requestBody(false).build())
             .responseType(ModelParameter.builder().value("code").valuePresent(true).requestBody(false).build())
             .codeChallenge(ModelParameter.builder().valuePresent(false).requestBody(false).build())
@@ -258,6 +260,8 @@ public class OidcRestController {
           URI.create(model.getRedirectUri().getValue()))
           .endpointURI(URI.create(selectedOp.getAuthorizationEndpoint()));
 
+      builder.maxAge(0);
+
       final AuthenticationRequest authRequest = AuthorizationRequestCustomizer.customize(
           builder,
           kidtoJwkFunction(opJWKS),
@@ -272,9 +276,11 @@ public class OidcRestController {
       httpSession.setAttribute("selected_op", selectedOp);
       httpSession.setAttribute("selected_rp", selectedRp);
 
+      final String asciiString = authRequest.toHTTPRequest().getURI().toASCIIString();
+      log.info(asciiString);
       return OIDCAuthnRequestModel.builder()
           .method("GET")
-          .url(authRequest.toHTTPRequest().getURI().toASCIIString())
+          .url(asciiString)
           .build();
     } catch (final Exception e) {
       httpSession.invalidate();

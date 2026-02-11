@@ -36,8 +36,11 @@ import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -68,6 +71,7 @@ import java.util.UUID;
  * @author Martin Lindström
  * @author Felix Hellman
  */
+@Slf4j
 @Controller
 @AllArgsConstructor
 public class OidcController {
@@ -154,7 +158,7 @@ public class OidcController {
       throw new RuntimeException("Token exchange error");
     };
     try {
-      final Map<String, Object> body = this.client.post().uri(selectedOp.getTokenEndpoint())
+      final Map<String, Object> tokenResponse = this.client.post().uri(selectedOp.getTokenEndpoint())
           .body(tokenBody)
           .header("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
           .retrieve()
@@ -164,7 +168,7 @@ public class OidcController {
           .getBody();
 
       final Map<String, Object> userInfo = this.client.get().uri(selectedOp.getUserInfoEndpoint())
-          .header("Authorization", "Bearer %s".formatted(body.get("access_token")))
+          .header("Authorization", "Bearer %s".formatted(tokenResponse.get("access_token")))
           .retrieve()
           .toEntity(new ParameterizedTypeReference<Map<String, Object>>() {
           })
@@ -187,7 +191,7 @@ public class OidcController {
             }
           });
 
-      final Map<String, Object> idTokenClaims = SignedJWT.parse((String) body.get("id_token")).getJWTClaimsSet().toJSONObject();
+      final Map<String, Object> idTokenClaims = SignedJWT.parse((String) tokenResponse.get("id_token")).getJWTClaimsSet().toJSONObject();
       final Map<String, Object> requestParameters = new HashMap<>(Map.of(
           "state", state,
           "iss", iss
@@ -216,19 +220,19 @@ public class OidcController {
       requestParameters.put("token_endpoint", selectedOp.getTokenEndpoint());
       requestParameters.put("userInfo_endpoint", selectedOp.getUserInfoEndpoint());
       requestParameters.put("auth_endpoint", selectedOp.getAuthorizationEndpoint());
-      final Map<String, Object> responseParameters = new HashMap<>(Map.copyOf(body));
+      final Map<String, Object> responseParameters = new HashMap<>(Map.copyOf(tokenResponse));
       Optional.ofNullable(state).ifPresent(s -> responseParameters.put("state", s));
       Optional.ofNullable(iss).ifPresent(s -> responseParameters.put("iss", s));
       Optional.ofNullable(code).ifPresent(s -> responseParameters.put("code", s));
 
       final OIDCResponse.OIDCResponseBuilder responseBuilder = OIDCResponse.builder()
-          .accessTokenClaims(SignedJWT.parse((String) body.get("access_token")).getJWTClaimsSet().toJSONObject())
+          .accessTokenClaims(SignedJWT.parse((String) tokenResponse.get("access_token")).getJWTClaimsSet().toJSONObject())
           .idTokenClaims(idTokenClaims)
           .authorizationRequest(authRequest.toHTTPRequest().getURI().toASCIIString())
           .userInfoClaims(userInfo)
           .requestParameters(requestParameters)
           .responseParameters(responseParameters)
-          .response(body);
+          .response(tokenResponse);
 
 
       if (authClaims.isPresent()) {
@@ -253,6 +257,33 @@ public class OidcController {
       httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE,
           responseBuilder
               .build());
+
+      final JWTClaimsSet.Builder clientAssertionLogout = new JWTClaimsSet.Builder();
+
+      clientAssertionLogout
+          .issuer(selectedRp.getEntityId())
+          .subject(selectedRp.getEntityId())
+          .audience(selectedOp.getEntityId())
+          .jwtID(UUID.randomUUID().toString())
+          .issueTime(Date.from(Instant.now()))
+          .expirationTime(Date.from(Instant.now().plusSeconds(300)));
+
+      final SignedJWT assertionLogout = new SignedJWT(header, clientAssertionLogout.build());
+      assertionLogout.sign(new RSASSASigner((RSAPrivateKey) signKey));
+
+      final MultiValueMap<String, String> logoutBody = new LinkedMultiValueMap<>();
+      logoutBody.add("client_id", authRequest.getClientID().getValue());
+      logoutBody.add("refresh_token", (String) tokenResponse.get("refresh_token"));
+      logoutBody.add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+      logoutBody.add("client_assertion", assertionLogout.serialize());
+
+      this.client.post()
+          .uri(selectedOp.getLogoutEndpoint())
+          .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+          .body(logoutBody)
+          .retrieve()
+          .onStatus(HttpStatusCode::isError, errorHandler)
+          .toBodilessEntity();
 
       return new ModelAndView("redirect:/");
     } catch (final RuntimeException e) {

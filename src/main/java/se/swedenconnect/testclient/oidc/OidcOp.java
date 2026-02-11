@@ -18,6 +18,7 @@ public class OidcOp {
   private String entityId;
   private String metadataEndpoint;
   private String authorizationEndpoint;
+  private String logoutEndpoint;
   private String tokenEndpoint;
   private String userInfoEndpoint;
   private String description;
