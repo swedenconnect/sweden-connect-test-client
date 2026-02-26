@@ -769,18 +769,18 @@ class OIDCSetupAuthentication {
      */
     displaySelectedRp(entityId) {
         if (!entityId || entityId === "none") {
-            $('#rp-info').hide();
+            $('#oidc-rp-info').hide();
             $('#oidc-authn-next-button').prop('disabled', true);
         }
         else {
             for (const rp of this.oidcInfoCache.rps) {
                 if (rp.entity_id === entityId) {
-                    $('#rp-description').text(rp.description);
+                    $('#oidc-rp-description').text(rp.description);
                     let rpUrl = $('#oidc-metadata-url');
                     rpUrl.attr('href', rp.metadata_url);
                     rpUrl.text(rp.metadata_url);
                     $('#oidc-view-metadata').attr('value', rp.entity_id);
-                    $('#rp-info').show();
+                    $('#oidc-rp-info').show();
 
                     if (OIDC_STATE.getSelectedOp()) {
                         $('#oidc-authn-next-button').prop('disabled', false);
@@ -799,7 +799,7 @@ class OIDCSetupAuthentication {
         let opSelect = $('#oidc-op-select');
         opSelect.prop('disabled', false);
         if (opSelect.find('option').length === 0) {
-            $('#op-info').hide();
+            $('#oidc-op-info').hide();
             opSelect.append(new Option("--- Select OP ---", "none", true, false));
             for (const op of opInfo) {
                 opSelect.append(new Option(op.entity_id, op.entity_id, false, false));
@@ -818,16 +818,15 @@ class OIDCSetupAuthentication {
      */
     displaySelectedOp(entityId) {
         if (!entityId || entityId === "none") {
-            $('#op-info').hide();
+            $('#oidc-op-info').hide();
             $('#oidc-authn-next-button').prop('disabled', true);
         }
         else {
             for (const op of this.oidcInfoCache.ops) {
                 if (op.entity_id === entityId) {
-                    $('#op-displayname').text(op.display_name);
-                    $('#op-description').text(op.description);
-                    $('#op-view-metadata').attr('value', op.entity_id);
-                    $('#op-info').show();
+                    $('#oidc-op-displayname').text(op.display_name);
+                    $('#oidc-op-description').text(op.description);
+                    $('#oidc-op-info').show();
 
                     if (OIDC_STATE.getSelectedRp()) {
                         $('#oidc-authn-next-button').prop('disabled', false);
@@ -885,7 +884,8 @@ class OIDCAuthnRequest {
         "https://id.oidc.se/scope/naturalPersonInfo",
         "https://id.oidc.se/scope/naturalPersonNumber",
         "https://id.oidc.se/scope/naturalPersonOrgId",
-        "https://id.oidc.se/scope/sign"
+        "https://id.oidc.se/scope/sign",
+        "https://id.oidc.se/scope/signApproval"
     ];
 
     static addSelectedScopeValue(list, uri) {

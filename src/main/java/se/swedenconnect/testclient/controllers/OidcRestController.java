@@ -52,6 +52,7 @@ import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
 import se.swedenconnect.testclient.oidc.OIDCOPMetadataFetcher;
 import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcRp;
+import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -79,18 +80,21 @@ public class OidcRestController {
   private final HttpSession httpSession;
   private final OIDCOPMetadataFetcher fetcher;
   private final CredentialBundles credentialBundles;
+  private final UrlBuilderBean urlBuilderBean;
 
   public OidcRestController(
       @Qualifier("testclient.oidc.RpList") @Nonnull final List<OidcRp> oidcRps,
       @Qualifier("testclient.oidc.OpList") @Nonnull final List<OidcOp> oidcOps,
       final HttpSession httpSession,
       final OIDCOPMetadataFetcher fetcher,
-      final CredentialBundles credentialBundles) {
+      final CredentialBundles credentialBundles,
+      @Nonnull final UrlBuilderBean urlBuilderBean) {
     this.oidcRps = oidcRps;
     this.oidcOps = oidcOps;
     this.httpSession = httpSession;
     this.fetcher = fetcher;
     this.credentialBundles = credentialBundles;
+    this.urlBuilderBean = urlBuilderBean;
   }
 
   @GetMapping(value = "/session/info")
@@ -102,7 +106,14 @@ public class OidcRestController {
   public List<OidcRpInfoModel> getOidcRpInfo() {
     return this.oidcRps.stream()
         .map(rp -> new OidcRpInfoModel(rp.getEntityId(), rp.getDescription(),
-            rp.getMetadata().toJSONObject(true).toJSONString()))
+            this.urlBuilderBean.buildUrl("/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset()))))
+        .toList();
+  }
+
+  @GetMapping(value = "/op/info", produces = MediaType.APPLICATION_JSON_VALUE)
+  public List<OidcOpInfoModel> getOidcOpInfo() {
+    return this.oidcOps.stream()
+        .map(op -> new OidcOpInfoModel(op.getEntityId(), op.getDisplayName(), op.getDescription(), op.getMetadataEndpoint()))
         .toList();
   }
 
@@ -114,14 +125,14 @@ public class OidcRestController {
 
   @GetMapping(value = "/rp/metadata")
   public JSONObject getMetadata(@RequestParam("rp") final String entityId) {
-    return this.oidcRps.stream().findFirst().filter(rp -> rp.getEntityId().equals(entityId)).orElseThrow(() -> {
+    return this.oidcRps.stream().filter(rp -> rp.getEntityId().equals(entityId)).findFirst().orElseThrow(() -> {
       return new RuntimeException("Failed to find metadata for %s".formatted(entityId));
     }).getMetadata().toJSONObject(true);
   }
 
   @GetMapping(value = "/op/metadata")
   public JSONObject getOpMetadata(@RequestParam("op") final String entityId) {
-    final OidcOp selectedOP = this.oidcOps.stream().findFirst().filter(rp -> rp.getEntityId().equals(entityId)).orElseThrow(() -> {
+    final OidcOp selectedOP = this.oidcOps.stream().filter(op -> op.getEntityId().equals(entityId)).findFirst().orElseThrow(() -> {
       return new RuntimeException("Failed to find metadata for %s".formatted(entityId));
     });
     return this.fetcher.getOPMetadata(selectedOP);
@@ -130,7 +141,7 @@ public class OidcRestController {
   @GetMapping(value = "/authn/info")
   public OIDCInitAuthnModel initInfo() {
     final List<OpenIdRelyingPartyModel> relyingParties = this.oidcRps.stream().map(rp -> new OpenIdRelyingPartyModel(rp.getEntityId(), rp.getMetadata().getName(),
-        rp.getDescription(), "/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset()))).toList();
+        rp.getDescription(), this.urlBuilderBean.buildUrl("/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset())))).toList();
 
     final List<OpenIdProviderModel> providers = this.oidcOps.stream().map(op -> new OpenIdProviderModel(
             op.getEntityId(),
@@ -366,7 +377,24 @@ public class OidcRestController {
     private String entityId;
 
     private String description;
+
     @JsonProperty("metadata_url")
-    private String metadataJson;
+    private String metadataUrl;
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class OidcOpInfoModel {
+    @JsonProperty("entity_id")
+    private String entityId;
+
+    @JsonProperty("display_name")
+    private String displayName;
+
+    private String description;
+
+    @JsonProperty("metadata_url")
+    private String metadataUrl;
   }
 }

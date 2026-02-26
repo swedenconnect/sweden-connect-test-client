@@ -20,6 +20,7 @@ class TestClient {
     this.samlAuthentication = null;
     this.oidcAuthentication = null;
     this.oidcRelyingParties = null;
+    this.oidcProviders = null;
 
     $('.noscripthide').show();
     $('[data-bs-toggle="tooltip"]').tooltip();
@@ -77,6 +78,17 @@ class TestClient {
         this.oidcRelyingParties.display();
         appState.setSelectedFeature('oidc-clients');
         this.onNavbarClicked(event, 'oidc-clients');
+      }
+    });
+
+    $('#menu-oidc-ops').click((event) => {
+      if (TestClient.isOidcEnabled()) {
+        if (!this.oidcProviders) {
+          this.oidcProviders = new OidcProviders();
+        }
+        this.oidcProviders.display();
+        appState.setSelectedFeature('oidc-ops');
+        this.onNavbarClicked(event, 'oidc-ops');
       }
     });
 

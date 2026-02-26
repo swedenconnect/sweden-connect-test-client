@@ -16,29 +16,18 @@
 
 class OidcRelyingParties {
 
-  constructor() {
-    this.oidcRpInfo = OIDC_STATE.get('rp-info');
-  }
-
   display() {
-    if (this.oidcRpInfo) {
-      OidcRelyingParties.setRpList(this.oidcRpInfo);
-    }
-    else {
-      $.ajax({
-        url: buildUrl('/oidc/rp/info'),
-        type: 'GET',
-        success: function(info) {
-          this.oidcRpInfo = info;
-          OIDC_STATE.set('rp-info', info);
-          OidcRelyingParties.setRpList(info);
-        },
-        error: function(error) {
-          console.error("Failed to get RP info: " + JSON.stringify(error));
-          OidcRelyingParties.setRpList([]);
-        }
-      });
-    }
+    $.ajax({
+      url: buildUrl('/oidc/rp/info'),
+      type: 'GET',
+      success: function(info) {
+        OidcRelyingParties.setRpList(info);
+      },
+      error: function(error) {
+        console.error("Failed to get RP info: " + JSON.stringify(error));
+        OidcRelyingParties.setRpList([]);
+      }
+    });
   }
 
   static setRpList(info) {
