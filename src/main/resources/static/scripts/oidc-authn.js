@@ -884,7 +884,8 @@ class OIDCAuthnRequest {
     static SCOPE_URIS = [
         "https://id.oidc.se/scope/naturalPersonInfo",
         "https://id.oidc.se/scope/naturalPersonNumber",
-        "https://id.oidc.se/scope/naturalPersonOrgId"
+        "https://id.oidc.se/scope/naturalPersonOrgId",
+        "https://id.oidc.se/scope/sign"
     ];
 
     static addSelectedScopeValue(list, uri) {
@@ -1181,6 +1182,12 @@ class OIDCAuthnRequest {
         let sigMimeType = $('#oidc-request-sig-mimetype-select');
         sigMimeType.change(function () {
             parent.pars["signMessage"]["mime_type"] = sigMimeType.prop('value');
+        });
+
+        let tbsTextarea = $('#oidc-request-tbs-textarea');
+        tbsTextarea.prop('value', parent.pars["signMessage"]["tbsData"] || '');
+        tbsTextarea.on('input change', function () {
+            parent.pars["signMessage"]["tbsData"] = tbsTextarea.prop('value');
         });
 
         sigCheckbox.change();

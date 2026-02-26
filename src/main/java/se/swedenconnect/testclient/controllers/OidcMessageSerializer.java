@@ -34,7 +34,7 @@ class OidcMessageSerializer extends TypeAdapter<OidcMessageParameterModel> {
 
   private void write(JsonWriter out, String name, String value, Boolean encode) throws IOException {
     if (value != null) {
-      if (encode) {
+      if (Boolean.TRUE.equals(encode)) {
         out.name(name)
             .value(Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8)));
       } else {

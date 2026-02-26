@@ -43,7 +43,7 @@ public class AuthorizationRequestCustomizer {
 
     resolver.getSignMessage()
         .ifPresent(sig -> {
-          if(sig.getB64Encode()) {
+          if(sig.getB64Encode() && sig.getTbsData() != null) {
             final String tbsData = Base64.getEncoder().encodeToString(sig.getTbsData().getBytes(StandardCharsets.UTF_8));
             sig.setTbsData(tbsData);
           } else {

@@ -18,7 +18,7 @@
 //
 function displayFederationInfo() {
   $.ajax({
-    url: './saml/federation/info',
+    url: buildUrl('/saml/federation/info'),
     type: 'GET',
     success: function(info) {
       $('#saml-metadata-description').text(info.description);
@@ -40,7 +40,7 @@ $(document).ready(function() {
     //$('#xml-viewer .modal-title').text(getUIMessageText('ui.saml.xml.metadata.all'));
 
     $.ajax({
-      url: './saml/federation/metadata',
+      url: buildUrl('/saml/federation/metadata'),
       type: 'GET',
       success: function(data) {
         codeViewer.displayXml("SAML Federation Metadata", data.metadata);
