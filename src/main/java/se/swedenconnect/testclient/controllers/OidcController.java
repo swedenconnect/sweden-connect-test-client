@@ -192,10 +192,8 @@ public class OidcController {
           });
 
       final Map<String, Object> idTokenClaims = SignedJWT.parse((String) tokenResponse.get("id_token")).getJWTClaimsSet().toJSONObject();
-      final Map<String, Object> requestParameters = new HashMap<>(Map.of(
-          "state", state,
-          "iss", iss
-      ));
+      final Map<String, Object> requestParameters = new HashMap<>(Map.of("iss", iss));
+      Optional.ofNullable(state).ifPresent(s -> requestParameters.put("state", s));
 
       Optional.ofNullable(authRequest.getRequestObject()).ifPresent(obj -> requestParameters.put("request_object", obj.serialize()));
       Optional.ofNullable(authRequest.getNonce()).ifPresent(nonce1 -> requestParameters.put("nonce", nonce1.getValue()));

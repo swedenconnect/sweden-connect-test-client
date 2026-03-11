@@ -979,6 +979,25 @@
                         <h2 class="content-heading">Build Authentication Request</h2>
                     </div>
                 </div>
+                <div class="row mt-3" id="oidc-templates-row">
+                    <div class="col-sm-2">
+                        <label class="col-form-label">Templates</label>
+                    </div>
+                    <div class="col-sm-10">
+                        <div class="btn-group" role="group">
+                            <button id="oidc-request-template-drop" type="button"
+                                    class="btn btn-sm btn-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Apply Template
+                            </button>
+                            <div id="oidc-request-template-drop-div" class="dropdown-menu"
+                                 aria-labelledby="oidc-request-template-drop">
+                                <span class="dropdown-item text-muted">Loading templates...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="mt-3"/>
                 <form>
                     <div class="row mt-4" id="oidc-client_id-row">
                         <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"

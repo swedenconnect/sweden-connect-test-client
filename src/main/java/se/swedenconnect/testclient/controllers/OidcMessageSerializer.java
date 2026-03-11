@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-class OidcMessageSerializer extends TypeAdapter<OidcMessageParameterModel> {
+public class OidcMessageSerializer extends TypeAdapter<OidcMessageParameterModel> {
 
   @Override
   public void write(JsonWriter out, OidcMessageParameterModel value) throws IOException {

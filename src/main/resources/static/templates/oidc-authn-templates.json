@@ -1,0 +1,161 @@
+[
+  {
+    "name": "Basic",
+    "description": "Basic OpenID Connect authentication with only the openid scope",
+    "scope": {
+      "value": "openid",
+      "valuePresent": true,
+      "requestBody": false
+    }
+  },
+  {
+    "name": "Natural Person Info (LoA3)",
+    "description": "Requests naturalPersonInfo scope with Level of Assurance 3 authentication",
+    "scope": {
+      "value": "openid https://id.oidc.se/scope/naturalPersonInfo",
+      "valuePresent": true,
+      "requestBody": false
+    },
+    "acrValues": {
+      "value": "http://id.elegnamnden.se/loa/1.0/loa3",
+      "valuePresent": true,
+      "requestBody": false
+    }
+  },
+  {
+    "name": "Natural Person Number (LoA3)",
+    "description": "Requests naturalPersonNumber scope (personal identity number) with Level of Assurance 3",
+    "scope": {
+      "value": "openid https://id.oidc.se/scope/naturalPersonNumber",
+      "valuePresent": true,
+      "requestBody": false
+    },
+    "acrValues": {
+      "value": "http://id.elegnamnden.se/loa/1.0/loa3",
+      "valuePresent": true,
+      "requestBody": false
+    }
+  },
+  {
+    "name": "Natural Person Org ID (LoA3)",
+    "description": "Requests naturalPersonOrgId scope (organizational identity) with Level of Assurance 3",
+    "scope": {
+      "value": "openid https://id.oidc.se/scope/naturalPersonOrgId",
+      "valuePresent": true,
+      "requestBody": false
+    },
+    "acrValues": {
+      "value": "http://id.elegnamnden.se/loa/1.0/loa3",
+      "valuePresent": true,
+      "requestBody": false
+    }
+  },
+  {
+    "name": "Request Object (minimal)",
+    "description": "Enables a signed request object with server-generated issuer and audience",
+    "scope": {
+      "value": "openid",
+      "valuePresent": true,
+      "requestBody": true
+    },
+    "clientId": {
+      "valuePresent": true,
+      "requestBody": true
+    },
+    "redirectUri": {
+      "valuePresent": true,
+      "requestBody": true
+    },
+    "requestObject": {
+      "moduleEnabled": true,
+      "signRequest": true,
+      "issuer": { "valuePresent": true },
+      "audience": { "valuePresent": true }
+    },
+    "advanced": {
+      "responseType": {"value":  "code", "valutePresent":  true, "requestBody": true},
+      "state": {"valuePresent":  true, "requestBody": true},
+      "nonce": {"valuePresent":  true, "requestBody": true},
+      "moduleEnabled": true
+    }
+  },
+  {
+    "name": "User Message Hidden",
+    "description": "Sends a user message hidden inside an encrypted request object",
+    "scope": {
+      "value": "openid",
+      "valuePresent": true,
+      "requestBody": true
+    },
+    "clientId": {
+      "valuePresent": true,
+      "requestBody": true
+    },
+    "redirectUri": {
+      "valuePresent": true,
+      "requestBody": true
+    },
+    "requestObject": {
+      "moduleEnabled": true,
+      "signRequest": true,
+      "encryptRequest": true,
+      "issuer": { "valuePresent": true },
+      "audience": { "valuePresent": true }
+    },
+    "advanced": {
+      "responseType": { "value": "code", "valuePresent": true, "requestBody": true },
+      "state": { "valuePresent": true, "requestBody": true },
+      "nonce": { "valuePresent": true, "requestBody": true },
+      "moduleEnabled": true
+    },
+    "userMessage": {
+      "requestBody": true,
+      "valuePresent": false,
+      "b64Encode": true,
+      "mime_type": "text/plain",
+      "message#sv": "UserMessage: Meddelande",
+      "message#en": "UserMessage: Message"
+    }
+  },
+  {
+    "name": "Sign Hidden",
+    "description": "Requests signature that is hidden with encrypted request object",
+    "scope": {
+      "value": "openid https://id.oidc.se/scope/sign",
+      "valuePresent": true,
+      "requestBody": true
+    },
+    "clientId": {
+      "valuePresent": true,
+      "requestBody": true
+    },
+    "redirectUri": {
+      "valuePresent": true,
+      "requestBody": true
+    },
+    "requestObject": {
+      "moduleEnabled": true,
+      "signRequest": true,
+      "encryptRequest": true,
+      "issuer": { "valuePresent": true },
+      "audience": { "valuePresent": true }
+    },
+    "advanced": {
+      "responseType": {"value":  "code", "valutePresent":  true, "requestBody": true},
+      "state": {"valuePresent":  true, "requestBody": true},
+      "nonce": {"valuePresent":  true, "requestBody": true},
+      "moduleEnabled": true
+    },
+    "signMessage": {
+      "requestBody": true,
+      "valuePresent": false,
+      "b64Encode": true,
+      "mime_type": "text/plain",
+      "tbsData": "Sign message",
+      "signMessage": {
+        "message#sv": "Sign: Meddelande",
+        "message#en": "Sign: Message"
+      }
+    }
+  }
+]

@@ -926,6 +926,7 @@ class OIDCAuthnRequest {
      * Initializes the AuthnRequest builder view.
      */
     init() {
+        this.initTemplates();
         this.initRequestObjectOptions();
         this.initAdvancedOptions();
         this.initKeyOptions();
@@ -1119,11 +1120,12 @@ class OIDCAuthnRequest {
             parent.pars["userMessage"]["b64Encode"] = this.checked;
         })
         umCheckbox.change(function () {
-            umDiv.toggle(this.checked);
+            umDiv.toggle(this.checked || rbCheckbox.prop("checked"));
             parent.pars["userMessage"]["valuePresent"] = this.checked;
         });
         let rbCheckbox = $('#oidc-request-um-request-body');
         rbCheckbox.change(function () {
+            umDiv.toggle(umCheckbox.prop("checked") || this.checked);
             parent.pars["userMessage"]["requestBody"] = this.checked;
         });
         let umMimeType = $('#oidc-request-um-mimetype-select');
@@ -1622,7 +1624,7 @@ class OIDCAuthnRequest {
             signKeySelector.append('<option value="' + key["kid"] + '">' + description + '</option>')
         });
         signKeySelector.val(this.pars["keys"]["signKey"]);
-        signKeySelector.change(function () {
+        signKeySelector.change(() => {
             this.pars["keys"]["signKey"] = signKeySelector.val();
         });
         let encryptionKeySelector = $("#oidc-request-advanced-enckey-select");
@@ -1635,7 +1637,7 @@ class OIDCAuthnRequest {
             encryptionKeySelector.append('<option value="' + key["kid"] + '">' + description + '</option>')
         });
         encryptionKeySelector.val(this.pars["keys"]["encKey"]);
-        encryptionKeySelector.change(function () {
+        encryptionKeySelector.change(() => {
             this.pars["keys"]["encKey"] = encryptionKeySelector.val();
         });
     }
@@ -1908,6 +1910,434 @@ class OIDCAuthnRequest {
                 updateScopeValue();
             }
         });
+    }
+
+    /**
+     * Loads predefined templates from the server and populates the template dropdown.
+     */
+    initTemplates() {
+        $.ajax({
+            url: buildUrl('/templates/oidc-authn-templates.json'),
+            type: 'GET',
+            dataType: 'json',
+            success: (templates) => {
+                const dropDiv = $('#oidc-request-template-drop-div');
+                dropDiv.empty();
+                if (!templates || templates.length === 0) {
+                    dropDiv.append($('<span>', { class: 'dropdown-item text-muted', text: 'No templates available' }));
+                    return;
+                }
+                for (const template of templates) {
+                    const item = $('<a>', {
+                        href: 'javascript:void(0)',
+                        class: 'dropdown-item',
+                        text: template.name,
+                        click: (event) => {
+                            event.preventDefault();
+                            this.applyTemplate(template);
+                        }
+                    });
+                    if (template.description) {
+                        item.attr('title', template.description);
+                    }
+                    dropDiv.append(item);
+                }
+            },
+            error: () => {
+                const dropDiv = $('#oidc-request-template-drop-div');
+                dropDiv.empty();
+                dropDiv.append($('<span>', { class: 'dropdown-item text-muted', text: 'No templates available' }));
+            }
+        });
+    }
+
+    /**
+     * Merges source into target one level deep: plain object values are themselves shallow-merged
+     * so that a template specifying only some sub-fields does not wipe out the rest.
+     */
+    mergeDeep(target, source) {
+        const result = { ...target };
+        for (const [key, value] of Object.entries(source)) {
+            const isPlainObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+            if (isPlainObject(value) && isPlainObject(target[key])) {
+                result[key] = { ...target[key], ...value };
+            } else {
+                result[key] = value;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Applies a predefined template by merging its fields into the current parameters
+     * and refreshing the affected UI components.
+     * @param template the template object from the JSON file
+     */
+    applyTemplate(template) {
+        if (template.clientId !== undefined) {
+            this.pars.clientId = { ...this.pars.clientId, ...template.clientId };
+            this.refreshField(
+                '#oidc-request-client_id-present',
+                '#oidc-request-client_id-request-body',
+                '#oidc-request-client_id-input',
+                'clientId'
+            );
+        }
+        if (template.redirectUri !== undefined) {
+            this.pars.redirectUri = { ...this.pars.redirectUri, ...template.redirectUri };
+            this.refreshField(
+                '#oidc-request-redirect-present',
+                '#oidc-request-redirect-request-body',
+                '#oidc-request-redirect-input',
+                'redirectUri'
+            );
+        }
+        if (template.scope !== undefined) {
+            this.pars.scope = { ...this.pars.scope, ...template.scope };
+            this.refreshScopeValues();
+        }
+        if (template.acrValues !== undefined) {
+            this.pars.acrValues = { ...this.pars.acrValues, ...template.acrValues };
+            this.refreshAcrValues();
+        }
+        if (template.signMessage !== undefined) {
+            this.pars.signMessage = this.mergeDeep(this.pars.signMessage, template.signMessage);
+            this.refreshSignMessage();
+        }
+        if (template.userMessage !== undefined) {
+            this.pars.userMessage = this.mergeDeep(this.pars.userMessage, template.userMessage);
+            this.refreshUserMessage();
+        }
+        if (template.advanced !== undefined) {
+            this.pars.advanced = this.mergeDeep(this.pars.advanced, template.advanced);
+            this.refreshAdvanced();
+        }
+        if (template.requestObject !== undefined) {
+            this.pars.requestObject = this.mergeDeep(this.pars.requestObject, template.requestObject);
+            this.refreshRequestObject();
+        }
+        if (template.keys !== undefined) {
+            this.pars.keys = { ...this.pars.keys, ...template.keys };
+            this.refreshKeys();
+        }
+        if (template.claims !== undefined || template.claimInRequestBody !== undefined) {
+            if (template.claims !== undefined) this.pars.claims = template.claims;
+            if (template.claimInRequestBody !== undefined) this.pars.claimInRequestBody = template.claimInRequestBody;
+            this.refreshClaims();
+        }
+    }
+
+    /**
+     * Updates a simple text field's UI state from this.pars without rebinding event handlers.
+     * @param presentElementId selector for the "In Request" checkbox
+     * @param requestBodyId selector for the "In Request Body" checkbox
+     * @param inputElementId selector for the text input
+     * @param valueReference key in this.pars
+     */
+    refreshField(presentElementId, requestBodyId, inputElementId, valueReference) {
+        const par = this.pars[valueReference];
+        const presentElement = $(presentElementId);
+        const requestBodyElement = $(requestBodyId);
+        const inputElement = $(inputElementId);
+
+        presentElement.prop('checked', par.valuePresent || false);
+        requestBodyElement.prop('checked', par.requestBody || false);
+
+        const disabled = !(par.valuePresent || par.requestBody);
+        inputElement.prop('disabled', disabled);
+        inputElement.prop('value', disabled ? '' : (par.value || ''));
+    }
+
+    /**
+     * Rebuilds the scope list UI and updates checkbox states from this.pars.scope
+     * without rebinding the existing event handlers.
+     */
+    refreshScopeValues() {
+        const scope = this.pars.scope;
+        const oidcRequestScopeList = $('#oidc-request-scope-list');
+        const oidcRequestScopeAddDiv = $('#oidc-request-scope-drop-div');
+        const oidcRequestScopeCheckbox = $('#oidc-request-scope-present');
+        const oidcRequestScopeRequestBodyCheckbox = $('#oidc-request-scope-request-body');
+
+        const assignedUris = scope && scope.value
+            ? scope.value.split(' ').filter(u => u.trim() !== '')
+            : [];
+
+        oidcRequestScopeList.empty();
+        for (const uri of assignedUris) {
+            OIDCAuthnRequest.addSelectedScopeValue(oidcRequestScopeList, uri);
+        }
+        if (assignedUris.length === 0) {
+            oidcRequestScopeList.append($('<li>')
+                .text("-- No scopes assigned --")
+                .addClass('list-group-item d-flex justify-content-between align-items-center'));
+        }
+
+        oidcRequestScopeAddDiv.find('a[data-scope-attr]').removeClass('disabled');
+        for (const uri of assignedUris) {
+            oidcRequestScopeAddDiv.find('a[data-scope-attr="' + uri + '"]').addClass('disabled');
+        }
+
+        oidcRequestScopeCheckbox.prop('checked', scope ? (scope.valuePresent || false) : false);
+        oidcRequestScopeRequestBodyCheckbox.prop('checked', scope ? (scope.requestBody || false) : false);
+    }
+
+    /**
+     * Rebuilds the ACR values list UI and updates checkbox states from this.pars.acrValues
+     * without rebinding the existing event handlers.
+     */
+    refreshAcrValues() {
+        const acr = this.pars.acrValues;
+        const oidcRequestAcrList = $('#oidc-request-acr-list');
+        const oidcRequestAcrAddDiv = $('#oidc-request-acr-drop-div');
+        const oidcRequestAcrCheckbox = $('#oidc-request-acr-present');
+        const oidcRequestAcrRequestBodyCheckbox = $('#oidc-request-acr-request-body');
+
+        const assignedUris = acr && acr.value
+            ? acr.value.split(' ').filter(u => u.trim() !== '')
+            : [];
+
+        oidcRequestAcrList.empty();
+        for (const uri of assignedUris) {
+            OIDCAuthnRequest.addSelectedAcrValue(oidcRequestAcrList, uri);
+        }
+        if (assignedUris.length === 0) {
+            oidcRequestAcrList.append($('<li>')
+                .text("-- No URIs assigned --")
+                .addClass('list-group-item d-flex justify-content-between align-items-center'));
+        }
+
+        oidcRequestAcrAddDiv.find('a[data-acr-attr]').removeClass('disabled');
+        for (const uri of assignedUris) {
+            oidcRequestAcrAddDiv.find('a[data-acr-attr="' + uri + '"]').addClass('disabled');
+        }
+
+        oidcRequestAcrCheckbox.prop('checked', acr ? (acr.valuePresent || false) : false);
+        oidcRequestAcrRequestBodyCheckbox.prop('checked', acr ? (acr.requestBody || false) : false);
+    }
+
+    /**
+     * Helper: rebuild language message rows in a messages div without rebinding handlers.
+     * Removes existing rows (identified by label[data-langcode]), then adds new ones.
+     * @param messagesDiv the jQuery div to populate
+     * @param messagesObj e.g. { "message#sv": "text", "message#en": "text" }
+     * @param sig true if this is a sign message (passed to createUserMessageDiv)
+     */
+    refreshMessageRows(messagesDiv, messagesObj, sig) {
+        messagesDiv.find('label[data-langcode]').closest('.row').remove();
+        const messages = messagesObj || {};
+        for (const lang of AuthnRequest.UM_POSSIBLE_LANGUAGES) {
+            const key = 'message#' + lang.code;
+            if (messages[key] !== undefined) {
+                const msgDiv = this.createUserMessageDiv(
+                    { lang_code: lang.code, language: lang.text, message: messages[key] },
+                    sig
+                );
+                if (msgDiv) {
+                    messagesDiv.append(msgDiv);
+                }
+            }
+        }
+    }
+
+    /**
+     * Refreshes the user message UI from this.pars.userMessage without rebinding event handlers.
+     */
+    refreshUserMessage() {
+        const um = this.pars.userMessage;
+        $('#oidc-request-um-present').prop('checked', um.valuePresent || false);
+        $('#oidc-request-um-request-body').prop('checked', um.requestBody || false);
+        $('#oidc-request-um-b64').prop('checked', um.b64Encode || false);
+        $('#oidc-request-um-div').toggle(!!(um.valuePresent || um.requestBody));
+        if (um.mime_type) {
+            $('#oidc-request-um-mimetype-select').val(um.mime_type);
+        }
+        this.refreshMessageRows($('#oidc-request-um-messages-div'), um, false);
+    }
+
+    /**
+     * Refreshes the advanced options UI from this.pars.advanced without rebinding event handlers.
+     */
+    refreshAdvanced() {
+        const adv = this.pars.advanced;
+
+        if (adv.moduleEnabled !== undefined) {
+            $('#oidc-advanced-authn-options').prop('checked', adv.moduleEnabled);
+            adv.moduleEnabled ? $('#oidc-advanced-authn-request').show() : $('#oidc-advanced-authn-request').hide();
+        }
+
+        // Module selectors: responseType, prompt, codeChallengeMethod
+        for (const [field, sel, rbSel, presentSel] of [
+            ['responseType',        '#oidc-request-responsetype-select',           '#oidc-request-responsetype-request-body',        '#oidc-request-responsetype-present'],
+            ['prompt',              '#oidc-request-prompt-select',                 '#oidc-request-prompt-request-body',              '#oidc-request-prompt-present'],
+            ['codeChallengeMethod', '#oidc-request-code_challenge_method-select',  '#oidc-request-code_challenge_method-request-body','#oidc-request-code_challenge_method-present'],
+        ]) {
+            if (adv[field] !== undefined) {
+                if (adv[field].value      !== undefined) $(sel).val(adv[field].value);
+                if (adv[field].requestBody  !== undefined) $(rbSel).prop('checked', adv[field].requestBody);
+                if (adv[field].valuePresent !== undefined) $(presentSel).prop('checked', adv[field].valuePresent);
+            }
+        }
+
+        // loginHint: user-editable nested field
+        if (adv.loginHint !== undefined) {
+            const lh = adv.loginHint;
+            const disabled = !(lh.valuePresent || lh.requestBody);
+            $('#oidc-request-login_hint-present').prop('checked', lh.valuePresent || false);
+            $('#oidc-request-login_hint-request-body').prop('checked', lh.requestBody || false);
+            $('#oidc-request-login_hint-input').prop('disabled', disabled).prop('value', disabled ? '' : (lh.value || ''));
+        }
+
+        // Server-generated fields: state, nonce, codeChallenge (value stays disabled until Modify)
+        for (const [field, inputSel, rbSel, presentSel] of [
+            ['state',         '#oidc-request-state-input',          '#oidc-request-state-request-body',          '#oidc-request-state-present'],
+            ['nonce',         '#oidc-request-nonce-input',          '#oidc-request-nonce-request-body',          '#oidc-request-nonce-present'],
+            ['codeChallenge', '#oidc-request-code_challenge-input', '#oidc-request-code_challenge-request-body', '#oidc-request-code_challenge-present'],
+        ]) {
+            if (adv[field] !== undefined) {
+                const f = adv[field];
+                if (f.value       !== undefined) $(inputSel).prop('value', f.value);
+                if (f.requestBody  !== undefined) $(rbSel).prop('checked', f.requestBody);
+                if (f.valuePresent !== undefined) $(presentSel).prop('checked', f.valuePresent);
+            }
+        }
+    }
+
+    /**
+     * Refreshes the request object options UI from this.pars.requestObject without rebinding event handlers.
+     */
+    refreshRequestObject() {
+        const ro = this.pars.requestObject;
+
+        if (ro.moduleEnabled !== undefined) {
+            $('#oidc-advanced-request-object-options').prop('checked', ro.moduleEnabled);
+            ro.moduleEnabled ? $('#oidc-request-options').show() : $('#oidc-request-options').hide();
+        }
+        if (ro.signRequest   !== undefined) $('#oidc-request-sign-request-body').prop('checked', ro.signRequest);
+        if (ro.encryptRequest !== undefined) $('#oidc-request-encrypt-request-body').prop('checked', ro.encryptRequest);
+
+        // issuer and audience are server-generated (remain disabled until Modify is clicked)
+        for (const [field, inputSel, rbSel, presentSel] of [
+            ['issuer',   '#oidc-request-issuer-input', '#oidc-request-issuer-request-body', '#oidc-request-issuer-present'],
+            ['audience', '#oidc-request-aud-input',    '#oidc-request-aud-request-body',    '#oidc-request-aud-present'],
+        ]) {
+            if (ro[field] !== undefined) {
+                const f = ro[field];
+                if (f.value       !== undefined) $(inputSel).prop('value', f.value);
+                if (f.requestBody  !== undefined) $(rbSel).prop('checked', f.requestBody);
+                if (f.valuePresent !== undefined) $(presentSel).prop('checked', f.valuePresent);
+            }
+        }
+    }
+
+    /**
+     * Refreshes the keys UI from this.pars.keys without rebinding event handlers.
+     */
+    refreshKeys() {
+        const keys = this.pars.keys;
+        if (keys.moduleEnabled !== undefined) {
+            $('#oidc-advanced-keys-request-check').prop('checked', keys.moduleEnabled);
+            keys.moduleEnabled ? $('#oidc-advanced-keys-request').show() : $('#oidc-advanced-keys-request').hide();
+        }
+        if (keys.signKey !== undefined) $('#oidc-request-advanced-signkey-select').val(keys.signKey);
+        if (keys.encKey  !== undefined) $('#oidc-request-advanced-enckey-select').val(keys.encKey);
+    }
+
+    /**
+     * Refreshes the claims UI from this.pars.claims and this.pars.claimInRequestBody.
+     * Clears and rebuilds claim rows, then calls computeClaims() to sync the textarea.
+     */
+    refreshClaims() {
+        // Clear existing claim rows, keeping the hidden template row
+        $('#oidc-id-claims-table').children().not('[id*="template"]').remove();
+
+        const claims = this.pars.claims || {};
+
+        // Merge id_token and userinfo entries into a single map keyed by claim name
+        const claimMap = {};
+        for (const location of ['id_token', 'userinfo']) {
+            for (const [name, spec] of Object.entries(claims[location] || {})) {
+                if (!claimMap[name]) {
+                    claimMap[name] = { id_token: false, userinfo: false, essential: false, withValue: false, value: '' };
+                }
+                claimMap[name][location] = true;
+                if (spec && spec.essential) {
+                    claimMap[name].essential = true;
+                } else if (spec && spec.value !== undefined) {
+                    claimMap[name].withValue = true;
+                    claimMap[name].value = String(spec.value);
+                } else if (spec && spec.values !== undefined) {
+                    claimMap[name].withValue = true;
+                    claimMap[name].value = spec.values.join(',');
+                }
+            }
+        }
+
+        for (const [claimName, s] of Object.entries(claimMap)) {
+            // Trigger add button to create a properly wired row
+            $('#oidc-request-claims-id-add-button').trigger('click');
+            const index = $('#oidc-id-claims-table').children().length - 1;
+
+            // Set claim name and trigger change so computeClaims picks it up
+            this.getClaimElement(index, this.claimIdentifiers["id"]["key-input"]).val(claimName).trigger('change');
+
+            // Set location checkboxes (prop only; computeClaims called at the end)
+            this.getClaimElement(index, this.claimIdentifiers["id"]["id-token-checkbox"]).prop('checked', s.id_token);
+            this.getClaimElement(index, this.claimIdentifiers["id"]["userinfo-checkbox"]).prop('checked', s.userinfo);
+
+            if (s.essential) {
+                this.getClaimElement(index, this.claimIdentifiers["id"]["essential-checkbox"]).prop('checked', true);
+            } else if (s.withValue) {
+                const valueCheckbox = this.getClaimElement(index, this.claimIdentifiers["id"]["value-checkbox"]);
+                const valueColumn   = this.getClaimElement(index, this.claimIdentifiers["id"]["value-column"]);
+                const valueInput    = this.getClaimElement(index, this.claimIdentifiers["id"]["value-input"]);
+                valueCheckbox.prop('checked', true);
+                valueColumn.prop('disabled', false);
+                valueInput.val(s.value).trigger('change');
+            }
+        }
+
+        // Ensure claims are flagged as present so computeClaims writes them
+        if (Object.keys(claimMap).length > 0) {
+            if (!$('#oidc-request-claims-present').prop('checked') && !$('#oidc-request-claims-request-body').prop('checked')) {
+                $('#oidc-request-claims-present').prop('checked', true);
+            }
+        }
+
+        if (this.pars.claimInRequestBody !== undefined) {
+            $('#oidc-request-claims-request-body').prop('checked', this.pars.claimInRequestBody);
+        }
+
+        this.computeClaims();
+    }
+
+    /**
+     * Refreshes the sign message UI from this.pars.signMessage without rebinding event handlers.
+     */
+    refreshSignMessage() {
+        const sig = this.pars.signMessage;
+
+        const sigCheckbox = $('#oidc-request-sig-present');
+        const sigRbCheckbox = $('#oidc-request-sig-request-body');
+        const sigb64Checkbox = $('#oidc-request-sig-b64');
+        const sigDiv = $('#oidc-request-sig-div');
+        const sigMimeType = $('#oidc-request-sig-mimetype-select');
+        const tbsTextarea = $('#oidc-request-tbs-textarea');
+        const sigMessagesDiv = $('#oidc-request-sig-messages-div');
+
+        sigCheckbox.prop('checked', sig.valuePresent || false);
+        sigRbCheckbox.prop('checked', sig.requestBody || false);
+        sigb64Checkbox.prop('checked', sig.b64Encode || false);
+
+        sigDiv.prop('hidden', !(sig.valuePresent || sig.requestBody));
+
+        if (sig.mime_type) {
+            sigMimeType.val(sig.mime_type);
+        }
+
+        tbsTextarea.prop('value', sig.tbsData || '');
+
+        this.refreshMessageRows(sigMessagesDiv, sig.signMessage, true);
     }
 
 }
