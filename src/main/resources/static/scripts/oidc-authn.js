@@ -490,6 +490,74 @@ class OIDCAuthenticationResult {
                 }
             }
             userInfoDiv.show();
+
+            // Logout — always runs last, after any refresh token grant
+            const performLogout = () => {
+                const logoutCard = $('#oidc-authn-result-logout');
+                const tbody = $('#oidc-logout-result-tbody').empty();
+                $.ajax({
+                    url: buildUrl('/oidc/authn/logout'),
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({}),
+                    dataType: 'json',
+                    success: (result) => {
+                        if (result.success) {
+                            tbody.append(this.createRow('status', 'Success'));
+                        } else {
+                            tbody.append(this.createRow('error', result.error || 'error',
+                                'table-text table-danger', 'table-text table-danger'));
+                            tbody.append(this.createRow('error_description', result.error_description || '',
+                                'table-text table-danger', 'table-text table-danger'));
+                        }
+                        logoutCard.show();
+                    },
+                    error: () => {
+                        tbody.append(this.createRow('status', 'Logout request failed',
+                            'table-text table-danger', 'table-text table-danger'));
+                        logoutCard.show();
+                    }
+                });
+            };
+
+            // RFC 8707 refresh token grant — runs before logout if module is enabled
+            const refreshCard = $('#oidc-authn-result-refresh');
+            const rtg = this.authnRequestData?.parameters?.refreshTokenGrant;
+            if (rtg?.moduleEnabled && resultData.response?.refresh_token) {
+                const resources = (rtg.resource || '')
+                    .split(/[\s\n]+/).filter(s => s.length > 0);
+                $.ajax({
+                    url: buildUrl('/oidc/authn/token/refresh'),
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ resource: resources }),
+                    dataType: 'json',
+                    success: (result) => {
+                        const tbody = $('#oidc-refresh-result-tbody').empty();
+                        if (result.error) {
+                            tbody.append(this.createRow('error', result.error,
+                                'table-text table-danger', 'table-text table-danger'));
+                            tbody.append(this.createRow('error_description', result.error_description || '',
+                                'table-text table-danger', 'table-text table-danger'));
+                        } else {
+                            Object.entries(result.accessTokenClaims || {}).forEach(([k, v]) => {
+                                tbody.append(this.createRow(k, JSON.stringify(v)));
+                            });
+                        }
+                        refreshCard.show();
+                    },
+                    error: () => {
+                        $('#oidc-refresh-result-tbody').empty()
+                            .append(this.createRow('error', 'Request failed',
+                                'table-text table-danger', 'table-text table-danger'));
+                        refreshCard.show();
+                    },
+                    complete: performLogout
+                });
+            } else {
+                refreshCard.hide();
+                performLogout();
+            }
         }
         else {
             responseDiv.hide();
@@ -930,6 +998,7 @@ class OIDCAuthnRequest {
         this.initRequestObjectOptions();
         this.initAdvancedOptions();
         this.initKeyOptions();
+        this.initRefreshTokenGrant();
         let parent = this;
         // advanced options toggle
         let advancedOptions = $('#oidc-advanced-authn-options');
@@ -1594,6 +1663,12 @@ class OIDCAuthnRequest {
             '#oidc-request-login_hint-input',
             ["advanced", "loginHint"]
         );
+        this.initNestedField(
+            '#oidc-request-resource-present',
+            '#oidc-request-resource-request-body',
+            '#oidc-request-resource-input',
+            ["advanced", "resource"]
+        );
         this.initModuleSelector(
             "#oidc-request-responsetype-select",
             "#oidc-request-responsetype-request-body",
@@ -1640,6 +1715,34 @@ class OIDCAuthnRequest {
         encryptionKeySelector.change(() => {
             this.pars["keys"]["encKey"] = encryptionKeySelector.val();
         });
+    }
+
+    initRefreshTokenGrant() {
+        if (!this.pars.refreshTokenGrant) return;
+        this.initModuleCheckbox(
+            '#oidc-refresh-grant-enable',
+            '#oidc-refresh-grant-options',
+            'refreshTokenGrant'
+        );
+        const resourceInput = $('#oidc-refresh-grant-resource-input');
+        resourceInput.val(this.pars.refreshTokenGrant.resource || '');
+        resourceInput.change(() => {
+            this.pars.refreshTokenGrant.resource = resourceInput.val();
+        });
+    }
+
+    refreshRefreshTokenGrant() {
+        const rtg = this.pars.refreshTokenGrant;
+        if (!rtg) return;
+        if (rtg.moduleEnabled !== undefined) {
+            $('#oidc-refresh-grant-enable').prop('checked', rtg.moduleEnabled);
+            rtg.moduleEnabled
+                ? $('#oidc-refresh-grant-options').show()
+                : $('#oidc-refresh-grant-options').hide();
+        }
+        if (rtg.resource !== undefined) {
+            $('#oidc-refresh-grant-resource-input').val(rtg.resource || '');
+        }
     }
 
     initModuleSelector(
@@ -2025,6 +2128,10 @@ class OIDCAuthnRequest {
             if (template.claimInRequestBody !== undefined) this.pars.claimInRequestBody = template.claimInRequestBody;
             this.refreshClaims();
         }
+        if (template.refreshTokenGrant !== undefined) {
+            this.pars.refreshTokenGrant = { ...this.pars.refreshTokenGrant, ...template.refreshTokenGrant };
+            this.refreshRefreshTokenGrant();
+        }
     }
 
     /**
@@ -2186,6 +2293,15 @@ class OIDCAuthnRequest {
             $('#oidc-request-login_hint-present').prop('checked', lh.valuePresent || false);
             $('#oidc-request-login_hint-request-body').prop('checked', lh.requestBody || false);
             $('#oidc-request-login_hint-input').prop('disabled', disabled).prop('value', disabled ? '' : (lh.value || ''));
+        }
+
+        // resource: user-editable nested field (textarea, RFC 8707)
+        if (adv.resource !== undefined) {
+            const res = adv.resource;
+            const disabled = !(res.valuePresent || res.requestBody);
+            $('#oidc-request-resource-present').prop('checked', res.valuePresent || false);
+            $('#oidc-request-resource-request-body').prop('checked', res.requestBody || false);
+            $('#oidc-request-resource-input').prop('disabled', disabled).val(disabled ? '' : (res.value || ''));
         }
 
         // Server-generated fields: state, nonce, codeChallenge (value stays disabled until Modify)

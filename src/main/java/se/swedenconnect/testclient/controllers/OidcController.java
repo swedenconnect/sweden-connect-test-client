@@ -252,36 +252,12 @@ public class OidcController {
       }
 
 
+      Optional.ofNullable((String) tokenResponse.get("refresh_token"))
+          .ifPresent(rt -> httpSession.setAttribute("refresh_token", rt));
+
       httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE,
           responseBuilder
               .build());
-
-      final JWTClaimsSet.Builder clientAssertionLogout = new JWTClaimsSet.Builder();
-
-      clientAssertionLogout
-          .issuer(selectedRp.getEntityId())
-          .subject(selectedRp.getEntityId())
-          .audience(selectedOp.getEntityId())
-          .jwtID(UUID.randomUUID().toString())
-          .issueTime(Date.from(Instant.now()))
-          .expirationTime(Date.from(Instant.now().plusSeconds(300)));
-
-      final SignedJWT assertionLogout = new SignedJWT(header, clientAssertionLogout.build());
-      assertionLogout.sign(new RSASSASigner((RSAPrivateKey) signKey));
-
-      final MultiValueMap<String, String> logoutBody = new LinkedMultiValueMap<>();
-      logoutBody.add("client_id", authRequest.getClientID().getValue());
-      logoutBody.add("refresh_token", (String) tokenResponse.get("refresh_token"));
-      logoutBody.add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
-      logoutBody.add("client_assertion", assertionLogout.serialize());
-
-      this.client.post()
-          .uri(selectedOp.getLogoutEndpoint())
-          .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-          .body(logoutBody)
-          .retrieve()
-          .onStatus(HttpStatusCode::isError, errorHandler)
-          .toBodilessEntity();
 
       return new ModelAndView("redirect:/");
     } catch (final RuntimeException e) {

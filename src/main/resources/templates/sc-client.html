@@ -1555,6 +1555,35 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="row mt-4" id="oidc-resource-row">
+                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 data-bs-original-title="RFC 8707 resource indicator URIs. One per line or space-separated.">
+                                <label class="col-form-label text-sm-right" for="oidc-request-resource-input">resource</label>
+                            </div>
+                            <div class="col-sm-6">
+                                <textarea class="form-control" id="oidc-request-resource-input" rows="2"
+                                          placeholder="One URI per line or space-separated"></textarea>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input"
+                                       id="oidc-request-resource-request-body">
+                                <label for="oidc-request-resource-request-body">
+                                    <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                          data-bs-original-title="Check this box if you want this parameter to be present in request body.">
+                                    In Request Body
+                                </span>
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input" id="oidc-request-resource-present">
+                                <label for="oidc-request-resource-present">
+                                    <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                          data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request
+                                </span>
+                                </label>
+                            </div>
+                        </div>
                         <div class="row mt-4" id="oidc-code_challenge_method-row">
                             <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                  data-bs-original-title="The code_challenge_method indicates the transformation method used to generate the code_challenge (typically 'S256' or 'plain').">
@@ -1851,6 +1880,37 @@
 
 
                     <hr class="mt-4"/>
+
+                    <div class="row mt-4" id="oidc-refresh-grant-button-div">
+                        <label class="col-sm-6 col-form-label">
+                            <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                  data-bs-original-title="When enabled, a refresh token grant (RFC 8707) is performed automatically on the result page using the refresh_token received from the OP.">
+                                Refresh Token Grant (RFC 8707)
+                            </span>
+                        </label>
+                        <div class="col-sm-6">
+                            <div class="d-flex justify-content-end">
+                                <input type="checkbox" class="form-check-input"
+                                       id="oidc-refresh-grant-enable">
+                                <label for="oidc-refresh-grant-enable">Enable</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group hide" id="oidc-refresh-grant-options">
+                        <div class="row mt-4">
+                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 data-bs-original-title="Resource URIs to include in the refresh token grant (RFC 8707). One per line or space-separated.">
+                                <label class="col-form-label text-sm-right"
+                                       for="oidc-refresh-grant-resource-input">resource</label>
+                            </div>
+                            <div class="col-sm-10">
+                                <textarea class="form-control" id="oidc-refresh-grant-resource-input" rows="2"
+                                          placeholder="One URI per line or space-separated (optional)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="mt-4"/>
                     <div id="oidc-request-submit-div">
                         <div class="row mt-4">
                             <div class="col-sm-12">
@@ -1971,6 +2031,33 @@
                     </div>
                 </div>
 
+                <div class="card border-primary mb-3 hide" id="oidc-authn-result-refresh">
+                    <div class="card-header">Refresh Token Grant (RFC 8707)</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table class="table table-hover saml-table">
+                                    <tbody id="oidc-refresh-result-tbody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-primary mb-3 hide" id="oidc-authn-result-logout">
+                    <div class="card-header">Logout</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <table class="table table-hover saml-table">
+                                    <tbody id="oidc-logout-result-tbody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <hr class="mt-4"/>
                 <div class="row mt-4">

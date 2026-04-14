@@ -16,10 +16,16 @@
 package se.swedenconnect.testclient.controllers;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyType;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
@@ -39,13 +45,18 @@ import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClient;
 import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.bundle.CredentialBundles;
 import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
@@ -57,9 +68,14 @@ import se.swedenconnect.testclient.utils.UrlBuilderBean;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.security.interfaces.RSAPrivateKey;
+import java.time.Instant;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -81,6 +97,7 @@ public class OidcRestController {
   private final OIDCOPMetadataFetcher fetcher;
   private final CredentialBundles credentialBundles;
   private final UrlBuilderBean urlBuilderBean;
+  private final RestClient client;
 
   public OidcRestController(
       @Qualifier("testclient.oidc.RpList") @Nonnull final List<OidcRp> oidcRps,
@@ -88,13 +105,15 @@ public class OidcRestController {
       final HttpSession httpSession,
       final OIDCOPMetadataFetcher fetcher,
       final CredentialBundles credentialBundles,
-      @Nonnull final UrlBuilderBean urlBuilderBean) {
+      @Nonnull final UrlBuilderBean urlBuilderBean,
+      final RestClient client) {
     this.oidcRps = oidcRps;
     this.oidcOps = oidcOps;
     this.httpSession = httpSession;
     this.fetcher = fetcher;
     this.credentialBundles = credentialBundles;
     this.urlBuilderBean = urlBuilderBean;
+    this.client = client;
   }
 
   @GetMapping(value = "/session/info")
@@ -233,6 +252,7 @@ public class OidcRestController {
             .responseType(ModelParameter.builder().value("code").valuePresent(true).requestBody(false).build())
             .codeChallenge(ModelParameter.builder().valuePresent(false).requestBody(false).build())
             .codeChallengeMethod(ModelParameter.builder().value("S256").valuePresent(false).requestBody(false).build())
+            .resource(ModelParameter.builder().value("").valuePresent(false).requestBody(false).build())
             .moduleEnabled(false).build())
         .keys(KeyOptionsParameterModel.builder()
             .signKeys(signKeys)
@@ -246,6 +266,10 @@ public class OidcRestController {
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false).build())
+        .refreshTokenGrant(RefreshTokenGrantParameterModel.builder()
+            .moduleEnabled(false)
+            .resource("")
+            .build())
         .build();
   }
 
@@ -297,6 +321,153 @@ public class OidcRestController {
       httpSession.invalidate();
       throw e;
     }
+  }
+
+  @PostMapping(value = "/authn/token/refresh",
+               consumes = MediaType.APPLICATION_JSON_VALUE,
+               produces = MediaType.APPLICATION_JSON_VALUE)
+  public Map<String, Object> refreshToken(
+      @RequestBody final RefreshTokenRequestModel request) throws Exception {
+
+    final String refreshToken = (String) httpSession.getAttribute("refresh_token");
+    if (refreshToken == null) {
+      throw new RuntimeException("No refresh_token in session");
+    }
+
+    final OidcRp selectedRp = (OidcRp) httpSession.getAttribute("selected_rp");
+    final OidcOp selectedOp = (OidcOp) httpSession.getAttribute("selected_op");
+    final SignedJWT assertion = buildClientAssertion(selectedRp, selectedOp);
+
+    final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+    body.add("grant_type", "refresh_token");
+    body.add("refresh_token", refreshToken);
+    body.add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+    body.add("client_assertion", assertion.serialize());
+    if (request.getResource() != null) {
+      request.getResource().forEach(r -> body.add("resource", r));
+    }
+
+    final Map<String, String> opError = new HashMap<>();
+    final Map<String, Object> tokenResponse = this.client.post()
+        .uri(selectedOp.getTokenEndpoint())
+        .body(body)
+        .header("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
+        .retrieve()
+        .onStatus(HttpStatusCode::is4xxClientError, (req, resp) -> {
+          @SuppressWarnings("unchecked")
+          final Map<String, String> errMap = new ObjectMapper().readerFor(Map.class)
+              .readValue(resp.getBody().readAllBytes());
+          opError.putAll(errMap);
+        })
+        .toEntity(new ParameterizedTypeReference<Map<String, Object>>() {})
+        .getBody();
+
+    if (!opError.isEmpty()) {
+      return Map.of(
+          "error", opError.getOrDefault("error", "error"),
+          "error_description", opError.getOrDefault("error_description", "")
+      );
+    }
+
+    Map<String, Object> accessTokenClaims = Map.of();
+    if (tokenResponse != null && tokenResponse.get("access_token") instanceof String at) {
+      try {
+        accessTokenClaims = SignedJWT.parse(at).getJWTClaimsSet().toJSONObject();
+      } catch (final Exception e) {
+        accessTokenClaims = Map.of("raw_access_token", at);
+      }
+    }
+
+    final Map<String, Object> result = new HashMap<>();
+    result.put("accessTokenClaims", accessTokenClaims);
+    result.put("rawResponse", tokenResponse != null ? tokenResponse : Map.of());
+    return result;
+  }
+
+  @PostMapping(value = "/authn/logout",
+               consumes = MediaType.APPLICATION_JSON_VALUE,
+               produces = MediaType.APPLICATION_JSON_VALUE)
+  public Map<String, Object> logout() throws Exception {
+    final String refreshToken = (String) httpSession.getAttribute("refresh_token");
+    final OidcRp selectedRp = (OidcRp) httpSession.getAttribute("selected_rp");
+    final OidcOp selectedOp = (OidcOp) httpSession.getAttribute("selected_op");
+    final AuthenticationRequest authRequest = (AuthenticationRequest) httpSession.getAttribute("auth_request");
+
+    if (refreshToken == null || selectedRp == null || selectedOp == null || authRequest == null) {
+      return Map.of("success", false, "error", "missing_session", "error_description", "Session data not available");
+    }
+
+    final SignedJWT assertion = buildLogoutAssertion(selectedRp, selectedOp);
+
+    final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+    body.add("client_id", authRequest.getClientID().getValue());
+    body.add("refresh_token", refreshToken);
+    body.add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+    body.add("client_assertion", assertion.serialize());
+
+    final Map<String, String> opError = new HashMap<>();
+    this.client.post()
+        .uri(selectedOp.getLogoutEndpoint())
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        .body(body)
+        .retrieve()
+        .onStatus(HttpStatusCode::is4xxClientError, (req, resp) -> {
+          @SuppressWarnings("unchecked")
+          final Map<String, String> errMap = new ObjectMapper().readerFor(Map.class)
+              .readValue(resp.getBody().readAllBytes());
+          opError.putAll(errMap);
+        })
+        .toBodilessEntity();
+
+    if (!opError.isEmpty()) {
+      final Map<String, Object> result = new HashMap<>();
+      result.put("success", false);
+      result.put("error", opError.getOrDefault("error", "error"));
+      result.put("error_description", opError.getOrDefault("error_description", ""));
+      return result;
+    }
+
+    return Map.of("success", true);
+  }
+
+  private SignedJWT buildLogoutAssertion(final OidcRp rp, final OidcOp op) throws JOSEException {
+    final PkiCredential cred = rp.getCredentials().getCredentialForSigning();
+    final JWK jwk = new JwkTransformerFunction().serializable().apply(cred);
+    final JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
+        .jwk(jwk.toPublicJWK())
+        .keyID(jwk.getKeyID())
+        .build();
+    final JWTClaimsSet claims = new JWTClaimsSet.Builder()
+        .issuer(rp.getEntityId())
+        .subject(rp.getEntityId())
+        .audience(op.getEntityId())
+        .jwtID(UUID.randomUUID().toString())
+        .issueTime(Date.from(Instant.now()))
+        .expirationTime(Date.from(Instant.now().plusSeconds(300)))
+        .build();
+    final SignedJWT jwt = new SignedJWT(header, claims);
+    jwt.sign(new RSASSASigner((RSAPrivateKey) cred.getPrivateKey()));
+    return jwt;
+  }
+
+  private SignedJWT buildClientAssertion(final OidcRp rp, final OidcOp op) throws JOSEException {
+    final PkiCredential cred = rp.getCredentials().getCredentialForSigning();
+    final JWK jwk = new JwkTransformerFunction().serializable().apply(cred);
+    final JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
+        .jwk(jwk.toPublicJWK())
+        .keyID(jwk.getKeyID())
+        .build();
+    final JWTClaimsSet claims = new JWTClaimsSet.Builder()
+        .issuer(rp.getEntityId())
+        .subject(rp.getEntityId())
+        .audience(op.getTokenEndpoint())
+        .jwtID(UUID.randomUUID().toString())
+        .issueTime(Date.from(Instant.now()))
+        .expirationTime(Date.from(Instant.now().plusSeconds(300)))
+        .build();
+    final SignedJWT jwt = new SignedJWT(header, claims);
+    jwt.sign(new RSASSASigner((RSAPrivateKey) cred.getPrivateKey()));
+    return jwt;
   }
 
   private Function<String, JWK> kidtoJwkFunction(final JWKSet opJWKS) {
@@ -396,5 +567,12 @@ public class OidcRestController {
 
     @JsonProperty("metadata_url")
     private String metadataUrl;
+  }
+
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class RefreshTokenRequestModel {
+    private List<String> resource;
   }
 }

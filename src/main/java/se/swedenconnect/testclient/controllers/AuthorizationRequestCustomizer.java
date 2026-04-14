@@ -9,6 +9,7 @@ import com.nimbusds.jose.shaded.gson.GsonBuilder;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.function.Function;
@@ -65,6 +66,12 @@ public class AuthorizationRequestCustomizer {
       builder.codeChallenge(cc.getRight(), cc.getLeft());
     });
     resolver.getClaimRequest().ifPresent(builder::claims);
+    resolver.getResource().ifPresent(resources -> {
+      if (!resources.isEmpty()) {
+        builder.customParameter("resource",
+            resources.stream().map(URI::toASCIIString).toArray(String[]::new));
+      }
+    });
     return builder;
   }
 }

@@ -26,6 +26,7 @@ import se.swedenconnect.testclient.oidc.RequestObjectFactory;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -131,6 +132,22 @@ public class AuthorizationParameterResolver {
 
   public Optional<String> getLoginHint() {
     return this.getValue(this.model.getAdvanced().getLoginHint(), v -> v);
+  }
+
+  public Optional<List<URI>> getResource() {
+    final ModelParameter resourceParam = this.model.getAdvanced().getResource();
+    if (resourceParam == null) {
+      return Optional.empty();
+    }
+    return this.getValue(resourceParam, value -> {
+      if (value == null || value.isBlank()) {
+        return List.of();
+      }
+      return Arrays.stream(value.split("\\s+"))
+          .filter(s -> !s.isBlank())
+          .map(URI::create)
+          .collect(Collectors.toList());
+    });
   }
 
   public Optional<Pair<CodeChallengeMethod, CodeVerifier>> getCodeChallenge() {

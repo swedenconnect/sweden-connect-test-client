@@ -27,4 +27,5 @@ public class OIDCAuthnRequestParameterModel {
   private KeyOptionsParameterModel keys;
   private OidcMessageParameterModel userMessage;
   private SignatureParameterModel signMessage;
+  private RefreshTokenGrantParameterModel refreshTokenGrant;
 }
