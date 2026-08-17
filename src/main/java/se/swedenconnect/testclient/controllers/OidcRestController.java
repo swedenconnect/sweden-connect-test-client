@@ -347,25 +347,29 @@ public class OidcRestController {
       request.getResource().forEach(r -> body.add("resource", r));
     }
 
-    final Map<String, String> opError = new HashMap<>();
+    final ObjectMapper mapper = new ObjectMapper();
+    @SuppressWarnings("unchecked")
     final Map<String, Object> tokenResponse = this.client.post()
         .uri(selectedOp.getTokenEndpoint())
         .body(body)
         .header("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
-        .retrieve()
-        .onStatus(HttpStatusCode::is4xxClientError, (req, resp) -> {
-          @SuppressWarnings("unchecked")
-          final Map<String, String> errMap = new ObjectMapper().readerFor(Map.class)
-              .readValue(resp.getBody().readAllBytes());
-          opError.putAll(errMap);
-        })
-        .toEntity(new ParameterizedTypeReference<Map<String, Object>>() {})
-        .getBody();
+        .exchange((req, resp) -> {
+          final byte[] bytes = resp.getBody().readAllBytes();
+          final Map<String, Object> parsed = mapper.readerFor(Map.class).readValue(bytes);
+          if (resp.getStatusCode().is4xxClientError()) {
+            return Map.of(
+                "__op_error__", true,
+                "error", parsed.getOrDefault("error", "error"),
+                "error_description", parsed.getOrDefault("error_description", "")
+            );
+          }
+          return parsed;
+        });
 
-    if (!opError.isEmpty()) {
+    if (tokenResponse != null && Boolean.TRUE.equals(tokenResponse.get("__op_error__"))) {
       return Map.of(
-          "error", opError.getOrDefault("error", "error"),
-          "error_description", opError.getOrDefault("error_description", "")
+          "error", tokenResponse.getOrDefault("error", "error"),
+          "error_description", tokenResponse.getOrDefault("error_description", "")
       );
     }
 

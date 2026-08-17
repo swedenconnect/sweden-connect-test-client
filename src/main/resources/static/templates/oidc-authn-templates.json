@@ -118,6 +118,36 @@
     }
   },
   {
+    "name": "Auth Request Resource (RFC 8707)",
+    "description": "Sends resource indicators in the /auth request per RFC 8707",
+    "scope": {
+      "value": "openid read write",
+      "valuePresent": true,
+      "requestBody": false
+    },
+    "advanced": {
+      "moduleEnabled": true,
+      "resource": {
+        "value": "https://api.example.com\nhttps://other-api.example.com",
+        "valuePresent": true,
+        "requestBody": false
+      }
+    }
+  },
+  {
+    "name": "Refresh Token Grant (RFC 8707)",
+    "description": "Enables Refresh Token Grant with resource indicators per RFC 8707",
+    "scope": {
+      "value": "openid read write",
+      "valuePresent": true,
+      "requestBody": false
+    },
+    "refreshTokenGrant": {
+      "moduleEnabled": true,
+      "resource": "https://api.example.com\nhttps://other-api.example.com"
+    }
+  },
+  {
     "name": "Sign Hidden",
     "description": "Requests signature that is hidden with encrypted request object",
     "scope": {

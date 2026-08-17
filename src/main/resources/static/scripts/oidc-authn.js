@@ -667,7 +667,9 @@ class OIDCAuthenticationResult {
 
         let html = "";
         if (Array.isArray(contents)) {
-            html = contents.map(pair => pair.length === 1 ? pair[0] : `${pair[0]}: ${pair[1] || 'Not assigned'}`)
+            html = contents.map(pair => Array.isArray(pair)
+                ? (pair.length === 1 ? pair[0] : `${pair[0]}: ${pair[1] || 'Not assigned'}`)
+                : pair)
                 .join('<br/>');
         }
         else {
