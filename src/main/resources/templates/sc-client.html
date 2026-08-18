@@ -48,6 +48,8 @@
                         <div class="dropdown-divider"></div>
                         <a id="menu-oidc-clients" class="dropdown-item" href="javascript:void(0)">OIDC Clients</a>
                         <a id="menu-oidc-ops" class="dropdown-item" href="javascript:void(0)">OIDC Providers</a>
+                        <a id="menu-oidc-federation" class="dropdown-item" href="javascript:void(0)">OpenID
+                            Federation</a>
                     </div>
                 </li>
             </ul>
@@ -894,7 +896,6 @@
 
     <!-- Main OIDC view -->
     <div id="main-oidc" class="main-div">
-        <h1>OIDC</h1>
         <div class="col-sm-12 content-container" id="oidc-request-main">
             <div class="row">
                 <div class="col-sm-12">
@@ -1924,7 +1925,6 @@
                             </div>
                         </div>
                     </div>
-                    </div>
                 </form>
                 </div>
             </div>
@@ -2094,6 +2094,119 @@
                     <h2>OpenID Connect Providers</h2>
                 </div>
                 <div class="col-sm-12" id="oidc-op-list">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OpenID Federation -->
+    <div id="main-oidc-federation" class="main-div">
+
+        <div class="col-sm-12 content-container">
+            <div class="row">
+                <div class="col-sm-12 content-heading">
+                    <h2>OpenID Federation</h2>
+                </div>
+                <div class="col-sm-12">
+                    <p>
+                        The test client publishes an entity configuration for each of its Relying Parties, and
+                        discovers OpenID Providers by listing the subordinates of the configured trust anchors. A
+                        discovered provider is configured by resolving its trust chain and applying the metadata
+                        policies of the chain.
+                    </p>
+                </div>
+
+                <div class="col-sm-12">
+                    <div class="card border-primary mb-3">
+                        <div class="card-header">Published Entity Configurations</div>
+                        <div class="card-body">
+                            <table class="table table-hover oidf-entities-table">
+                                <thead>
+                                <tr>
+                                    <th scope="col">Entity ID</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Entity Configuration URL</th>
+                                    <th scope="col">Trust Marks</th>
+                                    <th scope="col"></th>
+                                </tr>
+                                </thead>
+                                <tbody id="oidf-entities-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-12">
+                    <div class="card border-primary mb-3">
+                        <div class="card-header">Subordinate Listing</div>
+                        <div class="card-body">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="oidf-authority-select">Authority</label>
+                                    <select id="oidf-authority-select" class="form-select"></select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="oidf-entity-type-select">Entity type</label>
+                                    <select id="oidf-entity-type-select" class="form-select">
+                                        <option value="openid_provider" selected>openid_provider</option>
+                                        <option value="">(all)</option>
+                                        <option value="openid_relying_party">openid_relying_party</option>
+                                        <option value="federation_entity">federation_entity</option>
+                                        <option value="trust_mark_issuer">trust_mark_issuer</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <button id="oidf-list-button" type="button" class="btn btn-primary">
+                                        List subordinates
+                                    </button>
+                                </div>
+                            </div>
+                            <table class="table table-hover mt-3">
+                                <thead>
+                                <tr>
+                                    <th scope="col">Entity ID</th>
+                                    <th scope="col"></th>
+                                </tr>
+                                </thead>
+                                <tbody id="oidf-subordinates-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-12">
+                    <div class="card border-primary mb-3">
+                        <div class="card-header">Providers Configured From the Federation</div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <p>Last refresh: <span id="oidf-last-refresh"></span></p>
+                                </div>
+                                <div class="col-md-4">
+                                    <button id="oidf-refresh-button" type="button" class="btn btn-primary">
+                                        Refresh from federation
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="oidf-errors" class="alert alert-warning hide">
+                                <ul id="oidf-errors-list" class="mb-0"></ul>
+                            </div>
+                            <table class="table table-hover">
+                                <thead>
+                                <tr>
+                                    <th scope="col">Entity ID</th>
+                                    <th scope="col">Display Name</th>
+                                    <th scope="col">Trust Anchor</th>
+                                    <th scope="col"></th>
+                                </tr>
+                                </thead>
+                                <tbody id="oidf-providers-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

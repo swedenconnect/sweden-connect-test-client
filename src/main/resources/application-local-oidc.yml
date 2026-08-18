@@ -44,8 +44,40 @@ testclient:
     default-tls-trust: TRUST_ALL
   oidc:
     enabled: true
+    # The immediate superiors of our RP:s - published as authority_hints in the entity configurations.
     openid-fed-authorities:
       - https://www.dummy.com
+    federation:
+      enabled: false
+      # The trust anchors of the federation(s) we participate in. The jwks setting is optional - if it is not given,
+      # the trust anchor's entity configuration is downloaded and its self-declared keys are used (test only).
+      #trust-anchors:
+      #  - entity-id: https://ta.example.com
+      #    jwks: classpath:environments/localdev/trust-anchor.jwks
+      # The trust marks that our RP:s publish in their entity configurations. They are fetched from the trust mark
+      # endpoint of the issuer, unless their value is given (a pre-issued trust mark JWT). An RP may declare its own
+      # trust marks under testclient.oidc.rps[].trust-marks.
+      #trust-marks:
+      #  - trust-mark-type: https://tmi.example.com/trust-mark/test-sp
+      #    issuer: https://tmi.example.com
+      #    # Optional - normally read from the issuer's entity configuration.
+      #    trust-mark-endpoint: https://tmi.example.com/trust_mark
+      #    # No entity configuration is published if a required trust mark can not be obtained.
+      #    required: false
+      # How long a fetched trust mark is used before it is fetched again.
+      trust-mark-refresh-interval: 1h
+      # Discover OP:s using subordinate listings and configure them using the trust anchor resolve endpoint.
+      auto-configure-ops: true
+      refresh-interval: 10m
+      entity-configuration-validity: 24h
+      # Mandatory RP metadata fields that are filled in unless the RP declares them itself.
+      organization-number: "2021006883"
+      logo-path: /images/logo.svg
+      subject-type: pairwise
+      entity-metadata:
+        organization-name: "Sweden Connect"
+        contacts:
+          - operations@swedenconnect.se
     ops:
       - entity-id: https://dev.swedenconnect.se/proxy/realms/BankID
         authorization-endpoint: https://dev.swedenconnect.se/proxy/realms/BankID/protocol/openid-connect/auth
@@ -72,7 +104,7 @@ testclient:
             "contacts" : [ "operations@swedenconnect.se" ],
             "organization_name#sv" : "Sweden Connect",
             "organization_name#en" : "Sweden Connect",
-            "subject_type" : "public",
+            "subject_type" : "pairwise",
             "token_endpoint_auth_method" : "private_key_jwt",
             "require_auth_time": true
           }

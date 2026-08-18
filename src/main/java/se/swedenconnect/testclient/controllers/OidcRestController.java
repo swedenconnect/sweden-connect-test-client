@@ -24,6 +24,7 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyType;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ParseException;
@@ -62,6 +63,7 @@ import se.swedenconnect.security.credential.bundle.CredentialBundles;
 import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
 import se.swedenconnect.testclient.oidc.OIDCOPMetadataFetcher;
 import se.swedenconnect.testclient.oidc.OidcOp;
+import se.swedenconnect.testclient.oidc.OidcOpRegistry;
 import se.swedenconnect.testclient.oidc.OidcRp;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
@@ -92,7 +94,7 @@ public class OidcRestController {
    * OIDC RP:s.
    */
   private final List<OidcRp> oidcRps;
-  private final List<OidcOp> oidcOps;
+  private final OidcOpRegistry opRegistry;
   private final HttpSession httpSession;
   private final OIDCOPMetadataFetcher fetcher;
   private final CredentialBundles credentialBundles;
@@ -101,14 +103,14 @@ public class OidcRestController {
 
   public OidcRestController(
       @Qualifier("testclient.oidc.RpList") @Nonnull final List<OidcRp> oidcRps,
-      @Qualifier("testclient.oidc.OpList") @Nonnull final List<OidcOp> oidcOps,
+      @Nonnull final OidcOpRegistry opRegistry,
       final HttpSession httpSession,
       final OIDCOPMetadataFetcher fetcher,
       final CredentialBundles credentialBundles,
       @Nonnull final UrlBuilderBean urlBuilderBean,
       final RestClient client) {
     this.oidcRps = oidcRps;
-    this.oidcOps = oidcOps;
+    this.opRegistry = opRegistry;
     this.httpSession = httpSession;
     this.fetcher = fetcher;
     this.credentialBundles = credentialBundles;
@@ -131,8 +133,11 @@ public class OidcRestController {
 
   @GetMapping(value = "/op/info", produces = MediaType.APPLICATION_JSON_VALUE)
   public List<OidcOpInfoModel> getOidcOpInfo() {
-    return this.oidcOps.stream()
-        .map(op -> new OidcOpInfoModel(op.getEntityId(), op.getDisplayName(), op.getDescription(), op.getMetadataEndpoint()))
+    return this.opRegistry.getOps().stream()
+        .map(op -> new OidcOpInfoModel(op.getEntityId(), op.getDisplayName(), op.getDescription(),
+            op.getMetadataEndpoint(),
+            Optional.ofNullable(op.getSource()).orElse(OidcOp.Source.STATIC).name().toLowerCase(),
+            op.getTrustAnchor()))
         .toList();
   }
 
@@ -151,10 +156,7 @@ public class OidcRestController {
 
   @GetMapping(value = "/op/metadata")
   public JSONObject getOpMetadata(@RequestParam("op") final String entityId) {
-    final OidcOp selectedOP = this.oidcOps.stream().filter(op -> op.getEntityId().equals(entityId)).findFirst().orElseThrow(() -> {
-      return new RuntimeException("Failed to find metadata for %s".formatted(entityId));
-    });
-    return this.fetcher.getOPMetadata(selectedOP);
+    return this.fetcher.getOPMetadata(this.opRegistry.get(entityId));
   }
 
   @GetMapping(value = "/authn/info")
@@ -162,11 +164,11 @@ public class OidcRestController {
     final List<OpenIdRelyingPartyModel> relyingParties = this.oidcRps.stream().map(rp -> new OpenIdRelyingPartyModel(rp.getEntityId(), rp.getMetadata().getName(),
         rp.getDescription(), this.urlBuilderBean.buildUrl("/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset())))).toList();
 
-    final List<OpenIdProviderModel> providers = this.oidcOps.stream().map(op -> new OpenIdProviderModel(
+    final List<OpenIdProviderModel> providers = this.opRegistry.getOps().stream().map(op -> new OpenIdProviderModel(
             op.getEntityId(),
-            "display",
-            "description",
-            "https://metadata.test"))
+            Optional.ofNullable(op.getDisplayName()).orElseGet(op::getEntityId),
+            Optional.ofNullable(op.getDescription()).orElse(""),
+            op.getMetadataEndpoint()))
         .toList();
 
     return new OIDCInitAuthnModel(relyingParties, providers);
@@ -183,19 +185,14 @@ public class OidcRestController {
         this.oidcRps.stream().filter(relyingParty -> rp.equals(relyingParty.getEntityId())).findFirst()
             .orElseThrow(() -> new RuntimeException("No such relying party found"));
 
-    final OidcOp selectedOp =
-        this.oidcOps.stream().filter(openIdProvider -> op.equals(openIdProvider.getEntityId())).findFirst()
-            .orElseThrow(() -> new RuntimeException("No such OpenID Provider found"));
+    final OidcOp selectedOp = this.opRegistry.get(op);
 
-    final JSONObject opMetadata = this.fetcher.getOPMetadata(selectedOp);
-    final JWKSet opJWKS = this.fetcher.getOPJWKS(opMetadata.getAsString("jwks_uri"));
-    final JWK opEncKey = opJWKS.getKeys()
+    final JWKSet opJWKS = this.fetcher.getOPJWKS(selectedOp);
+    final Optional<JWK> opEncKey = opJWKS.getKeys()
         .stream()
-        .filter(jwk -> {
-          return jwk.getKeyUse().getValue().equals("enc");
-        })
+        .filter(jwk -> KeyUse.ENCRYPTION.equals(jwk.getKeyUse()))
         .findFirst()
-        .get();
+        .or(() -> opJWKS.getKeys().stream().findFirst());
     final List<KeyModel> encryptionKeys = opJWKS.getKeys()
         .stream()
         .map(jwk -> {
@@ -203,7 +200,7 @@ public class OidcRestController {
               .alg(Optional.ofNullable(jwk.getKeyType()).map(KeyType::getValue).orElse("?"))
               .kid(jwk.getKeyID())
               .typ("");
-          if (opEncKey.getKeyID().equals(jwk.getKeyID())) {
+          if (opEncKey.map(k -> k.getKeyID().equals(jwk.getKeyID())).orElse(false)) {
             builder.description("[Registered Key]");
           }
           return builder.build();
@@ -257,7 +254,7 @@ public class OidcRestController {
         .keys(KeyOptionsParameterModel.builder()
             .signKeys(signKeys)
             .encKeys(encryptionKeys)
-            .encKey(opEncKey.getKeyID())
+            .encKey(opEncKey.map(JWK::getKeyID).orElse(null))
             .signKey(signKey.getKeyID())
             .moduleEnabled(true).build())
         .requestObject(RequestObjectParamterModel.builder()
@@ -282,11 +279,9 @@ public class OidcRestController {
           this.oidcRps.stream().filter(rp -> model.getRp().equals(rp.getEntityId())).findFirst()
               .orElseThrow(() -> new RuntimeException("No such relying party found"));
 
-      final OidcOp selectedOp = this.oidcOps.stream().filter(op -> op.getEntityId().equals(model.getOp())).findFirst()
-          .orElseThrow(() -> new RuntimeException("No such OpenID Provider found"));
+      final OidcOp selectedOp = this.opRegistry.get(model.getOp());
 
-      final JSONObject opMetadata = this.fetcher.getOPMetadata(selectedOp);
-      final JWKSet opJWKS = this.fetcher.getOPJWKS(opMetadata.getAsString("jwks_uri"));
+      final JWKSet opJWKS = this.fetcher.getOPJWKS(selectedOp);
 
       final AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(
           new ResponseType("code"),
@@ -571,6 +566,12 @@ public class OidcRestController {
 
     @JsonProperty("metadata_url")
     private String metadataUrl;
+
+    /** How the OP was configured - {@code static} or {@code federation}. */
+    private String source;
+
+    @JsonProperty("trust_anchor")
+    private String trustAnchor;
   }
 
   @Data

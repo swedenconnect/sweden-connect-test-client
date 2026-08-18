@@ -15,12 +15,15 @@
  */
 package se.swedenconnect.testclient;
 
+import com.nimbusds.jose.jwk.JWKSet;
 import jakarta.annotation.Nonnull;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.io.ResourceLoader;
+import se.swedenconnect.testclient.utils.PropertyToJWKSetConverter;
 import se.swedenconnect.opensaml.OpenSAMLInitializer;
 import se.swedenconnect.opensaml.OpenSAMLSecurityDefaultsConfig;
 import se.swedenconnect.opensaml.OpenSAMLSecurityExtensionConfig;
@@ -53,6 +56,18 @@ public class SwedenconnectTestClientApplication {
    *
    * @return a LocalizedStringConverter bean
    */
+  /**
+   * Creates a converter from a string to a {@link JWKSet}.
+   *
+   * @param resourceLoader the resource loader
+   * @return a JWKSet converter bean
+   */
+  @Bean
+  @ConfigurationPropertiesBinding
+  Converter<String, JWKSet> jwkSetConverter(@Nonnull final ResourceLoader resourceLoader) {
+    return new PropertyToJWKSetConverter(resourceLoader);
+  }
+
   @Bean
   @ConfigurationPropertiesBinding
   Converter<String, LocalizedString> localizedStringConverter() {

@@ -16,6 +16,7 @@
 package se.swedenconnect.testclient.oidc;
 
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 import jakarta.annotation.Nonnull;
 import lombok.Getter;
@@ -24,6 +25,7 @@ import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
 import se.swedenconnect.testclient.credentials.ClientCredentials;
+import se.swedenconnect.testclient.utils.JwkUtils;
 
 import java.net.URI;
 
@@ -69,7 +71,8 @@ public class OidcRp {
 
     final JwkTransformerFunction jwkTransformer = new JwkTransformerFunction();
     // TODO: other metadata
-    final JWKSet jwkSet = new JWKSet(jwkTransformer.apply(this.credentials.getCredentialForSigning()));
+    final JWKSet jwkSet = new JWKSet(JwkUtils.declareUse(
+        jwkTransformer.apply(this.credentials.getCredentialForSigning()), KeyUse.SIGNATURE, null));
 
     this.metadata.setJWKSet(jwkSet.toPublicJWKSet());
 

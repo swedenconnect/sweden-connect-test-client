@@ -868,12 +868,17 @@ class OIDCSetupAuthentication {
     displayOps(opInfo) {
         let opSelect = $('#oidc-op-select');
         opSelect.prop('disabled', false);
-        if (opSelect.find('option').length === 0) {
-            $('#oidc-op-info').hide();
-            opSelect.append(new Option("--- Select OP ---", "none", true, false));
-            for (const op of opInfo) {
-                opSelect.append(new Option(op.entity_id, op.entity_id, false, false));
-            }
+        // Rebuild the list - OP:s may have been added since the last time (for example by resolving them from the
+        // federation).
+        const previous = opSelect.val();
+        $('#oidc-op-info').hide();
+        opSelect.empty();
+        opSelect.append(new Option("--- Select OP ---", "none", true, false));
+        for (const op of opInfo) {
+            opSelect.append(new Option(op.entity_id, op.entity_id, false, false));
+        }
+        if (previous && opInfo.some(op => op.entity_id === previous)) {
+            opSelect.val(previous);
         }
         let selectedOp = OIDC_STATE.getSelectedOp();
         if (selectedOp) {

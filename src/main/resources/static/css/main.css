@@ -337,3 +337,22 @@ span .bi {
 .toast.show {
     opacity: 1;
 }
+
+.oidf-entities-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.oidf-entities-table td,
+.oidf-entities-table th {
+    word-break: break-word;
+}
+
+.oidf-entities-table .oidf-trust-marks .badge {
+    display: inline-block;
+    max-width: 100%;
+    margin-bottom: 0.25rem;
+    white-space: normal;
+    word-break: break-all;
+    text-align: left;
+}

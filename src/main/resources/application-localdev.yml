@@ -58,7 +58,7 @@ testclient:
             "contacts" : [ "operations@swedenconnect.se" ],
             "organization_name#sv" : "Sweden Connect",
             "organization_name#en" : "Sweden Connect",
-            "subject_type" : "public",
+            "subject_type" : "pairwise",
             "token_endpoint_auth_method" : "private_key_jwt",
             "require_auth_time": true
           }

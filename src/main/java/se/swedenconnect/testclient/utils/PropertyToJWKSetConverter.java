@@ -18,15 +18,38 @@ package se.swedenconnect.testclient.utils;
 import com.nimbusds.jose.jwk.JWKSet;
 import jakarta.annotation.Nonnull;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.ResourceLoader;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
 /**
- * Converts an application property string into a {@link JWKSet}.
+ * Converts an application property string into a {@link JWKSet}. The property may either hold the JWK set inline (as
+ * JSON) or point at a resource (for example {@code classpath:my-trust-anchor.jwks}).
  *
  * @author Martin Lindström
  */
 public class PropertyToJWKSetConverter implements Converter<String, JWKSet> {
+
+  /** For loading JWK sets given as resource locations. */
+  private final ResourceLoader resourceLoader;
+
+  /**
+   * Default constructor.
+   */
+  public PropertyToJWKSetConverter() {
+    this(new DefaultResourceLoader());
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param resourceLoader the resource loader to use when the property points at a resource
+   */
+  public PropertyToJWKSetConverter(@Nonnull final ResourceLoader resourceLoader) {
+    this.resourceLoader = resourceLoader;
+  }
 
   @Override
   public JWKSet convert(@Nonnull final String source) {
@@ -34,8 +57,9 @@ public class PropertyToJWKSetConverter implements Converter<String, JWKSet> {
       if (this.isInline(source)) {
         return JWKSet.load(new ByteArrayInputStream(source.getBytes()));
       }
-
-      return null;
+      try (final InputStream is = this.resourceLoader.getResource(source.trim()).getInputStream()) {
+        return JWKSet.load(is);
+      }
     }
     catch (final Exception e) {
       throw new IllegalArgumentException("Failed to instantiate JWKSet from " + source, e);

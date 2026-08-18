@@ -18,8 +18,12 @@ package se.swedenconnect.testclient.config;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 import se.swedenconnect.testclient.credentials.ClientCredentialsProperties;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Configuration properties for an OIDC RP.
@@ -56,9 +60,18 @@ public class OidcRpProperties implements InitializingBean {
   @Setter
   private String metadata;
 
+  /**
+   * The trust marks to publish in the RP:s OpenID Federation entity configuration. If not assigned, the trust marks
+   * configured under {@code testclient.oidc.federation.trust-marks} are used.
+   */
+  @Getter
+  @NestedConfigurationProperty
+  private final List<OidfProperties.TrustMarkProperties> trustMarks = new ArrayList<>();
+
   @Override
   public void afterPropertiesSet() {
     Assert.hasText(this.pathSuffix, "Missing path-suffix for OIDC OP");
+    this.trustMarks.forEach(OidfProperties.TrustMarkProperties::afterPropertiesSet);
     Assert.hasText(this.description, "Missing description for OIDC OP");
     Assert.hasText(this.metadata, "Missing metadata for OIDC OP");
   }

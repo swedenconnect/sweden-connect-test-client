@@ -21,6 +21,7 @@ class TestClient {
     this.oidcAuthentication = null;
     this.oidcRelyingParties = null;
     this.oidcProviders = null;
+    this.oidcFederation = null;
 
     $('.noscripthide').show();
     $('[data-bs-toggle="tooltip"]').tooltip();
@@ -92,6 +93,17 @@ class TestClient {
       }
     });
 
+    $('#menu-oidc-federation').click((event) => {
+      if (TestClient.isOidfEnabled()) {
+        if (!this.oidcFederation) {
+          this.oidcFederation = new OidcFederation();
+        }
+        this.oidcFederation.display();
+        appState.setSelectedFeature('oidc-federation');
+        this.onNavbarClicked(event, 'oidc-federation');
+      }
+    });
+
   }
 
   static init() {
@@ -117,6 +129,11 @@ class TestClient {
           .attr("aria-disabled", "true")
           .attr("tabindex", "-1");
       $('#menu-oidc-ops').addClass("disabled")
+          .attr("aria-disabled", "true")
+          .attr("tabindex", "-1");
+    }
+    if (!TestClient.isOidfEnabled()) {
+      $('#menu-oidc-federation').addClass("disabled")
           .attr("aria-disabled", "true")
           .attr("tabindex", "-1");
     }
@@ -157,6 +174,10 @@ class TestClient {
 
   static isOidcEnabled() {
     return window.app_info && window.app_info.oidc_enabled;
+  }
+
+  static isOidfEnabled() {
+    return window.app_info && window.app_info.oidf_enabled;
   }
 
   static getFederationName() {

@@ -15,7 +15,6 @@
  */
 package se.swedenconnect.testclient.config;
 
-import com.nimbusds.jose.jwk.JWKSet;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.InitializingBean;
@@ -60,33 +59,27 @@ public class OidcProperties implements InitializingBean {
   @NestedConfigurationProperty
   private final List<OidcOpProperties> ops = new ArrayList<>();
 
+  /**
+   * OpenID Federation settings.
+   */
+  @Getter
+  @NestedConfigurationProperty
+  private final OidfProperties federation = new OidfProperties();
+
   @Override
   public void afterPropertiesSet() {
     if (this.enabled) {
-      Assert.notEmpty(this.openidFedAuthorities, "testclient.oidc.openid-fed-authorities must be set");
       Assert.notEmpty(this.rps, "testclient.oidc.rps is required (at least one RP must be configured)");
       this.rps.forEach(OidcRpProperties::afterPropertiesSet);
+      this.federation.afterPropertiesSet();
+      if (this.federation.isEnabled()) {
+        Assert.notEmpty(this.openidFedAuthorities,
+            "testclient.oidc.openid-fed-authorities must be set when OpenID Federation is enabled");
+      }
     }
-  }
-
-  public static class OidcFederationProperties implements InitializingBean {
-
-    @Getter
-    @Setter
-    private String authority;
-
-    @Getter
-    @Setter
-    private String trustAnchor;
-
-    @Getter
-    @Setter
-    private JWKSet trustJwks;
-
-    @Override
-    public void afterPropertiesSet() {
+    if (this.openidFedAuthorities == null) {
+      this.openidFedAuthorities = new ArrayList<>();
     }
-
   }
 
 }

@@ -38,6 +38,9 @@ public class ApplicationModel {
   @JsonProperty("oidc_enabled")
   private boolean oidcEnabled = false;
 
+  @JsonProperty("oidf_enabled")
+  private boolean oidfEnabled = false;
+
   @JsonProperty("federation_name")
   private String federationName;
 }

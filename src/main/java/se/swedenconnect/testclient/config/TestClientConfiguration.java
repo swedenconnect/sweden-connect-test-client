@@ -100,6 +100,11 @@ public class TestClientConfiguration {
     final ApplicationModel model = new ApplicationModel();
     model.setSamlEnabled(Optional.ofNullable(this.properties.getSaml()).map(SamlProperties::isEnabled).orElse(false));
     model.setOidcEnabled(Optional.ofNullable(this.properties.getOidc()).map(OidcProperties::isEnabled).orElse(false));
+    model.setOidfEnabled(model.isOidcEnabled()
+        && Optional.ofNullable(this.properties.getOidc())
+        .map(OidcProperties::getFederation)
+        .map(OidfProperties::isEnabled)
+        .orElse(false));
 
     // TODO: change
     model.setFederationName(

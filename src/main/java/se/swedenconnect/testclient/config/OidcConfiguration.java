@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestClient;
 import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.factory.PkiCredentialFactory;
@@ -28,11 +29,19 @@ import se.swedenconnect.testclient.controllers.OidcController;
 import se.swedenconnect.testclient.credentials.ClientCredentials;
 import se.swedenconnect.testclient.oidc.OIDCOPMetadataFetcher;
 import se.swedenconnect.testclient.oidc.OidcOp;
+import se.swedenconnect.testclient.oidc.OidcOpRegistry;
 import se.swedenconnect.testclient.oidc.OidcRp;
+import se.swedenconnect.testclient.oidc.federation.EntityConfigurationFactory;
+import se.swedenconnect.testclient.oidc.federation.OidfClient;
+import se.swedenconnect.testclient.oidc.federation.OidfOpRefresher;
+import se.swedenconnect.testclient.oidc.federation.OidfService;
+import se.swedenconnect.testclient.oidc.federation.TrustMarkResolver;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * OpenID Connect configuration.
@@ -77,8 +86,14 @@ public class OidcConfiguration {
         .tokenEndpoint(p.getTokenEndpoint())
         .userInfoEndpoint(p.getUserInfoEndpoint())
         .logoutEndpoint(p.getLogoutEndpoint())
+        .source(OidcOp.Source.STATIC)
         .build()
     ).toList();
+  }
+
+  @Bean
+  OidcOpRegistry oidcOpRegistry(@Qualifier("testclient.oidc.OpList") @Nonnull final List<OidcOp> staticOps) {
+    return new OidcOpRegistry(staticOps);
   }
 
   @Bean("testclient.oidc.RpList")
@@ -103,6 +118,61 @@ public class OidcConfiguration {
           p.getMetadata(), this.urlBuilder.buildUrl(OidcController.REDIRECTION_URL_BASE, p.getPathSuffix())));
     }
     return rps;
+  }
+
+  /**
+   * Configuration for OpenID Federation support.
+   */
+  @ConditionalOnProperty(prefix = "testclient.oidc.federation", name = "enabled", havingValue = "true")
+  @Configuration
+  @EnableScheduling
+  static class OidfConfiguration {
+
+    private final OidcProperties oidcProperties;
+
+    private final OidfProperties federationProperties;
+
+    OidfConfiguration(@Nonnull final OidcProperties properties) {
+      this.oidcProperties = properties;
+      this.federationProperties = properties.getFederation();
+    }
+
+    @Bean
+    OidfClient oidfClient(@Nonnull final RestClient restClient) {
+      return new OidfClient(restClient);
+    }
+
+    @Bean
+    OidfService oidfService(@Nonnull final OidfClient oidfClient) {
+      return new OidfService(this.federationProperties, oidfClient);
+    }
+
+    @Bean
+    TrustMarkResolver trustMarkResolver(@Nonnull final OidfClient oidfClient) {
+      // The trust marks that the individual RP:s declare - an RP that does not declare any gets the ones from the
+      // federation settings.
+      final Map<String, List<OidfProperties.TrustMarkProperties>> rpTrustMarks = this.oidcProperties.getRps().stream()
+          .filter(rp -> !rp.getTrustMarks().isEmpty())
+          .collect(Collectors.toMap(OidcRpProperties::getPathSuffix, OidcRpProperties::getTrustMarks));
+      return new TrustMarkResolver(this.federationProperties, oidfClient, rpTrustMarks);
+    }
+
+    @Bean
+    EntityConfigurationFactory entityConfigurationFactory(
+        @Qualifier("testclient.oidc.fed.authorities") @Nonnull final List<EntityID> authorities,
+        @Qualifier("testclient.BaseUrl") @Nonnull final String baseUrl,
+        @Nonnull final TrustMarkResolver trustMarkResolver) {
+      return new EntityConfigurationFactory(this.federationProperties, authorities, baseUrl, trustMarkResolver);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "testclient.oidc.federation", name = "auto-configure-ops",
+                           havingValue = "true", matchIfMissing = true)
+    OidfOpRefresher oidfOpRefresher(@Nonnull final OidfService oidfService,
+        @Nonnull final OidcOpRegistry registry) {
+      return new OidfOpRefresher(oidfService, registry);
+    }
+
   }
 
 }

@@ -39,6 +39,16 @@ class OidcProviders {
         text: op.entity_id
       }));
       let tbody = $('<tbody>');
+      tbody.append($('<tr>')
+          .append($('<th>', { scope: 'row', text: "Source" }))
+          .append($('<td>', {
+            text: op.source === 'federation' ? "OpenID Federation" : "Statically configured"
+          })));
+      if (op.trust_anchor) {
+        tbody.append($('<tr>')
+            .append($('<th>', { scope: 'row', text: "Trust Anchor" }))
+            .append($('<td>', { text: op.trust_anchor })));
+      }
       if (op.display_name) {
         tbody.append($('<tr>')
             .append($('<th>', { scope: 'row', text: "Display Name" }))
@@ -50,7 +60,10 @@ class OidcProviders {
             .append($('<td>', { text: op.description })));
       }
       tbody.append($('<tr>')
-          .append($('<th>', { scope: 'row', text: "Metadata URL" }))
+          .append($('<th>', {
+            scope: 'row',
+            text: op.source === 'federation' ? "Entity Configuration URL" : "Metadata URL"
+          }))
           .append($('<td>')
               .append($('<a>', {
                 href: op.metadata_url,
