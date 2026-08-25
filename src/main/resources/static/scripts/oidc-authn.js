@@ -960,7 +960,9 @@ class OIDCAuthnRequest {
         "https://id.oidc.se/scope/naturalPersonNumber",
         "https://id.oidc.se/scope/naturalPersonOrgId",
         "https://id.oidc.se/scope/sign",
-        "https://id.oidc.se/scope/signApproval"
+        "https://id.oidc.se/scope/signApproval",
+        "https://id.swedenconnect.se/scope/eidasNaturalPersonIdentity",
+        "https://id.swedenconnect.se/scope/eidasSwedishIdentity"
     ];
 
     static addSelectedScopeValue(list, uri) {

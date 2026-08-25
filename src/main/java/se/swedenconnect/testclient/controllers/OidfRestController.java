@@ -19,7 +19,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityID;
-import com.nimbusds.openid.connect.sdk.federation.entities.EntityType;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
@@ -53,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for the OpenID Federation features - entity configuration publishing, subordinate listings and
@@ -120,9 +120,26 @@ public class OidfRestController {
                 OidfClient.entityConfigurationUrl(rp.getEntityId()), this.trustMarks(rp)))
             .toList())
         .lastRefresh(this.opRegistry.getLastFederationRefresh())
+        .refreshInterval(this.federationService.getRefreshInterval().toSeconds())
         .errors(this.opRegistry.getFederationErrors())
-        .providers(this.opRegistry.getFederationOps().stream().map(OidfRestController::toModel).toList())
+        .providers(this.providers())
         .build();
+  }
+
+  /**
+   * The status of every OP that has been discovered from the federation. An OP that has once been configured is
+   * reported also when the latest refresh did not find it - it is still usable, but its status says that it is not
+   * up to date.
+   *
+   * @return the providers
+   */
+  @Nonnull
+  private List<OpenIdProviderModel> providers() {
+    final Map<String, OidcOp> ops = this.opRegistry.getFederationOps().stream()
+        .collect(Collectors.toMap(OidcOp::getEntityId, op -> op, (a, b) -> a));
+    return this.opRegistry.getFederationOpStatuses().stream()
+        .map(status -> toModel(ops.get(status.entityId()), status))
+        .toList();
   }
 
   /**
@@ -138,7 +155,7 @@ public class OidfRestController {
     }
     else {
       final OidfService.FederationRefreshResult result = this.federationService.refreshOps();
-      this.opRegistry.updateFederationOps(result.ops(), result.errors());
+      this.opRegistry.updateFederationOps(result.ops(), result.failures(), result.errors());
     }
     return this.getInfo();
   }
@@ -153,62 +170,6 @@ public class OidfRestController {
   public FederationInfoModel refreshTrustMarks() {
     this.entityConfigurationFactory.clearCache();
     return this.getInfo();
-  }
-
-  /**
-   * Invokes the subordinate listing endpoint of an authority.
-   *
-   * @param authority the authority to list the subordinates of (defaults to the first configured listing source)
-   * @param entityType optional entity type to filter on (for example {@code openid_provider})
-   * @return the subordinate entity identifiers
-   */
-  @GetMapping(value = "/subordinates", produces = MediaType.APPLICATION_JSON_VALUE)
-  public SubordinateListingModel listSubordinates(
-      @RequestParam(value = "authority", required = false) @Nullable final String authority,
-      @RequestParam(value = "entity_type", required = false) @Nullable final String entityType) {
-
-    final EntityID authorityId = Optional.ofNullable(authority)
-        .filter(a -> !a.isBlank())
-        .map(EntityID::new)
-        .orElseGet(this.federationService::getDefaultListingSource);
-    final EntityType type = Optional.ofNullable(entityType)
-        .filter(t -> !t.isBlank())
-        .map(EntityType::new)
-        .orElse(null);
-
-    return new SubordinateListingModel(authorityId.getValue(),
-        Optional.ofNullable(type).map(EntityType::getValue).orElse(null),
-        this.federationService.listSubordinates(authorityId, type).stream()
-            .map(EntityID::getValue)
-            .toList());
-  }
-
-  /**
-   * Resolves an OP - i.e., asks the trust anchor's resolve endpoint for its metadata (with the federation policies
-   * applied) and registers the OP so that it may be used for authentication requests.
-   *
-   * @param entityId the entity identifier of the OP
-   * @param trustAnchor the trust anchor to resolve under (defaults to the first configured trust anchor)
-   * @return the resolved OP
-   */
-  @PostMapping(value = "/resolve", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResolvedProviderModel resolve(
-      @RequestParam("entity_id") @Nonnull final String entityId,
-      @RequestParam(value = "trust_anchor", required = false) @Nullable final String trustAnchor) {
-
-    final EntityID anchor = Optional.ofNullable(trustAnchor)
-        .map(EntityID::new)
-        .orElseGet(this.federationService::getDefaultTrustAnchor);
-
-    final OidcOp op = this.federationService.resolveOp(new EntityID(entityId), anchor);
-    this.opRegistry.registerFederationOp(op);
-    log.info("Registered OpenID Provider {} (resolved under {})", op.getEntityId(), anchor);
-
-    return ResolvedProviderModel.builder()
-        .provider(toModel(op))
-        .metadata(op.getResolvedMetadata())
-        .trustChain(claimsOfChain(op.getTrustChain()))
-        .build();
   }
 
   /**
@@ -295,19 +256,34 @@ public class OidfRestController {
     }
   }
 
+  /**
+   * Builds the model for a federation OP. The OP is {@code null} if it has never been successfully resolved - all
+   * that we know about it is then its status.
+   */
   @Nonnull
-  private static OpenIdProviderModel toModel(@Nonnull final OidcOp op) {
-    return OpenIdProviderModel.builder()
-        .entityId(op.getEntityId())
-        .displayName(op.getDisplayName())
-        .description(op.getDescription())
-        .trustAnchor(op.getTrustAnchor())
-        .entityConfigurationUrl(OidfClient.entityConfigurationUrl(op.getEntityId()))
-        .authorizationEndpoint(op.getAuthorizationEndpoint())
-        .tokenEndpoint(op.getTokenEndpoint())
-        .userInfoEndpoint(op.getUserInfoEndpoint())
-        .expiresAt(op.getExpiresAt())
-        .build();
+  private static OpenIdProviderModel toModel(@Nullable final OidcOp op,
+      @Nonnull final OidcOpRegistry.FederationOpStatus status) {
+
+    final OpenIdProviderModel.OpenIdProviderModelBuilder builder = OpenIdProviderModel.builder()
+        .entityId(status.entityId())
+        .entityConfigurationUrl(OidfClient.entityConfigurationUrl(status.entityId()))
+        .status(status.state().name().toLowerCase())
+        .firstSeen(status.firstSeen())
+        .lastResolved(status.lastResolved())
+        .lastAttempt(status.lastAttempt())
+        .error(status.error())
+        .configured(op != null);
+
+    if (op != null) {
+      builder.displayName(op.getDisplayName())
+          .description(op.getDescription())
+          .trustAnchor(op.getTrustAnchor())
+          .authorizationEndpoint(op.getAuthorizationEndpoint())
+          .tokenEndpoint(op.getTokenEndpoint())
+          .userInfoEndpoint(op.getUserInfoEndpoint())
+          .expiresAt(op.getExpiresAt());
+    }
+    return builder.build();
   }
 
   /**
@@ -348,6 +324,10 @@ public class OidfRestController {
 
     @JsonProperty("last_refresh")
     private Instant lastRefresh;
+
+    /** How often the federation is traversed in order to discover, and re-configure, OP:s - in seconds. */
+    @JsonProperty("refresh_interval")
+    private Long refreshInterval;
 
     private List<String> errors;
   }
@@ -418,23 +398,6 @@ public class OidfRestController {
   }
 
   /**
-   * Model for a subordinate listing.
-   */
-  @Data
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  public static class SubordinateListingModel {
-
-    private String authority;
-
-    @JsonProperty("entity_type")
-    private String entityType;
-
-    private List<String> subordinates;
-  }
-
-  /**
    * Model for an OP that has been configured using the federation.
    */
   @Data
@@ -469,25 +432,27 @@ public class OidfRestController {
 
     @JsonProperty("expires_at")
     private Instant expiresAt;
-  }
 
-  /**
-   * Model for the result of a resolve operation.
-   */
-  @Data
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  @JsonInclude(JsonInclude.Include.NON_NULL)
-  public static class ResolvedProviderModel {
+    /** The state of the OP - {@code ok}, {@code error} or {@code not_listed}. */
+    private String status;
 
-    private OpenIdProviderModel provider;
+    /** Whether the OP is configured, i.e., whether it may be used for authentication requests. */
+    private boolean configured;
 
-    /** The metadata after the federation policies have been applied. */
-    private Map<String, Object> metadata;
+    /** When the OP was first discovered. */
+    @JsonProperty("first_seen")
+    private Instant firstSeen;
 
-    @JsonProperty("trust_chain")
-    private List<Map<String, Object>> trustChain;
+    /** When the OP was last successfully resolved. */
+    @JsonProperty("last_resolved")
+    private Instant lastResolved;
+
+    /** When the OP was last part of a refresh. */
+    @JsonProperty("last_attempt")
+    private Instant lastAttempt;
+
+    /** The reason why the OP could not be resolved during the latest refresh. */
+    private String error;
   }
 
   /**

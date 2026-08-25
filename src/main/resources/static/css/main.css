@@ -338,17 +338,28 @@ span .bi {
     opacity: 1;
 }
 
-.oidf-entities-table {
+.oidf-table {
     table-layout: fixed;
     width: 100%;
 }
 
-.oidf-entities-table td,
-.oidf-entities-table th {
+.oidf-table td,
+.oidf-table th {
     word-break: break-word;
 }
 
-.oidf-entities-table .oidf-trust-marks .badge {
+/* The action and status columns need little room - the entity id is the one that is long. */
+.oidf-providers-table th:nth-child(1) { width: 40%; }
+.oidf-providers-table th:nth-child(2) { width: 18%; }
+.oidf-providers-table th:nth-child(3) { width: 17%; }
+.oidf-providers-table th:nth-child(4) { width: 15%; }
+.oidf-providers-table th:nth-child(5) { width: 10%; }
+
+#oidf-errors-list li {
+    word-break: break-word;
+}
+
+.oidf-table .badge {
     display: inline-block;
     max-width: 100%;
     margin-bottom: 0.25rem;

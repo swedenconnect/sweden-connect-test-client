@@ -26,10 +26,10 @@ The trust marks that the RP:s have been issued are published in the `trust_marks
 
 **2. Listing subordinates**
 
-The subordinate listing endpoint of a trust anchor (or an intermediate) may be invoked from the *OpenID Federation*
-view, optionally filtered on entity type (for example `openid_provider`).
+The OP discovery invokes the subordinate listing endpoint of a trust anchor (or an intermediate), filtered on
+`openid_provider`.
 
-The automatic OP discovery normally starts at the trust anchor and traverses the entire federation tree below it.
+The discovery normally starts at the trust anchor and traverses the entire federation tree below it.
 By assigning `subordinate-listing-sources` for a trust anchor, the listings are instead made towards the given
 authorities (typically the intermediates where the OP:s are registered).
 
@@ -62,7 +62,13 @@ builds and validates the trust chain and applies the combined metadata policies,
 in a signed resolve response. We validate that response - it must be signed by the trust anchor, be issued about the
 entity we asked for, and not have expired - and use the metadata to configure the OP (endpoints and keys) so that it
 can be used for authentication requests without any manual configuration. This is done automatically at start-up and
-then at the configured interval, and may also be triggered manually.
+then at `refresh-interval` - no user interaction is involved, and the *OpenID Federation* view only reports the
+status of the OP:s that have been discovered.
+
+An OP that has once been configured is never removed. If a later refresh cannot resolve it, or if the federation
+stops listing it, the configuration from the last successful resolution is kept and the OP is reported as
+*Resolve failed* / *Not listed* along with the reason. A misbehaving OP, or trust anchor, therefore does not make an
+OP disappear from the test client.
 
 The resolution is deliberately delegated to the trust anchor rather than performed locally. A local resolver has to
 walk the chain bottom-up using `authority_hints`, which fails as soon as an intermediate does not declare its
@@ -158,11 +164,9 @@ testclient:
 | Endpoint | Description |
 | :--- | :--- |
 | `GET /{rp-path-suffix}/.well-known/openid-federation` | The entity configuration for an RP. |
-| `GET /oidc/federation/info` | Our federation entities (including their trust marks), the trust anchors and the OP:s configured from the federation. |
+| `GET /oidc/federation/info` | Our federation entities (including their trust marks), the trust anchors and the status of the OP:s discovered from the federation. |
 | `POST /oidc/federation/trust-marks/refresh` | Discards the cached trust marks and entity configurations - the trust marks are fetched from their issuers again. |
-| `POST /oidc/federation/refresh` | Re-runs the discovery and resolution of the federation OP:s. |
-| `GET /oidc/federation/subordinates?authority=&entity_type=` | Invokes a subordinate listing endpoint. |
-| `POST /oidc/federation/resolve?entity_id=&trust_anchor=` | Resolves an OP and registers it for testing. |
+| `POST /oidc/federation/refresh` | Re-runs the discovery and resolution of the federation OP:s (this also happens automatically at `refresh-interval`). |
 | `GET /oidc/federation/chain?entity_id=&trust_anchor=` | The trust chain of an entity, as reported by the trust anchor (serialized and decoded). |
 | `GET /oidc/federation/entity-configuration?entity_id=` | The entity configuration of an entity (ours or a remote one). |
 

@@ -48,7 +48,12 @@ public class OidfOpRefresher {
   }
 
   /**
-   * Discovers and resolves all OP:s of the configured trust anchors and updates the registry.
+   * Discovers and resolves all OP:s of the configured trust anchors and updates the registry. Invoked on a schedule -
+   * no user interaction is involved in getting, or keeping, the OP:s configured.
+   * <p>
+   * OP:s that have been configured before are kept even if this refresh does not find them - see
+   * {@link OidcOpRegistry#updateFederationOps(java.util.Collection, java.util.Map, List)}.
+   * </p>
    *
    * @return the errors that occurred (empty if everything went well)
    */
@@ -59,15 +64,15 @@ public class OidfOpRefresher {
     log.debug("Refreshing OpenID Providers from the federation ...");
     try {
       final OidfService.FederationRefreshResult result = this.service.refreshOps();
-      this.registry.updateFederationOps(result.ops(), result.errors());
-      log.info("Federation refresh completed - {} OpenID Provider(s) configured, {} error(s)",
-          result.ops().size(), result.errors().size());
+      this.registry.updateFederationOps(result.ops(), result.failures(), result.errors());
+      log.info("Federation refresh completed - {} OpenID Provider(s) resolved, {} configured in total, {} error(s)",
+          result.ops().size(), this.registry.getFederationOps().size(), result.errors().size());
       return result.errors();
     }
     catch (final Exception e) {
       log.error("Federation refresh failed", e);
       final List<String> errors = List.of("Federation refresh failed: %s".formatted(e.getMessage()));
-      this.registry.updateFederationOps(this.registry.getFederationOps(), errors);
+      this.registry.federationRefreshFailed(errors);
       return errors;
     }
   }

@@ -16,87 +16,42 @@
 
 class OidcFederation {
 
+  /** How often the status view is updated from the server (the discovery itself runs on the server). */
+  static POLL_INTERVAL_MS = 30000;
+
   constructor() {
     this.info = null;
-
-    $('#oidf-refresh-button').off('click').on('click', () => this.refresh());
-    $('#oidf-list-button').off('click').on('click', () => this.listSubordinates());
+    this.pollTimer = null;
   }
 
+  /**
+   * The providers are discovered and configured by the server without any user interaction - the view just polls
+   * for the current status while it is displayed.
+   */
   display() {
     this.loadInfo();
+    if (!this.pollTimer) {
+      this.pollTimer = setInterval(() => {
+        if ($('#main-oidc-federation').is(':visible')) {
+          this.loadInfo(true);
+        }
+      }, OidcFederation.POLL_INTERVAL_MS);
+    }
   }
 
-  loadInfo() {
+  /**
+   * @param silent when polling, a failure is logged but does not raise an error dialog in the user's face
+   */
+  loadInfo(silent) {
     $.ajax({
       url: buildUrl('/oidc/federation/info'),
       type: 'GET',
       success: (info) => this.setInfo(info),
       error: (error) => {
         console.error("Failed to get federation info: " + JSON.stringify(error));
-        OidcFederation.displayError("Failed to get federation information");
-      }
-    });
-  }
-
-  refresh() {
-    const button = $('#oidf-refresh-button');
-    button.prop('disabled', true);
-    $.ajax({
-      url: buildUrl('/oidc/federation/refresh'),
-      type: 'POST',
-      success: (info) => {
-        button.prop('disabled', false);
-        this.setInfo(info);
-      },
-      error: (error) => {
-        button.prop('disabled', false);
-        console.error("Failed to refresh federation: " + JSON.stringify(error));
-        OidcFederation.displayError("Failed to refresh the federation");
-      }
-    });
-  }
-
-  listSubordinates() {
-    const authority = $('#oidf-authority-select').val();
-    const entityType = $('#oidf-entity-type-select').val();
-
-    let url = buildUrl('/oidc/federation/subordinates') + '?authority=' + encodeURIComponent(authority);
-    if (entityType) {
-      url = url + '&entity_type=' + encodeURIComponent(entityType);
-    }
-
-    const tbody = $('#oidf-subordinates-tbody');
-    tbody.empty();
-    tbody.append($('<tr>').append($('<td>', { colspan: 2, text: 'Listing subordinates ...' })));
-
-    $.ajax({
-      url: url,
-      type: 'GET',
-      success: (listing) => this.setSubordinates(listing),
-      error: (error) => {
-        console.error("Failed to list subordinates: " + JSON.stringify(error));
-        tbody.empty();
-        OidcFederation.displayError(OidcFederation.errorText(error, "Failed to list subordinates"));
-      }
-    });
-  }
-
-  resolve(entityId) {
-    const url = buildUrl('/oidc/federation/resolve')
-        + '?entity_id=' + encodeURIComponent(entityId)
-        + '&trust_anchor=' + encodeURIComponent(OidcFederation.selectedTrustAnchor());
-
-    $.ajax({
-      url: url,
-      type: 'POST',
-      success: (resolved) => {
-        this.loadInfo();
-        codeViewer.displayJson("Resolved metadata for " + entityId, resolved.metadata);
-      },
-      error: (error) => {
-        console.error("Failed to resolve: " + JSON.stringify(error));
-        OidcFederation.displayError(OidcFederation.errorText(error, "Failed to resolve " + entityId));
+        if (!silent) {
+          OidcFederation.displayError("Failed to get federation information");
+        }
       }
     });
   }
@@ -164,42 +119,13 @@ class OidcFederation {
               }).on('click', () => this.showEntityConfiguration(entity.entity_id)))));
     }
 
-    // The authorities that we may list subordinates of - the configured listing sources first (these are the
-    // interesting ones), and then the trust anchors themselves.
-    const authoritySelect = $('#oidf-authority-select');
-    const currentAuthority = authoritySelect.val();
-    authoritySelect.empty();
-
-    const sources = info.listing_sources || [];
-    const trustAnchors = info.trust_anchors || [];
-    const sourceIds = sources.map(s => s.entity_id);
-
-    if (sources.length > 0) {
-      const sourceGroup = $('<optgroup>', { label: 'Configured listing sources' });
-      for (let source of sources) {
-        sourceGroup.append($('<option>', {
-          value: source.entity_id,
-          text: source.entity_id,
-          'data-trust-anchor': source.trust_anchor
-        }));
-      }
-      authoritySelect.append(sourceGroup);
-    }
-
-    const remainingAnchors = trustAnchors.filter(ta => !sourceIds.includes(ta));
-    if (remainingAnchors.length > 0) {
-      const anchorGroup = $('<optgroup>', { label: 'Trust anchors' });
-      for (let ta of remainingAnchors) {
-        anchorGroup.append($('<option>', { value: ta, text: ta, 'data-trust-anchor': ta }));
-      }
-      authoritySelect.append(anchorGroup);
-    }
-
-    if (currentAuthority && authoritySelect.find('option[value="' + currentAuthority + '"]').length > 0) {
-      authoritySelect.val(currentAuthority);
-    }
-
-    $('#oidf-last-refresh').text(info.last_refresh ? info.last_refresh : 'Not yet refreshed');
+    $('#oidf-trust-anchors').text((info.trust_anchors && info.trust_anchors.length > 0)
+        ? info.trust_anchors.join(', ')
+        : '-');
+    $('#oidf-last-refresh').text(info.last_refresh ? info.last_refresh : 'Not yet checked');
+    $('#oidf-refresh-interval').text(info.refresh_interval
+        ? ' (the federation is checked every ' + OidcFederation.duration(info.refresh_interval) + ')'
+        : '');
 
     // Errors
     const errorDiv = $('#oidf-errors');
@@ -223,59 +149,69 @@ class OidcFederation {
     tbody.empty();
     if (providers.length === 0) {
       tbody.append($('<tr>').append($('<td>', {
-        colspan: 4,
+        colspan: 5,
         text: 'No OpenID Providers have been configured from the federation'
       })));
       return;
     }
     for (let op of providers) {
-      tbody.append($('<tr>')
+      const row = $('<tr>')
           .append($('<td>', { text: op.entity_id }))
           .append($('<td>', { text: op.display_name || '' }))
-          .append($('<td>', { text: op.trust_anchor || '' }))
-          .append($('<td>')
-              .append($('<button>', {
-                type: 'button',
-                class: 'btn btn-sm btn-outline-primary',
-                text: 'Metadata'
-              }).on('click', () => OidcFederation.showOpMetadata(op.entity_id)))));
-    }
-  }
-
-  setSubordinates(listing) {
-    const tbody = $('#oidf-subordinates-tbody');
-    tbody.empty();
-    const subordinates = listing.subordinates || [];
-    if (subordinates.length === 0) {
-      tbody.append($('<tr>').append($('<td>', { colspan: 2, text: 'No subordinates found' })));
-      return;
-    }
-    for (let entityId of subordinates) {
-      tbody.append($('<tr>')
-          .append($('<td>', { text: entityId }))
-          .append($('<td>')
-              .append($('<button>', {
-                type: 'button',
-                class: 'btn btn-sm btn-outline-primary',
-                text: 'Entity configuration',
-                style: 'margin-right: 0.25rem;'
-              }).on('click', () => this.showEntityConfiguration(entityId)))
-              .append($('<button>', {
-                type: 'button',
-                class: 'btn btn-sm btn-primary',
-                text: 'Resolve and add'
-              }).on('click', () => this.resolve(entityId)))));
+          .append(OidcFederation.statusCell(op))
+          .append($('<td>', { text: op.last_resolved || '-' }));
+      const actions = $('<td>');
+      if (op.configured) {
+        actions.append($('<button>', {
+          type: 'button',
+          class: 'btn btn-sm btn-outline-primary',
+          text: 'Metadata'
+        }).on('click', () => OidcFederation.showOpMetadata(op.entity_id)));
+      }
+      tbody.append(row.append(actions));
     }
   }
 
   /**
-   * The selected authority may be an intermediate - resolution is always made against the trust anchor that the
-   * authority was configured under.
+   * The status of a provider - whether it was resolved during the latest check, and if not, what happened. A
+   * provider that could not be resolved is kept with the configuration from the last successful resolution, which
+   * is what the badge says.
    */
-  static selectedTrustAnchor() {
-    const select = $('#oidf-authority-select');
-    const option = select.find('option:selected');
-    return option.data('trust-anchor') || select.val();
+  static statusCell(op) {
+    const cell = $('<td>');
+    if (op.status === 'ok') {
+      return cell.append($('<span>', {
+        class: 'badge bg-success',
+        text: 'Configured',
+        title: 'Resolved during the latest check'
+      }));
+    }
+    const text = op.status === 'not_listed' ? 'Not listed' : 'Resolve failed';
+    const suffix = op.configured
+        ? ' The previously resolved configuration is still used.'
+        : ' The provider has never been successfully resolved and cannot be used.';
+    cell.append($('<span>', {
+      class: 'badge ' + (op.configured ? 'bg-warning text-dark' : 'bg-danger'),
+      text: text,
+      title: (op.error || 'The federation no longer lists the provider') + suffix
+    }));
+    if (op.error) {
+      cell.append($('<div>', { class: 'small text-muted', text: op.error }));
+    }
+    return cell;
+  }
+
+  /**
+   * Renders a number of seconds as minutes/hours where that is more readable.
+   */
+  static duration(seconds) {
+    if (seconds % 3600 === 0) {
+      return (seconds / 3600) + (seconds === 3600 ? ' hour' : ' hours');
+    }
+    if (seconds % 60 === 0) {
+      return (seconds / 60) + (seconds === 60 ? ' minute' : ' minutes');
+    }
+    return seconds + ' seconds';
   }
 
   static showOpMetadata(entityId) {

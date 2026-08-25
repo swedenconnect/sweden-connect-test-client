@@ -33,8 +33,10 @@ import se.swedenconnect.testclient.config.OidfProperties;
 import se.swedenconnect.testclient.oidc.OidcOp;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +97,16 @@ public class OidfService {
   }
 
   /**
+   * Gets how often the federation is traversed in order to discover, and re-configure, OP:s.
+   *
+   * @return the refresh interval
+   */
+  @Nonnull
+  public Duration getRefreshInterval() {
+    return this.properties.getRefreshInterval();
+  }
+
+  /**
    * Gets the authorities that the subordinate listing endpoints are invoked against when discovering OP:s. Unless
    * the {@code subordinate-listing-sources} setting is used, this is the trust anchors themselves.
    *
@@ -150,6 +162,7 @@ public class OidfService {
   public FederationRefreshResult refreshOps() {
     final List<OidcOp> ops = new ArrayList<>();
     final List<String> errors = new ArrayList<>();
+    final Map<String, String> failures = new LinkedHashMap<>();
 
     for (final OidfProperties.TrustAnchorProperties ta : this.properties.getTrustAnchors()) {
       if (!ta.isDiscoverOps()) {
@@ -181,11 +194,16 @@ public class OidfService {
         }
         catch (final Exception e) {
           log.warn("Failed to resolve OpenID Provider {} under {}", op, trustAnchor, e);
-          errors.add("Resolution of %s failed: %s".formatted(op, message(e)));
+          final String reason = message(e);
+          errors.add("Resolution of %s failed: %s".formatted(op, reason));
+          failures.put(op.getValue(), reason);
         }
       }
     }
-    return new FederationRefreshResult(ops, errors);
+    // An OP that was resolved under one trust anchor is not reported as failing because another one could not
+    // resolve it.
+    ops.forEach(op -> failures.remove(op.getEntityId()));
+    return new FederationRefreshResult(ops, errors, failures);
   }
 
   /**
@@ -544,8 +562,10 @@ public class OidfService {
    *
    * @param ops the OP:s that were successfully resolved
    * @param errors the errors that occurred (if any)
+   * @param failures the OP:s that were discovered but could not be resolved - entity identifier to reason
    */
-  public record FederationRefreshResult(@Nonnull List<OidcOp> ops, @Nonnull List<String> errors) {
+  public record FederationRefreshResult(@Nonnull List<OidcOp> ops, @Nonnull List<String> errors,
+                                        @Nonnull Map<String, String> failures) {
   }
 
 }
