@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.util.Pair;
 import com.nimbusds.jwt.JWT;
@@ -54,9 +53,8 @@ import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
 import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcRp;
+import se.swedenconnect.testclient.utils.JoseUtils;
 
-import java.security.PrivateKey;
-import java.security.interfaces.RSAPrivateKey;
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
@@ -117,13 +115,10 @@ public class OidcController {
     final PkiCredential credentialForSigning = selectedRp.getCredentials()
         .getCredentialForSigning();
 
-    final PrivateKey signKey = credentialForSigning
-        .getPrivateKey();
-
     final JWK jwk = new JwkTransformerFunction().serializable()
-        .apply(selectedRp.getCredentials().getCredentialForSigning());
+        .apply(credentialForSigning);
 
-    final JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
+    final JWSHeader header = new JWSHeader.Builder(JoseUtils.signingAlgorithm(jwk))
         .jwk(jwk.toPublicJWK())
         .keyID(jwk.getKeyID())
         .build();
@@ -139,7 +134,7 @@ public class OidcController {
         .expirationTime(Date.from(Instant.now().plusSeconds(300)));
 
     final SignedJWT assertion = new SignedJWT(header, clientAssertion.build());
-    assertion.sign(new RSASSASigner((RSAPrivateKey) signKey));
+    assertion.sign(JoseUtils.signer(credentialForSigning));
 
     final State sentState = authRequest.getState();
 

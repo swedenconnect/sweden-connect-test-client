@@ -18,9 +18,7 @@ package se.swedenconnect.testclient.controllers;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyType;
@@ -65,12 +63,12 @@ import se.swedenconnect.testclient.oidc.OIDCOPMetadataFetcher;
 import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcOpRegistry;
 import se.swedenconnect.testclient.oidc.OidcRp;
+import se.swedenconnect.testclient.utils.JoseUtils;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.security.interfaces.RSAPrivateKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -432,7 +430,7 @@ public class OidcRestController {
   private SignedJWT buildLogoutAssertion(final OidcRp rp, final OidcOp op) throws JOSEException {
     final PkiCredential cred = rp.getCredentials().getCredentialForSigning();
     final JWK jwk = new JwkTransformerFunction().serializable().apply(cred);
-    final JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
+    final JWSHeader header = new JWSHeader.Builder(JoseUtils.signingAlgorithm(jwk))
         .jwk(jwk.toPublicJWK())
         .keyID(jwk.getKeyID())
         .build();
@@ -445,14 +443,14 @@ public class OidcRestController {
         .expirationTime(Date.from(Instant.now().plusSeconds(300)))
         .build();
     final SignedJWT jwt = new SignedJWT(header, claims);
-    jwt.sign(new RSASSASigner((RSAPrivateKey) cred.getPrivateKey()));
+    jwt.sign(JoseUtils.signer(cred));
     return jwt;
   }
 
   private SignedJWT buildClientAssertion(final OidcRp rp, final OidcOp op) throws JOSEException {
     final PkiCredential cred = rp.getCredentials().getCredentialForSigning();
     final JWK jwk = new JwkTransformerFunction().serializable().apply(cred);
-    final JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256)
+    final JWSHeader header = new JWSHeader.Builder(JoseUtils.signingAlgorithm(jwk))
         .jwk(jwk.toPublicJWK())
         .keyID(jwk.getKeyID())
         .build();
@@ -465,7 +463,7 @@ public class OidcRestController {
         .expirationTime(Date.from(Instant.now().plusSeconds(300)))
         .build();
     final SignedJWT jwt = new SignedJWT(header, claims);
-    jwt.sign(new RSASSASigner((RSAPrivateKey) cred.getPrivateKey()));
+    jwt.sign(JoseUtils.signer(cred));
     return jwt;
   }
 

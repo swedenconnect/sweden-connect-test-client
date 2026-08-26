@@ -20,12 +20,8 @@ import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.ECDSASigner;
-import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -33,9 +29,9 @@ import jakarta.annotation.Nonnull;
 import lombok.Getter;
 import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
+import se.swedenconnect.testclient.utils.JoseUtils;
 import se.swedenconnect.testclient.utils.JwkUtils;
 
-import java.security.interfaces.ECPrivateKey;
 
 /**
  * Signs OpenID Federation statements (entity configurations and subordinate statements) using a
@@ -64,7 +60,7 @@ public class OidfSigner {
   public OidfSigner(@Nonnull final PkiCredential credential) {
     this.credential = credential;
     final JWK jwk = new JwkTransformerFunction().serializable().apply(credential).toPublicJWK();
-    this.algorithm = determineAlgorithm(jwk);
+    this.algorithm = JoseUtils.signingAlgorithm(jwk);
     this.publicJwk = JwkUtils.declareUse(jwk, KeyUse.SIGNATURE, this.algorithm);
   }
 
@@ -99,29 +95,7 @@ public class OidfSigner {
 
   @Nonnull
   private JWSSigner createSigner() throws JOSEException {
-    if (KeyType.EC.equals(this.publicJwk.getKeyType())) {
-      return new ECDSASigner((ECPrivateKey) this.credential.getPrivateKey());
-    }
-    return new RSASSASigner(this.credential.getPrivateKey());
-  }
-
-  @Nonnull
-  private static JWSAlgorithm determineAlgorithm(@Nonnull final JWK jwk) {
-    if (KeyType.EC.equals(jwk.getKeyType())) {
-      final Curve curve = jwk.toECKey().getCurve();
-      if (Curve.P_384.equals(curve)) {
-        return JWSAlgorithm.ES384;
-      }
-      if (Curve.P_521.equals(curve)) {
-        return JWSAlgorithm.ES512;
-      }
-      return JWSAlgorithm.ES256;
-    }
-    if (KeyType.RSA.equals(jwk.getKeyType())) {
-      return JWSAlgorithm.RS256;
-    }
-    throw new IllegalArgumentException(
-        "Unsupported key type for OpenID Federation signing: " + jwk.getKeyType());
+    return JoseUtils.signer(this.credential);
   }
 
 }

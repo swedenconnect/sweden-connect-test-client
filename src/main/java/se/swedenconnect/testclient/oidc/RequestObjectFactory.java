@@ -2,12 +2,8 @@ package se.swedenconnect.testclient.oidc;
 
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWEHeader;
-import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.RSAEncrypter;
-import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.shaded.gson.ExclusionStrategy;
 import com.nimbusds.jose.shaded.gson.FieldAttributes;
@@ -27,6 +23,7 @@ import se.swedenconnect.testclient.controllers.AuthorizationParameterResolver;
 import se.swedenconnect.testclient.controllers.OIDCAuthnRequestParameterModel;
 import se.swedenconnect.testclient.controllers.OidcMessageParameterModel;
 import se.swedenconnect.testclient.controllers.OidcMessageSerializer;
+import se.swedenconnect.testclient.utils.JoseUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -53,13 +50,13 @@ public class RequestObjectFactory {
   public static EncryptedJWT getEncryptedSignedJWT(final OIDCAuthnRequestParameterModel model,
                                                    final Function<String, JWK> getJwkFromKid, final SignedJWT signedJWT) throws JOSEException {
     final JWK encKey = getJwkFromKid.apply(model.getKeys().getEncKey());
-    final JWEHeader header = new JWEHeader.Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM)
+    final JWEHeader header = new JWEHeader.Builder(JoseUtils.keyEncryptionAlgorithm(encKey), EncryptionMethod.A256GCM)
         .contentType("JWT")
         .keyID(encKey.getKeyID())
         .build();
     final EncryptedJWT encryptedJWT = new EncryptedJWT(header, new JWTClaimsSet.Builder().claim("payload",
         signedJWT.serialize()).build());
-    encryptedJWT.encrypt(new RSAEncrypter(encKey.toRSAKey().toRSAPublicKey()));
+    encryptedJWT.encrypt(JoseUtils.encrypter(encKey));
     return encryptedJWT;
   }
 
@@ -67,12 +64,12 @@ public class RequestObjectFactory {
                                                   final Function<String, JWK> getJwkFromKid,
                                                   final JWTClaimsSet jwtClaimsSet) throws JOSEException {
     final JWK encKey = getJwkFromKid.apply(model.getKeys().getEncKey());
-    final JWEHeader header = new JWEHeader.Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM)
+    final JWEHeader header = new JWEHeader.Builder(JoseUtils.keyEncryptionAlgorithm(encKey), EncryptionMethod.A256GCM)
         .contentType("JWT")
         .keyID(encKey.getKeyID())
         .build();
     final EncryptedJWT encryptedJWT = new EncryptedJWT(header, jwtClaimsSet);
-    encryptedJWT.encrypt(new RSAEncrypter(encKey.toRSAKey()));
+    encryptedJWT.encrypt(JoseUtils.encrypter(encKey));
     return encryptedJWT;
   }
 
@@ -130,9 +127,9 @@ public class RequestObjectFactory {
                                        final Function<String, JWK> getJwkFromKid,
                                        final JWTClaimsSet claims) throws JOSEException {
     final JWK signKey = getJwkFromKid.apply(model.getKeys().getSignKey());
-    final JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(signKey.getKeyID()).build();
+    final JWSHeader header = new JWSHeader.Builder(JoseUtils.signingAlgorithm(signKey)).keyID(signKey.getKeyID()).build();
     final SignedJWT signedJWT = new SignedJWT(header, claims);
-    signedJWT.sign(new RSASSASigner(signKey.toRSAKey()));
+    signedJWT.sign(JoseUtils.signer(signKey));
     return signedJWT;
   }
 }
