@@ -8,7 +8,7 @@ Sweden Connect SAML Test SP and OIDC Test RP
 
 ---
 
-> TODO
+> TODO: SAML config
 
 ## OpenID Federation
 
@@ -172,4 +172,4 @@ testclient:
 
 ---
 
-Copyright &copy; 2025, [Sweden Connect](https://swedenconnect.se). Licensed under version 2.0 of the [Apache License](http://www.apache.org/licenses/LICENSE-2.0).
+Copyright &copy; 2025-2026, [Sweden Connect](https://swedenconnect.se). Licensed under version 2.0 of the [Apache License](http://www.apache.org/licenses/LICENSE-2.0).
