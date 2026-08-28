@@ -521,7 +521,7 @@ public class OidfService {
         return configured;
       }
       return Optional.ofNullable(
-              this.fetchEntityConfiguration(trustAnchor).getClaimsSet().getFederationEntityMetadata())
+          this.fetchEntityConfiguration(trustAnchor).getClaimsSet().getFederationEntityMetadata())
           .map(FederationEntityMetadata::getFederationResolveEndpointURI)
           .orElseThrow(() -> new IllegalArgumentException(
               "%s does not publish a federation_resolve_endpoint".formatted(id)));
@@ -563,7 +563,7 @@ public class OidfService {
    * @param failures the OP:s that were discovered but could not be resolved - entity identifier to reason
    */
   public record FederationRefreshResult(@Nonnull List<OidcOp> ops, @Nonnull List<String> errors,
-                                        @Nonnull Map<String, String> failures) {
+      @Nonnull Map<String, String> failures) {
   }
 
 }

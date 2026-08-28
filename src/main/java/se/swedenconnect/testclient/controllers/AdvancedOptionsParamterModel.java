@@ -21,6 +21,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * The editable model for the advanced options of an OIDC authentication request, i.e., the parameters that are
+ * hidden behind the <em>Advanced</em> section of the UI.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

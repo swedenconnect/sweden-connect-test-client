@@ -26,6 +26,13 @@ import lombok.Setter;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The result of a completed OIDC authentication - the tokens and claims that were received, how they were protected,
+ * and any errors that occurred. This is the model that the UI displays.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @Getter
 @Setter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

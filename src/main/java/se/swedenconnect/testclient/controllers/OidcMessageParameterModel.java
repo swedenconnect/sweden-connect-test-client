@@ -24,6 +24,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Model for a multilingual message, used for the user message and sign message extensions. Each language variant is
+ * represented by its own field, and {@code message#xx} is a deliberately invalid variant for testing.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

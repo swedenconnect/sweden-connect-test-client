@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Sweden Connect
+ * Copyright 2025-2026 Sweden Connect
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,12 @@ import org.junit.jupiter.api.Test;
 import se.swedenconnect.security.credential.BasicCredential;
 import se.swedenconnect.security.credential.PkiCredential;
 
+/**
+ * Tests for {@link se.swedenconnect.testclient.utils.JoseUtils}.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 class JoseUtilsTest {
 
   private static final JWTClaimsSet CLAIMS = new JWTClaimsSet.Builder().subject("test").build();

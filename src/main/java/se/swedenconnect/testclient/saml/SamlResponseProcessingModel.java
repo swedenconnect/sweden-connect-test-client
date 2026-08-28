@@ -127,17 +127,21 @@ public class SamlResponseProcessingModel {
         AttributeConstants.ATTRIBUTE_FRIENDLY_NAME_EMPLOYEE_HSA_ID);
 
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_PERSON_IDENTIFIER_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_PERSON_IDENTIFIER_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_PERSON_IDENTIFIER_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_CURRENT_FAMILY_NAME_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_CURRENT_FAMILY_NAME_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_CURRENT_FAMILY_NAME_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_CURRENT_GIVEN_NAME_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_CURRENT_GIVEN_NAME_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_CURRENT_GIVEN_NAME_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_DATE_OF_BIRTH_ATTRIBUTE_NAME,
         se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_DATE_OF_BIRTH_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_GENDER_ATTRIBUTE_NAME,
         se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_GENDER_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_CURRENT_ADDRESS_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_CURRENT_ADDRESS_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_CURRENT_ADDRESS_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_BIRTH_NAME_ATTRIBUTE_NAME,
         se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_BIRTH_NAME_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_PLACE_OF_BIRTH_ATTRIBUTE_NAME,
@@ -145,39 +149,56 @@ public class SamlResponseProcessingModel {
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_NATIONALITY_ATTRIBUTE_NAME,
         se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_NATIONALITY_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_COUNTRY_OF_BIRTH_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_COUNTRY_OF_BIRTH_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_COUNTRY_OF_BIRTH_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_TOWN_OF_BIRTH_ATTRIBUTE_NAME,
         se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_TOWN_OF_BIRTH_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_COUNTRY_OF_RESIDENCE_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_COUNTRY_OF_RESIDENCE_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_COUNTRY_OF_RESIDENCE_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_PHONE_NUMBER_ATTRIBUTE_NAME,
         se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_PHONE_NUMBER_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_EMAIL_ADDRESS_ATTRIBUTE_NAME,
         se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_EMAIL_ADDRESS_ATTRIBUTE_FRIENDLY_NAME);
 
     m.put(
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_PERSON_IDENTIFIER_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_PERSON_IDENTIFIER_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_PERSON_IDENTIFIER_ATTRIBUTE_NAME,
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_PERSON_IDENTIFIER_ATTRIBUTE_FRIENDLY_NAME);
     m.put(
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_CURRENT_FAMILY_NAME_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_CURRENT_FAMILY_NAME_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_CURRENT_FAMILY_NAME_ATTRIBUTE_NAME,
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_CURRENT_FAMILY_NAME_ATTRIBUTE_FRIENDLY_NAME);
     m.put(
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_CURRENT_GIVEN_NAME_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_CURRENT_GIVEN_NAME_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_CURRENT_GIVEN_NAME_ATTRIBUTE_NAME,
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_CURRENT_GIVEN_NAME_ATTRIBUTE_FRIENDLY_NAME);
     m.put(
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_DATE_OF_BIRTH_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_DATE_OF_BIRTH_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_DATE_OF_BIRTH_ATTRIBUTE_NAME,
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_DATE_OF_BIRTH_ATTRIBUTE_FRIENDLY_NAME);
     m.put(se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_GENDER_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_GENDER_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_GENDER_ATTRIBUTE_FRIENDLY_NAME);
     m.put(
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_CURRENT_ADDRESS_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_CURRENT_ADDRESS_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_CURRENT_ADDRESS_ATTRIBUTE_NAME,
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_CURRENT_ADDRESS_ATTRIBUTE_FRIENDLY_NAME);
     m.put(
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_BIRTH_NAME_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_BIRTH_NAME_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_BIRTH_NAME_ATTRIBUTE_NAME,
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_BIRTH_NAME_ATTRIBUTE_FRIENDLY_NAME);
     m.put(
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_PLACE_OF_BIRTH_ATTRIBUTE_NAME,
-        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants.EIDAS_REPRESENTATIVE_PLACE_OF_BIRTH_ATTRIBUTE_FRIENDLY_NAME);
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_PLACE_OF_BIRTH_ATTRIBUTE_NAME,
+        se.swedenconnect.opensaml.eidas.ext.attributes.AttributeConstants
+            .EIDAS_REPRESENTATIVE_PLACE_OF_BIRTH_ATTRIBUTE_FRIENDLY_NAME);
 
     ATTRIBUTE_REGISTRY = Collections.unmodifiableMap(m);
   }

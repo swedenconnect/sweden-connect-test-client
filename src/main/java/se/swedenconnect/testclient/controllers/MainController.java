@@ -36,8 +36,7 @@ public class MainController {
   private final ApplicationModel applicationInfo;
   private final ServletContext context;
 
-  public MainController(final ApplicationModel applicationModel,
-                        final ServletContext context) {
+  public MainController(final ApplicationModel applicationModel, final ServletContext context) {
     this.applicationInfo = applicationModel;
     this.context = context;
   }

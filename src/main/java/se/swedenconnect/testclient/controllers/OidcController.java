@@ -99,13 +99,12 @@ public class OidcController {
 
   @RequestMapping(path = REDIRECTION_URL_BASE + "/{rpSuffix}", method = {RequestMethod.GET, RequestMethod.POST})
   public ModelAndView handleRedirection(@Nonnull final HttpServletRequest request,
-                                        @PathVariable("rpSuffix") @Nonnull final String rp,
-                                        @RequestParam(value = "error", required = false) final String error,
-                                        @RequestParam(value = "error_description", required = false) final String errorDescription,
-                                        @RequestParam(value = "state", required = false) final String state,
-                                        @RequestParam(value = "iss", required = false) final String iss,
-                                        @RequestParam(value = "code", required = false) final String code) throws JOSEException,
-      ParseException {
+      @PathVariable("rpSuffix") @Nonnull final String rp,
+      @RequestParam(value = "error", required = false) final String error,
+      @RequestParam(value = "error_description", required = false) final String errorDescription,
+      @RequestParam(value = "state", required = false) final String state,
+      @RequestParam(value = "iss", required = false) final String iss,
+      @RequestParam(value = "code", required = false) final String code) throws JOSEException, ParseException {
     final AuthenticationRequest authRequest = (AuthenticationRequest) httpSession.getAttribute("auth_request");
     final OidcOp selectedOp = (OidcOp) httpSession.getAttribute("selected_op");
     final OidcRp selectedRp = (OidcRp) httpSession.getAttribute("selected_rp");
@@ -196,7 +195,8 @@ public class OidcController {
                 return Optional.empty();
               }
               return Optional.of(OIDCClaimsRequest.parse(new JSONObject(claims)));
-            } catch (final com.nimbusds.oauth2.sdk.ParseException e) {
+            }
+            catch (final com.nimbusds.oauth2.sdk.ParseException e) {
               throw new RuntimeException(e);
             }
           });
@@ -207,20 +207,23 @@ public class OidcController {
       final Map<String, Object> requestParameters = new HashMap<>(Map.of("iss", iss));
       Optional.ofNullable(state).ifPresent(s -> requestParameters.put("state", s));
 
-      Optional.ofNullable(authRequest.getRequestObject()).ifPresent(obj -> requestParameters.put("request_object", obj.serialize()));
-      Optional.ofNullable(authRequest.getNonce()).ifPresent(nonce1 -> requestParameters.put("nonce", nonce1.getValue()));
+      Optional.ofNullable(authRequest.getRequestObject())
+          .ifPresent(obj -> requestParameters.put("request_object", obj.serialize()));
+      Optional.ofNullable(authRequest.getNonce())
+          .ifPresent(nonce1 -> requestParameters.put("nonce", nonce1.getValue()));
       Optional.ofNullable(authRequest.getACRValues()).ifPresent(acrs -> requestParameters.put("acr_values", acrs));
-      Optional.ofNullable(authRequest.getRedirectionURI()).ifPresent(redirection -> requestParameters.put("redirect_uri", redirection));
+      Optional.ofNullable(authRequest.getRedirectionURI())
+          .ifPresent(redirection -> requestParameters.put("redirect_uri", redirection));
       Optional.ofNullable(httpSession.getAttribute("jwt_claims")).map(JWTClaimsSet.class::cast).ifPresent(
           jwt -> requestParameters.put("jwt_claims", objectMapper.writeValueAsString(jwt.toJSONObject())));
-      Optional.ofNullable(httpSession.getAttribute("plain_jwt")).map(JWT.class::cast).ifPresent(jwt -> requestParameters.put(
-          "plain_jwt", jwt.serialize()));
-      Optional.ofNullable(httpSession.getAttribute("encrypted_plain_jwt")).map(JWT.class::cast).ifPresent(jwt -> requestParameters.put(
-          "encrypted_plain_jwt", jwt.serialize()));
-      Optional.ofNullable(httpSession.getAttribute("signed_jwt")).map(JWT.class::cast).ifPresent(jwt -> requestParameters.put(
-          "signed_jwt", jwt.serialize()));
-      Optional.ofNullable(httpSession.getAttribute("encrypted_signed_jwt")).map(JWT.class::cast).ifPresent(jwt -> requestParameters.put(
-          "encrypted_signed_jwt", jwt.serialize()));
+      Optional.ofNullable(httpSession.getAttribute("plain_jwt")).map(JWT.class::cast)
+          .ifPresent(jwt -> requestParameters.put("plain_jwt", jwt.serialize()));
+      Optional.ofNullable(httpSession.getAttribute("encrypted_plain_jwt")).map(JWT.class::cast)
+          .ifPresent(jwt -> requestParameters.put("encrypted_plain_jwt", jwt.serialize()));
+      Optional.ofNullable(httpSession.getAttribute("signed_jwt")).map(JWT.class::cast)
+          .ifPresent(jwt -> requestParameters.put("signed_jwt", jwt.serialize()));
+      Optional.ofNullable(httpSession.getAttribute("encrypted_signed_jwt")).map(JWT.class::cast)
+          .ifPresent(jwt -> requestParameters.put("encrypted_signed_jwt", jwt.serialize()));
 
       requestParameters.put("token_endpoint", selectedOp.getTokenEndpoint());
       requestParameters.put("userInfo_endpoint", selectedOp.getUserInfoEndpoint());
@@ -271,7 +274,8 @@ public class OidcController {
               .build());
 
       return new ModelAndView("redirect:/");
-    } catch (final RuntimeException e) {
+    }
+    catch (final RuntimeException e) {
       return new ModelAndView("redirect:/oidc/redirect/%s?error=%s&error_description=%s"
           .formatted(rp, errorBody.get("error"), errorBody.get("error_description")));
     }

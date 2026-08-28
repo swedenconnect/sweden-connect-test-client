@@ -28,6 +28,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.function.Function;
 
+/**
+ * Applies the Sweden Connect specific extensions - the user message and the sign message - to the authentication
+ * request that is being built.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 public class AuthorizationRequestCustomizer {
 
   public static final Gson GSON = new GsonBuilder()
@@ -58,10 +65,12 @@ public class AuthorizationRequestCustomizer {
 
     resolver.getSignMessage()
         .ifPresent(sig -> {
-          if(sig.getB64Encode() && sig.getTbsData() != null) {
-            final String tbsData = Base64.getEncoder().encodeToString(sig.getTbsData().getBytes(StandardCharsets.UTF_8));
+          if (sig.getB64Encode() && sig.getTbsData() != null) {
+            final String tbsData =
+                Base64.getEncoder().encodeToString(sig.getTbsData().getBytes(StandardCharsets.UTF_8));
             sig.setTbsData(tbsData);
-          } else {
+          }
+          else {
             sig.setTbsData(sig.getTbsData());
           }
           builder.customParameter("https://id.oidc.se/param/signRequest", GSON.toJson(sig));

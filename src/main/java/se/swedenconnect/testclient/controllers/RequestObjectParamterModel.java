@@ -21,6 +21,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * The editable model for the request object of an OIDC authentication request - whether one should be created at
+ * all, and whether it should be signed and/or encrypted.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

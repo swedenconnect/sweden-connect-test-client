@@ -44,6 +44,12 @@ import java.util.Base64;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * Creates the request objects - signed and optionally encrypted JWT:s - of an OIDC authentication request.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 public class RequestObjectFactory {
 
   public static final Gson GSON = new GsonBuilder()
@@ -62,7 +68,7 @@ public class RequestObjectFactory {
       .create();
 
   public static EncryptedJWT getEncryptedSignedJWT(final OIDCAuthnRequestParameterModel model,
-                                                   final Function<String, JWK> getJwkFromKid, final SignedJWT signedJWT) throws JOSEException {
+      final Function<String, JWK> getJwkFromKid, final SignedJWT signedJWT) throws JOSEException {
     final JWK encKey = getJwkFromKid.apply(model.getKeys().getEncKey());
     final JWEHeader header = new JWEHeader.Builder(JoseUtils.keyEncryptionAlgorithm(encKey), EncryptionMethod.A256GCM)
         .contentType("JWT")
@@ -75,8 +81,7 @@ public class RequestObjectFactory {
   }
 
   public static EncryptedJWT getEncryptedPlainJwt(final OIDCAuthnRequestParameterModel model,
-                                                  final Function<String, JWK> getJwkFromKid,
-                                                  final JWTClaimsSet jwtClaimsSet) throws JOSEException {
+      final Function<String, JWK> getJwkFromKid, final JWTClaimsSet jwtClaimsSet) throws JOSEException {
     final JWK encKey = getJwkFromKid.apply(model.getKeys().getEncKey());
     final JWEHeader header = new JWEHeader.Builder(JoseUtils.keyEncryptionAlgorithm(encKey), EncryptionMethod.A256GCM)
         .contentType("JWT")
@@ -102,14 +107,15 @@ public class RequestObjectFactory {
       builder.claim("https://id.oidc.se/param/userMessage", GSON.toJson(um));
     });
     resolver.getSignMessage().ifPresent(sig -> {
-          if(sig.getB64Encode() && sig.getTbsData() != null) {
-            final String tbsData = Base64.getEncoder().encodeToString(sig.getTbsData().getBytes(StandardCharsets.UTF_8));
-            sig.setTbsData(tbsData);
-          } else {
-            sig.setTbsData(sig.getTbsData());
-          }
-          builder.claim("https://id.oidc.se/param/signRequest", GSON.toJson(sig));
-      });
+      if (sig.getB64Encode() && sig.getTbsData() != null) {
+        final String tbsData = Base64.getEncoder().encodeToString(sig.getTbsData().getBytes(StandardCharsets.UTF_8));
+        sig.setTbsData(tbsData);
+      }
+      else {
+        sig.setTbsData(sig.getTbsData());
+      }
+      builder.claim("https://id.oidc.se/param/signRequest", GSON.toJson(sig));
+    });
 
     resolver.getClientId().ifPresent(clientId -> builder.claim("client_id", clientId.getValue()));
     resolver.getNonce().ifPresent(nonce -> builder.claim("nonce", nonce.getValue()));
@@ -126,16 +132,17 @@ public class RequestObjectFactory {
       builder.claim("code_challenge", codeChallenge.getRight().getValue());
       builder.claim("code_challenge_method", codeChallenge.getLeft());
     }
-    resolver.getClaimRequest().ifPresent(oidcClaimsRequest -> builder.claim("claims", oidcClaimsRequest.toJSONObject()));
+    resolver.getClaimRequest()
+        .ifPresent(oidcClaimsRequest -> builder.claim("claims", oidcClaimsRequest.toJSONObject()));
 
     return builder.build();
   }
 
   public static SignedJWT getSignedJWT(final OIDCAuthnRequestParameterModel model,
-                                       final Function<String, JWK> getJwkFromKid,
-                                       final JWTClaimsSet claims) throws JOSEException {
+      final Function<String, JWK> getJwkFromKid, final JWTClaimsSet claims) throws JOSEException {
     final JWK signKey = getJwkFromKid.apply(model.getKeys().getSignKey());
-    final JWSHeader header = new JWSHeader.Builder(JoseUtils.signingAlgorithm(signKey)).keyID(signKey.getKeyID()).build();
+    final JWSHeader header =
+        new JWSHeader.Builder(JoseUtils.signingAlgorithm(signKey)).keyID(signKey.getKeyID()).build();
     final SignedJWT signedJWT = new SignedJWT(header, claims);
     signedJWT.sign(JoseUtils.signer(signKey));
     return signedJWT;

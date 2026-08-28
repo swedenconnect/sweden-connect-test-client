@@ -262,8 +262,8 @@ public class OidcOpRegistry {
    */
   @Builder(toBuilder = true)
   public record FederationOpStatus(@Nonnull String entityId, @Nonnull Instant firstSeen,
-                                   @Nullable Instant lastResolved, @Nonnull Instant lastAttempt,
-                                   @Nonnull FederationOpState state, @Nullable String error) {
+      @Nullable Instant lastResolved, @Nonnull Instant lastAttempt, @Nonnull FederationOpState state,
+      @Nullable String error) {
   }
 
 }

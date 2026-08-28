@@ -333,8 +333,7 @@ public class TrustMarkResolver {
    * @param error the reason why the trust mark could not be obtained, or {@code null} if it was
    */
   public record ResolvedTrustMark(@Nonnull String trustMarkType, @Nullable String issuer,
-                                  @Nullable SignedJWT trustMark, @Nullable Instant expiresAt, boolean required,
-                                  @Nullable String error) {
+      @Nullable SignedJWT trustMark, @Nullable Instant expiresAt, boolean required, @Nullable String error) {
 
     /**
      * Creates a result for a trust mark that could not be obtained.

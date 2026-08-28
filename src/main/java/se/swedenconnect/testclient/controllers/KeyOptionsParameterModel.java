@@ -23,6 +23,13 @@ import lombok.Setter;
 
 import java.util.List;
 
+/**
+ * The editable model for the key selection of an OIDC authentication request - the keys to use for signing and
+ * encryption along with the keys that are available for selection.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

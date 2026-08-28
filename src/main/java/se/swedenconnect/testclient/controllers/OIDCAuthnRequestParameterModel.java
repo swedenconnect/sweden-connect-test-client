@@ -23,6 +23,13 @@ import lombok.Setter;
 
 import java.util.Map;
 
+/**
+ * The editable model for an OIDC authentication request. It is handed to the UI pre-filled for a given RP and OP,
+ * freely edited by the operator, and posted back when the request is generated.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
