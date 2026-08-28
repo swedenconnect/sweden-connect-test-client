@@ -46,6 +46,10 @@ The tool is deployed in the Sweden Connect test environments:
 
 - Sweden Connect QA: TBD
 
+## Releases
+
+- See [Release notes](docs/release-notes.md).
+
 ## Documentation
 
 See [docs/index.md](docs/index.md) for documentation about how the test client is configured and deployed.
