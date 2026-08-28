@@ -16,15 +16,11 @@
 package se.swedenconnect.testclient.controllers;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
@@ -46,8 +42,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -62,19 +56,14 @@ import se.swedenconnect.testclient.oidc.OIDCOPMetadataFetcher;
 import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcOpRegistry;
 import se.swedenconnect.testclient.oidc.OidcRp;
-import se.swedenconnect.testclient.utils.JoseUtils;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.time.Instant;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -246,7 +235,6 @@ public class OidcRestController {
             .responseType(ModelParameter.builder().value("code").valuePresent(true).requestBody(false).build())
             .codeChallenge(ModelParameter.builder().valuePresent(false).requestBody(false).build())
             .codeChallengeMethod(ModelParameter.builder().value("S256").valuePresent(false).requestBody(false).build())
-            .resource(ModelParameter.builder().value("").valuePresent(false).requestBody(false).build())
             .moduleEnabled(false).build())
         .keys(KeyOptionsParameterModel.builder()
             .signKeys(signKeys)
@@ -260,10 +248,6 @@ public class OidcRestController {
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false).build())
-        .refreshTokenGrant(RefreshTokenGrantParameterModel.builder()
-            .moduleEnabled(false)
-            .resource("")
-            .build())
         .build();
   }
 
@@ -313,91 +297,6 @@ public class OidcRestController {
       httpSession.invalidate();
       throw e;
     }
-  }
-
-  @PostMapping(value = "/authn/token/refresh",
-               consumes = MediaType.APPLICATION_JSON_VALUE,
-               produces = MediaType.APPLICATION_JSON_VALUE)
-  public Map<String, Object> refreshToken(
-      @RequestBody final RefreshTokenRequestModel request) throws Exception {
-
-    final String refreshToken = (String) httpSession.getAttribute("refresh_token");
-    if (refreshToken == null) {
-      throw new RuntimeException("No refresh_token in session");
-    }
-
-    final OidcRp selectedRp = (OidcRp) httpSession.getAttribute("selected_rp");
-    final OidcOp selectedOp = (OidcOp) httpSession.getAttribute("selected_op");
-    final SignedJWT assertion = buildClientAssertion(selectedRp, selectedOp);
-
-    final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-    body.add("grant_type", "refresh_token");
-    body.add("refresh_token", refreshToken);
-    body.add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
-    body.add("client_assertion", assertion.serialize());
-    if (request.getResource() != null) {
-      request.getResource().forEach(r -> body.add("resource", r));
-    }
-
-    final ObjectMapper mapper = new ObjectMapper();
-    @SuppressWarnings("unchecked")
-    final Map<String, Object> tokenResponse = this.client.post()
-        .uri(selectedOp.getTokenEndpoint())
-        .body(body)
-        .header("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
-        .exchange((req, resp) -> {
-          final byte[] bytes = resp.getBody().readAllBytes();
-          final Map<String, Object> parsed = mapper.readerFor(Map.class).readValue(bytes);
-          if (resp.getStatusCode().is4xxClientError()) {
-            return Map.of(
-                "__op_error__", true,
-                "error", parsed.getOrDefault("error", "error"),
-                "error_description", parsed.getOrDefault("error_description", "")
-            );
-          }
-          return parsed;
-        });
-
-    if (tokenResponse != null && Boolean.TRUE.equals(tokenResponse.get("__op_error__"))) {
-      return Map.of(
-          "error", tokenResponse.getOrDefault("error", "error"),
-          "error_description", tokenResponse.getOrDefault("error_description", "")
-      );
-    }
-
-    Map<String, Object> accessTokenClaims = Map.of();
-    if (tokenResponse != null && tokenResponse.get("access_token") instanceof String at) {
-      try {
-        accessTokenClaims = SignedJWT.parse(at).getJWTClaimsSet().toJSONObject();
-      } catch (final Exception e) {
-        accessTokenClaims = Map.of("raw_access_token", at);
-      }
-    }
-
-    final Map<String, Object> result = new HashMap<>();
-    result.put("accessTokenClaims", accessTokenClaims);
-    result.put("rawResponse", tokenResponse != null ? tokenResponse : Map.of());
-    return result;
-  }
-
-  private SignedJWT buildClientAssertion(final OidcRp rp, final OidcOp op) throws JOSEException {
-    final PkiCredential cred = rp.getCredentials().getCredentialForSigning();
-    final JWK jwk = new JwkTransformerFunction().serializable().apply(cred);
-    final JWSHeader header = new JWSHeader.Builder(JoseUtils.signingAlgorithm(jwk))
-        .jwk(jwk.toPublicJWK())
-        .keyID(jwk.getKeyID())
-        .build();
-    final JWTClaimsSet claims = new JWTClaimsSet.Builder()
-        .issuer(rp.getEntityId())
-        .subject(rp.getEntityId())
-        .audience(op.getTokenEndpoint())
-        .jwtID(UUID.randomUUID().toString())
-        .issueTime(Date.from(Instant.now()))
-        .expirationTime(Date.from(Instant.now().plusSeconds(300)))
-        .build();
-    final SignedJWT jwt = new SignedJWT(header, claims);
-    jwt.sign(JoseUtils.signer(cred));
-    return jwt;
   }
 
   private Function<String, JWK> kidtoJwkFunction(final JWKSet opJWKS) {
@@ -503,12 +402,5 @@ public class OidcRestController {
 
     @JsonProperty("trust_anchor")
     private String trustAnchor;
-  }
-
-  @Data
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class RefreshTokenRequestModel {
-    private List<String> resource;
   }
 }

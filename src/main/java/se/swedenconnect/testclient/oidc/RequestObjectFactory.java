@@ -18,7 +18,6 @@ import com.nimbusds.oauth2.sdk.id.Identifier;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 
-import java.net.URI;
 import se.swedenconnect.testclient.controllers.AuthorizationParameterResolver;
 import se.swedenconnect.testclient.controllers.OIDCAuthnRequestParameterModel;
 import se.swedenconnect.testclient.controllers.OidcMessageParameterModel;
@@ -107,12 +106,6 @@ public class RequestObjectFactory {
     resolver.getScope().ifPresent(scope -> builder.claim("scope", String.join(" ", scope.toStringList())));
     resolver.getResponseType().ifPresent(responseType -> builder.claim("response_type", responseType.toString()));
     resolver.getLoginHint().ifPresent(loginHint -> builder.claim("login_hint", loginHint));
-    resolver.getResource().ifPresent(resources -> {
-      if (!resources.isEmpty()) {
-        builder.claim("resource",
-            resources.stream().map(URI::toASCIIString).collect(Collectors.toList()));
-      }
-    });
     if (resolver.getCodeChallenge().isPresent()) {
       final Pair<CodeChallengeMethod, CodeVerifier> codeChallenge = resolver.getCodeChallenge().get();
       builder.claim("code_challenge", codeChallenge.getRight().getValue());

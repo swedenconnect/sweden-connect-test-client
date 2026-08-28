@@ -19,6 +19,5 @@ public class AdvancedOptionsParamterModel {
   private ModelParameter loginHint;
   private ModelParameter codeChallengeMethod;
   private ModelParameter codeChallenge;
-  private ModelParameter resource;
   private Boolean moduleEnabled;
 }

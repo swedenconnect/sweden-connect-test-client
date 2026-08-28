@@ -268,9 +268,6 @@ public class OidcController {
       }
 
 
-      Optional.ofNullable((String) tokenResponse.get("refresh_token"))
-          .ifPresent(rt -> httpSession.setAttribute("refresh_token", rt));
-
       httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE,
           responseBuilder
               .build());

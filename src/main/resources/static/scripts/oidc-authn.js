@@ -515,43 +515,6 @@ class OIDCAuthenticationResult {
             userInfoDiv.show();
 
             this.displayScopeValidation(resultData.scopeValidation);
-
-            // RFC 8707 refresh token grant
-            const refreshCard = $('#oidc-authn-result-refresh');
-            const rtg = this.authnRequestData?.parameters?.refreshTokenGrant;
-            if (rtg?.moduleEnabled && resultData.response?.refresh_token) {
-                const resources = (rtg.resource || '')
-                    .split(/[\s\n]+/).filter(s => s.length > 0);
-                $.ajax({
-                    url: buildUrl('/oidc/authn/token/refresh'),
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ resource: resources }),
-                    dataType: 'json',
-                    success: (result) => {
-                        const tbody = $('#oidc-refresh-result-tbody').empty();
-                        if (result.error) {
-                            tbody.append(this.createRow('error', result.error,
-                                'table-text table-danger', 'table-text table-danger'));
-                            tbody.append(this.createRow('error_description', result.error_description || '',
-                                'table-text table-danger', 'table-text table-danger'));
-                        } else {
-                            Object.entries(result.accessTokenClaims || {}).forEach(([k, v]) => {
-                                tbody.append(this.createRow(k, JSON.stringify(v)));
-                            });
-                        }
-                        refreshCard.show();
-                    },
-                    error: () => {
-                        $('#oidc-refresh-result-tbody').empty()
-                            .append(this.createRow('error', 'Request failed',
-                                'table-text table-danger', 'table-text table-danger'));
-                        refreshCard.show();
-                    }
-                });
-            } else {
-                refreshCard.hide();
-            }
         }
         else {
             responseDiv.hide();
@@ -1090,19 +1053,7 @@ class OIDCAuthnRequest {
         this.initRequestObjectOptions();
         this.initAdvancedOptions();
         this.initKeyOptions();
-        this.initRefreshTokenGrant();
         let parent = this;
-        // advanced options toggle
-        let advancedOptions = $('#oidc-advanced-authn-options');
-        advancedOptions.click(function () {
-            if (advancedOptions.prop("checked")) {
-                $('#oidc-advanced-authn-request').show();
-
-            }
-            else {
-                $('#oidc-advanced-authn-request').hide();
-            }
-        });
         let keyOptions = $('#oidc-advanced-keys-request-check');
         keyOptions.click(function () {
             if (keyOptions.prop("checked")) {
@@ -1666,6 +1617,33 @@ class OIDCAuthnRequest {
         });
     }
 
+    /**
+     * Sets up a button that shows/hides a block of options. Unlike {@link initModuleCheckbox} this only controls
+     * what is displayed - it does not affect what is included in the request.
+     *
+     * @param buttonSelector the toggle button
+     * @param optionsSelector the block of options to show or hide
+     * @param moduleReference the module in this.pars keeping the display state
+     * @param label what the button calls the options, e.g. "advanced options"
+     */
+    initDisplayToggleButton(
+        buttonSelector,
+        optionsSelector,
+        moduleReference,
+        label) {
+        let parent = this;
+        let button = $(buttonSelector);
+        let apply = function (visible) {
+            parent.pars[moduleReference]["moduleEnabled"] = visible;
+            visible ? $(optionsSelector).show() : $(optionsSelector).hide();
+            button.text((visible ? "Hide " : "Display ") + label);
+        };
+        button.off("click").click(function () {
+            apply(!parent.pars[moduleReference]["moduleEnabled"]);
+        });
+        apply(parent.pars[moduleReference]["moduleEnabled"] || false);
+    }
+
     initModuleCheckbox(
         checkboxSelector,
         optionsSelector,
@@ -1717,10 +1695,11 @@ class OIDCAuthnRequest {
     }
 
     initAdvancedOptions() {
-        this.initModuleCheckbox(
+        this.initDisplayToggleButton(
             "#oidc-advanced-authn-options",
             "#oidc-advanced-authn-request",
-            "advanced"
+            "advanced",
+            "advanced options"
         );
         this.initServerGeneratedField(
             "#oidc-request-state-input",
@@ -1754,12 +1733,6 @@ class OIDCAuthnRequest {
             '#oidc-request-login_hint-request-body',
             '#oidc-request-login_hint-input',
             ["advanced", "loginHint"]
-        );
-        this.initNestedField(
-            '#oidc-request-resource-present',
-            '#oidc-request-resource-request-body',
-            '#oidc-request-resource-input',
-            ["advanced", "resource"]
         );
         this.initModuleSelector(
             "#oidc-request-responsetype-select",
@@ -1807,34 +1780,6 @@ class OIDCAuthnRequest {
         encryptionKeySelector.change(() => {
             this.pars["keys"]["encKey"] = encryptionKeySelector.val();
         });
-    }
-
-    initRefreshTokenGrant() {
-        if (!this.pars.refreshTokenGrant) return;
-        this.initModuleCheckbox(
-            '#oidc-refresh-grant-enable',
-            '#oidc-refresh-grant-options',
-            'refreshTokenGrant'
-        );
-        const resourceInput = $('#oidc-refresh-grant-resource-input');
-        resourceInput.val(this.pars.refreshTokenGrant.resource || '');
-        resourceInput.change(() => {
-            this.pars.refreshTokenGrant.resource = resourceInput.val();
-        });
-    }
-
-    refreshRefreshTokenGrant() {
-        const rtg = this.pars.refreshTokenGrant;
-        if (!rtg) return;
-        if (rtg.moduleEnabled !== undefined) {
-            $('#oidc-refresh-grant-enable').prop('checked', rtg.moduleEnabled);
-            rtg.moduleEnabled
-                ? $('#oidc-refresh-grant-options').show()
-                : $('#oidc-refresh-grant-options').hide();
-        }
-        if (rtg.resource !== undefined) {
-            $('#oidc-refresh-grant-resource-input').val(rtg.resource || '');
-        }
     }
 
     initModuleSelector(
@@ -2222,10 +2167,6 @@ class OIDCAuthnRequest {
             if (template.claimInRequestBody !== undefined) this.pars.claimInRequestBody = template.claimInRequestBody;
             this.refreshClaims();
         }
-        if (template.refreshTokenGrant !== undefined) {
-            this.pars.refreshTokenGrant = { ...this.pars.refreshTokenGrant, ...template.refreshTokenGrant };
-            this.refreshRefreshTokenGrant();
-        }
     }
 
     /**
@@ -2363,8 +2304,9 @@ class OIDCAuthnRequest {
         const adv = this.pars.advanced;
 
         if (adv.moduleEnabled !== undefined) {
-            $('#oidc-advanced-authn-options').prop('checked', adv.moduleEnabled);
             adv.moduleEnabled ? $('#oidc-advanced-authn-request').show() : $('#oidc-advanced-authn-request').hide();
+            $('#oidc-advanced-authn-options')
+                .text((adv.moduleEnabled ? 'Hide ' : 'Display ') + 'advanced options');
         }
 
         // Module selectors: responseType, prompt, codeChallengeMethod
@@ -2387,15 +2329,6 @@ class OIDCAuthnRequest {
             $('#oidc-request-login_hint-present').prop('checked', lh.valuePresent || false);
             $('#oidc-request-login_hint-request-body').prop('checked', lh.requestBody || false);
             $('#oidc-request-login_hint-input').prop('disabled', disabled).prop('value', disabled ? '' : (lh.value || ''));
-        }
-
-        // resource: user-editable nested field (textarea, RFC 8707)
-        if (adv.resource !== undefined) {
-            const res = adv.resource;
-            const disabled = !(res.valuePresent || res.requestBody);
-            $('#oidc-request-resource-present').prop('checked', res.valuePresent || false);
-            $('#oidc-request-resource-request-body').prop('checked', res.requestBody || false);
-            $('#oidc-request-resource-input').prop('disabled', disabled).val(disabled ? '' : (res.value || ''));
         }
 
         // Server-generated fields: state, nonce, codeChallenge (value stays disabled until Modify)
