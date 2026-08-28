@@ -491,36 +491,7 @@ class OIDCAuthenticationResult {
             }
             userInfoDiv.show();
 
-            // Logout — always runs last, after any refresh token grant
-            const performLogout = () => {
-                const logoutCard = $('#oidc-authn-result-logout');
-                const tbody = $('#oidc-logout-result-tbody').empty();
-                $.ajax({
-                    url: buildUrl('/oidc/authn/logout'),
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({}),
-                    dataType: 'json',
-                    success: (result) => {
-                        if (result.success) {
-                            tbody.append(this.createRow('status', 'Success'));
-                        } else {
-                            tbody.append(this.createRow('error', result.error || 'error',
-                                'table-text table-danger', 'table-text table-danger'));
-                            tbody.append(this.createRow('error_description', result.error_description || '',
-                                'table-text table-danger', 'table-text table-danger'));
-                        }
-                        logoutCard.show();
-                    },
-                    error: () => {
-                        tbody.append(this.createRow('status', 'Logout request failed',
-                            'table-text table-danger', 'table-text table-danger'));
-                        logoutCard.show();
-                    }
-                });
-            };
-
-            // RFC 8707 refresh token grant — runs before logout if module is enabled
+            // RFC 8707 refresh token grant
             const refreshCard = $('#oidc-authn-result-refresh');
             const rtg = this.authnRequestData?.parameters?.refreshTokenGrant;
             if (rtg?.moduleEnabled && resultData.response?.refresh_token) {
@@ -551,12 +522,10 @@ class OIDCAuthenticationResult {
                             .append(this.createRow('error', 'Request failed',
                                 'table-text table-danger', 'table-text table-danger'));
                         refreshCard.show();
-                    },
-                    complete: performLogout
+                    }
                 });
             } else {
                 refreshCard.hide();
-                performLogout();
             }
         }
         else {

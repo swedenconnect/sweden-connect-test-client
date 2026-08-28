@@ -85,7 +85,6 @@ public class OidcConfiguration {
         .metadataEndpoint(p.getMetadataEndpoint())
         .tokenEndpoint(p.getTokenEndpoint())
         .userInfoEndpoint(p.getUserInfoEndpoint())
-        .logoutEndpoint(p.getLogoutEndpoint())
         .source(OidcOp.Source.STATIC)
         .build()
     ).toList();

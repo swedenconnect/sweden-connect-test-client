@@ -45,7 +45,6 @@ import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -379,72 +378,6 @@ public class OidcRestController {
     result.put("accessTokenClaims", accessTokenClaims);
     result.put("rawResponse", tokenResponse != null ? tokenResponse : Map.of());
     return result;
-  }
-
-  @PostMapping(value = "/authn/logout",
-               consumes = MediaType.APPLICATION_JSON_VALUE,
-               produces = MediaType.APPLICATION_JSON_VALUE)
-  public Map<String, Object> logout() throws Exception {
-    final String refreshToken = (String) httpSession.getAttribute("refresh_token");
-    final OidcRp selectedRp = (OidcRp) httpSession.getAttribute("selected_rp");
-    final OidcOp selectedOp = (OidcOp) httpSession.getAttribute("selected_op");
-    final AuthenticationRequest authRequest = (AuthenticationRequest) httpSession.getAttribute("auth_request");
-
-    if (refreshToken == null || selectedRp == null || selectedOp == null || authRequest == null) {
-      return Map.of("success", false, "error", "missing_session", "error_description", "Session data not available");
-    }
-
-    final SignedJWT assertion = buildLogoutAssertion(selectedRp, selectedOp);
-
-    final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-    body.add("client_id", authRequest.getClientID().getValue());
-    body.add("refresh_token", refreshToken);
-    body.add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
-    body.add("client_assertion", assertion.serialize());
-
-    final Map<String, String> opError = new HashMap<>();
-    this.client.post()
-        .uri(selectedOp.getLogoutEndpoint())
-        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-        .body(body)
-        .retrieve()
-        .onStatus(HttpStatusCode::is4xxClientError, (req, resp) -> {
-          @SuppressWarnings("unchecked")
-          final Map<String, String> errMap = new ObjectMapper().readerFor(Map.class)
-              .readValue(resp.getBody().readAllBytes());
-          opError.putAll(errMap);
-        })
-        .toBodilessEntity();
-
-    if (!opError.isEmpty()) {
-      final Map<String, Object> result = new HashMap<>();
-      result.put("success", false);
-      result.put("error", opError.getOrDefault("error", "error"));
-      result.put("error_description", opError.getOrDefault("error_description", ""));
-      return result;
-    }
-
-    return Map.of("success", true);
-  }
-
-  private SignedJWT buildLogoutAssertion(final OidcRp rp, final OidcOp op) throws JOSEException {
-    final PkiCredential cred = rp.getCredentials().getCredentialForSigning();
-    final JWK jwk = new JwkTransformerFunction().serializable().apply(cred);
-    final JWSHeader header = new JWSHeader.Builder(JoseUtils.signingAlgorithm(jwk))
-        .jwk(jwk.toPublicJWK())
-        .keyID(jwk.getKeyID())
-        .build();
-    final JWTClaimsSet claims = new JWTClaimsSet.Builder()
-        .issuer(rp.getEntityId())
-        .subject(rp.getEntityId())
-        .audience(op.getEntityId())
-        .jwtID(UUID.randomUUID().toString())
-        .issueTime(Date.from(Instant.now()))
-        .expirationTime(Date.from(Instant.now().plusSeconds(300)))
-        .build();
-    final SignedJWT jwt = new SignedJWT(header, claims);
-    jwt.sign(JoseUtils.signer(cred));
-    return jwt;
   }
 
   private SignedJWT buildClientAssertion(final OidcRp rp, final OidcOp op) throws JOSEException {
