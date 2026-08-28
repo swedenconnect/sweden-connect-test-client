@@ -17,11 +17,14 @@ package se.swedenconnect.testclient.utils;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWEDecrypter;
 import com.nimbusds.jose.JWEEncrypter;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.crypto.ECDHDecrypter;
 import com.nimbusds.jose.crypto.ECDHEncrypter;
 import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.Curve;
@@ -146,6 +149,25 @@ public class JoseUtils {
       return new RSAEncrypter(jwk.toRSAKey().toRSAPublicKey());
     }
     throw new JOSEException("Unsupported key type for encryption: " + jwk.getKeyType());
+  }
+
+  /**
+   * Creates a decrypter for the supplied credential.
+   *
+   * @param credential the credential holding the private key to decrypt with
+   * @return a {@link JWEDecrypter}
+   * @throws JOSEException for unsupported keys
+   */
+  @Nonnull
+  public static JWEDecrypter decrypter(@Nonnull final PkiCredential credential) throws JOSEException {
+    final PrivateKey key = credential.getPrivateKey();
+    if (key instanceof final ECPrivateKey ecKey) {
+      return new ECDHDecrypter(ecKey);
+    }
+    if (key instanceof final RSAPrivateKey rsaKey) {
+      return new RSADecrypter(rsaKey);
+    }
+    throw new JOSEException("Unsupported key type for decryption: " + key.getAlgorithm());
   }
 
   @Nonnull

@@ -443,6 +443,7 @@ class OIDCAuthenticationResult {
         const userInfoDiv = $('#oidc-authn-result-userinfo');
         if (resultData.responseParameters) {
             const tableDiv = responseDiv.find('tbody');
+            this.appendProtectionRows(tableDiv, resultData.responseProtection);
 
             for (var prop in resultData.responseParameters) {
                 if (Object.prototype.hasOwnProperty.call(resultData.responseParameters, prop)) {
@@ -481,6 +482,7 @@ class OIDCAuthenticationResult {
                 accessTokenButton.hide();
             }
             const idTokenTableDiv = idTokenDiv.find('tbody');
+            this.appendProtectionRows(idTokenTableDiv, resultData.idTokenProtection);
             for (var prop in resultData.idTokenClaims) {
                 if (Object.prototype.hasOwnProperty.call(resultData.idTokenClaims, prop)) {
                     idTokenTableDiv.append(this.createRow(prop, resultData.idTokenClaims[prop]));
@@ -495,6 +497,7 @@ class OIDCAuthenticationResult {
             }
             idTokenDiv.show();
             const userInfoTableDiv = userInfoDiv.find('tbody');
+            this.appendProtectionRows(userInfoTableDiv, resultData.userInfoProtection);
             for (var prop in resultData.userInfoClaims) {
                 if (Object.prototype.hasOwnProperty.call(resultData.userInfoClaims, prop)) {
                     userInfoTableDiv.append(this.createRow(prop, resultData.userInfoClaims[prop])
@@ -704,6 +707,43 @@ class OIDCAuthenticationResult {
             }
         }
         card.show();
+    }
+
+    /**
+     * Appends rows telling how an object was delivered - signed or not, encrypted or not - along with the
+     * JOSE parameters used.
+     *
+     * @param tbody the table body to append the rows to
+     * @param protection the protection information, as reported by the server
+     */
+    appendProtectionRows(tbody, protection) {
+        if (!protection) {
+            return;
+        }
+        const box = (checked) => checked ? '&#9745;' : '&#9744;';
+        const describe = (checked, label, params) => {
+            const assigned = params.filter(p => p[1]).map(p => p[0] + ': ' + p[1]);
+            return box(checked) + ' ' + label + (assigned.length > 0 ? ' (' + assigned.join(', ') + ')' : '');
+        };
+
+        tbody.append(this.createRow('Signature',
+            describe(protection.signed, protection.signed ? 'Signed' : 'Not signed', [
+                ['alg', protection.signatureAlgorithm],
+                ['kid', protection.signatureKeyId],
+                ['typ', protection.signatureType]
+            ])));
+        tbody.append(this.createRow('Encryption',
+            describe(protection.encrypted, protection.encrypted ? 'Encrypted' : 'Not encrypted', [
+                ['alg', protection.encryptionAlgorithm],
+                ['enc', protection.encryptionMethod],
+                ['kid', protection.encryptionKeyId]
+            ])));
+        if (protection.format) {
+            tbody.append(this.createRow('Delivery', protection.format));
+        }
+        if (protection.note) {
+            tbody.append(this.createRow('Note', protection.note));
+        }
     }
 
     createRow(title, contents, thClass = 'table-text', tdClass = 'table-text') {
