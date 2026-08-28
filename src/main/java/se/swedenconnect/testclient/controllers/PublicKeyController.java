@@ -28,6 +28,12 @@ import java.security.PublicKey;
 import java.security.cert.CertificateEncodingException;
 import java.util.Base64;
 
+/**
+ * Controller that publishes the public key of a configured credential in JWK or PEM format.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @AllArgsConstructor
 @RestController
 public class PublicKeyController {
@@ -48,7 +54,8 @@ public class PublicKeyController {
           .toJSONString();
     }
     if ("PEM".equals(format)) {
-      final String base64 = new String(Base64.getEncoder().encode(credential.getCertificate().getEncoded()), Charset.defaultCharset());
+      final String base64 = new String(
+          Base64.getEncoder().encode(credential.getCertificate().getEncoded()), Charset.defaultCharset());
       StringBuilder pem = new StringBuilder();
       pem.append("-----BEGIN CERTIFICATE-----");
       pem.append("\n");

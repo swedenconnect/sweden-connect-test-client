@@ -47,6 +47,13 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/**
+ * Resolves the parameters of an OIDC authentication request from the editable UI model, converting them into the
+ * Nimbus types and deciding whether a parameter goes into the request URL or into the request object.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @AllArgsConstructor
 public class AuthorizationParameterResolver {
 
@@ -98,7 +105,8 @@ public class AuthorizationParameterResolver {
   }
 
   public Optional<Scope> getScope() {
-    final Optional<Scope> scope = this.getValue(this.model.getScope(), scopeString -> new Scope(scopeString.split(" ")));
+    final Optional<Scope> scope =
+        this.getValue(this.model.getScope(), scopeString -> new Scope(scopeString.split(" ")));
     if (scope.isEmpty() && !this.forRequestBody) {
       //Scope needs to be "openid" for request if other scopes are specified in request object
       return Optional.of(new Scope("openid"));
@@ -149,7 +157,8 @@ public class AuthorizationParameterResolver {
   }
 
   public Optional<Pair<CodeChallengeMethod, CodeVerifier>> getCodeChallenge() {
-    final Optional<Pair<CodeChallengeMethod, CodeVerifier>> codeVerifier = Optional.ofNullable((Pair<CodeChallengeMethod, CodeVerifier>) this.loadFunction.apply("code_verifier"));
+    final Optional<Pair<CodeChallengeMethod, CodeVerifier>> codeVerifier = Optional.ofNullable(
+        (Pair<CodeChallengeMethod, CodeVerifier>) this.loadFunction.apply("code_verifier"));
     if (codeVerifier.isPresent()) {
       return codeVerifier;
     }
@@ -181,7 +190,8 @@ public class AuthorizationParameterResolver {
       final SignedJWT signedJWT = RequestObjectFactory.getSignedJWT(model, kidToJwtFunction, claims);
       saveFunction.accept("signed_jwt", signedJWT);
       if (model.getRequestObject().getEncryptRequest()) {
-        final EncryptedJWT encryptedJWT = RequestObjectFactory.getEncryptedSignedJWT(model, kidToJwtFunction, signedJWT);
+        final EncryptedJWT encryptedJWT =
+            RequestObjectFactory.getEncryptedSignedJWT(model, kidToJwtFunction, signedJWT);
         saveFunction.accept("encrypted_signed_jwt", encryptedJWT);
         return Optional.of(encryptedJWT);
       }

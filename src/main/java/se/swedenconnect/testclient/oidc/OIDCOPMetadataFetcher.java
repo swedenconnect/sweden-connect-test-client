@@ -23,6 +23,12 @@ import org.springframework.web.client.RestClient;
 import java.text.ParseException;
 import java.util.Objects;
 
+/**
+ * Fetches the metadata of an OpenID Provider.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 public class OIDCOPMetadataFetcher {
   private RestClient client;
 
@@ -72,7 +78,8 @@ public class OIDCOPMetadataFetcher {
         .body(JSONObject.class);
     try {
       return JWKSet.parse(body);
-    } catch (final ParseException e) {
+    }
+    catch (final ParseException e) {
       throw new RuntimeException("Failed to parse JWKS", e);
     }
   }

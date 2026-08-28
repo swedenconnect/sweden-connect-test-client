@@ -139,7 +139,8 @@ public class SamlRestController {
     throw new NotFoundException("%s not found".formatted(sp));
   }
 
-  @PostMapping(value = "/authn/generate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/authn/generate", consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   public SamlAuthnRequestModel generateAuthnRequest(@Nonnull @RequestBody final SamlAuthnRequestParameterModel model)
       throws RequestGenerationException {
 
@@ -174,7 +175,8 @@ public class SamlRestController {
     throw new NotFoundException("%s not found".formatted(model.getSp()));
   }
 
-  @PostMapping(value = "/authn/verify", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/authn/verify", consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   public SamlResponseProcessingModel verifySamlResponse(
       @Nonnull @RequestBody final SamlResponseValidationInput responseInput) {
 

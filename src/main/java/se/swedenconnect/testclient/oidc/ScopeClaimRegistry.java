@@ -30,8 +30,8 @@ import java.util.Optional;
  * Specification for the Swedish OpenID Connect Profile</a>,
  * <a href="https://www.oidc.se/specifications/oidc-signature-extension-1_1.html">Signature Extension for OpenID
  * Connect</a> and
- * <a href="https://docs.swedenconnect.se/technical-framework/latest/OpenID_Connect_Claims_and_Scopes_Specification.html">OpenID
- * Connect Claims and Scopes Specification for Sweden Connect</a>.
+ * <a href="https://docs.swedenconnect.se/technical-framework/latest/OpenID_Connect_Claims_and_Scopes_Specification.html">
+ * OpenID Connect Claims and Scopes Specification for Sweden Connect</a>.
  *
  * @author Felix Hellman
  */

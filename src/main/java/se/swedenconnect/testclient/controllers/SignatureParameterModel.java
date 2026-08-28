@@ -27,6 +27,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+/**
+ * The editable model for the OIDC signature extension, i.e., the sign message and the data to be signed.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -45,15 +51,15 @@ public class SignatureParameterModel {
   public String getPreferredMessage() {
     if (Objects.nonNull(this.signMessage)) {
       return Stream.of(
-              this.signMessage.getMessage(),
-              this.signMessage.getMessageSwedish(),
-              this.signMessage.getMessageEnglish(),
-              this.signMessage.getMessageGerman(),
-              this.signMessage.getMessageFrench(),
-              this.signMessage.getMessageItalian(),
-              this.signMessage.getMessageSpanish(),
-              this.signMessage.getMessageDummy()
-          ).filter(Objects::nonNull)
+          this.signMessage.getMessage(),
+          this.signMessage.getMessageSwedish(),
+          this.signMessage.getMessageEnglish(),
+          this.signMessage.getMessageGerman(),
+          this.signMessage.getMessageFrench(),
+          this.signMessage.getMessageItalian(),
+          this.signMessage.getMessageSpanish(),
+          this.signMessage.getMessageDummy())
+          .filter(Objects::nonNull)
           .findFirst()
           .orElse("");
     }

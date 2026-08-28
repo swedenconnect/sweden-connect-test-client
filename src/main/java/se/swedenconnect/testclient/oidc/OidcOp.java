@@ -26,6 +26,13 @@ import net.minidev.json.JSONObject;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Representation of an OpenID Provider that may be tested against - either statically configured or discovered
+ * through OpenID Federation.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor

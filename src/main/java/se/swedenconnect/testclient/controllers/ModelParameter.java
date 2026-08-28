@@ -23,6 +23,13 @@ import lombok.Setter;
 
 import java.util.Optional;
 
+/**
+ * A single editable request parameter. Apart from its value it tells whether the parameter should be placed in the
+ * request object rather than in the request URL, and whether it should be included at all.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

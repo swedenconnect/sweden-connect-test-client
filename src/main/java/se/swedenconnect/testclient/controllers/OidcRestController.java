@@ -113,7 +113,8 @@ public class OidcRestController {
   public List<OidcRpInfoModel> getOidcRpInfo() {
     return this.oidcRps.stream()
         .map(rp -> new OidcRpInfoModel(rp.getEntityId(), rp.getDescription(),
-            this.urlBuilderBean.buildUrl("/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset()))))
+            this.urlBuilderBean.buildUrl(
+                "/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset()))))
         .toList();
   }
 
@@ -127,7 +128,8 @@ public class OidcRestController {
         .toList();
   }
 
-  @PostMapping(value = "/authn/verify", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/authn/verify", consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   public Object verifyOidcResponse(
       @Nonnull @RequestBody final Map<String, Object> response) {
     return response.get("response_data");
@@ -147,10 +149,14 @@ public class OidcRestController {
 
   @GetMapping(value = "/authn/info")
   public OIDCInitAuthnModel initInfo() {
-    final List<OpenIdRelyingPartyModel> relyingParties = this.oidcRps.stream().map(rp -> new OpenIdRelyingPartyModel(rp.getEntityId(), rp.getMetadata().getName(),
-        rp.getDescription(), this.urlBuilderBean.buildUrl("/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset())))).toList();
+    final List<OpenIdRelyingPartyModel> relyingParties = this.oidcRps.stream()
+        .map(rp -> new OpenIdRelyingPartyModel(rp.getEntityId(), rp.getMetadata().getName(), rp.getDescription(),
+            this.urlBuilderBean.buildUrl(
+                "/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset()))))
+        .toList();
 
-    final List<OpenIdProviderModel> providers = this.opRegistry.getOps().stream().map(op -> new OpenIdProviderModel(
+    final List<OpenIdProviderModel> providers = this.opRegistry.getOps().stream()
+        .map(op -> new OpenIdProviderModel(
             op.getEntityId(),
             Optional.ofNullable(op.getDisplayName()).orElseGet(op::getEntityId),
             Optional.ofNullable(op.getDescription()).orElse(""),
@@ -220,8 +226,18 @@ public class OidcRestController {
     return OIDCAuthnRequestParameterModel.builder()
         .op(op)
         .rp(rp)
-        .signMessage(SignatureParameterModel.builder().b64Encode(true).signMessage(OidcMessageParameterModel.builder().build()).requestBody(false).valuePresent(false).build())
-        .userMessage(OidcMessageParameterModel.builder().b64Encode(true).messageSwedish("msg").valuePresent(false).requestBody(false).build())
+        .signMessage(SignatureParameterModel.builder()
+            .b64Encode(true)
+            .signMessage(OidcMessageParameterModel.builder().build())
+            .requestBody(false)
+            .valuePresent(false)
+            .build())
+        .userMessage(OidcMessageParameterModel.builder()
+            .b64Encode(true)
+            .messageSwedish("msg")
+            .valuePresent(false)
+            .requestBody(false)
+            .build())
         .scope(new ModelParameter("openid", false, true))
         .redirectUri(new ModelParameter(selectedRp.getMetadata().getRedirectionURI().toASCIIString(), false, true))
         .clientId(new ModelParameter(selectedRp.getEntityId(), false, true))
@@ -251,7 +267,8 @@ public class OidcRestController {
         .build();
   }
 
-  @PostMapping(value = "/authn/generate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/authn/generate", consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
   public OIDCAuthnRequestModel generateAuthnRequest(
       @Nonnull @RequestBody final OIDCAuthnRequestParameterModel model
   ) throws JOSEException, ParseException {
@@ -293,7 +310,8 @@ public class OidcRestController {
           .method("GET")
           .url(asciiString)
           .build();
-    } catch (final Exception e) {
+    }
+    catch (final Exception e) {
       httpSession.invalidate();
       throw e;
     }

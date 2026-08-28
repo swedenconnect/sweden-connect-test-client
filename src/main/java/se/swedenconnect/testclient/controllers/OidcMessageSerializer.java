@@ -23,6 +23,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+/**
+ * A Gson type adapter for {@link OidcMessageParameterModel} that writes each language variant, optionally
+ * Base64-encoding the message values.
+ *
+ * @author Martin Lindström
+ * @author Felix Hellman
+ */
 public class OidcMessageSerializer extends TypeAdapter<OidcMessageParameterModel> {
 
   @Override
@@ -52,7 +59,8 @@ public class OidcMessageSerializer extends TypeAdapter<OidcMessageParameterModel
       if (Boolean.TRUE.equals(encode)) {
         out.name(name)
             .value(Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8)));
-      } else {
+      }
+      else {
         out.name(name)
             .value(value);
       }
