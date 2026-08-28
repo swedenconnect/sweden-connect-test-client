@@ -1799,6 +1799,8 @@ class OIDCAuthnRequest {
                 uris.push($(this).text());
             });
             parent.pars.acrValues.value = uris.join(' ');
+            parent.pars.acrValues.valuePresent = uris.length > 0;
+            oidcRequestAcrCheckbox.prop('checked', uris.length > 0);
         };
 
         let assignedUris = [];
