@@ -24,6 +24,9 @@ public class OIDCResponse {
   private Map<String, Object> userInfoClaims;
   private Map<String, Object> responseParameters;
   private Map<String, Object> requestParameters;
+  private ProtectionInfo responseProtection;
+  private ProtectionInfo idTokenProtection;
+  private ProtectionInfo userInfoProtection;
   private Map<String, Object> missingIdTokenClaims;
   private Map<String, Object> missingUserInfoClaims;
   private List<ScopeValidationResult> scopeValidation;

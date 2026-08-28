@@ -17,12 +17,17 @@ package se.swedenconnect.testclient.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWEHeader;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.util.Pair;
+import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.Scope;
@@ -40,6 +45,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
@@ -166,12 +172,14 @@ public class OidcController {
           })
           .getBody();
 
-      final Map<String, Object> userInfo = this.client.get().uri(selectedOp.getUserInfoEndpoint())
+      final ResponseEntity<String> userInfoResponse = this.client.get().uri(selectedOp.getUserInfoEndpoint())
           .header("Authorization", "Bearer %s".formatted(tokenResponse.get("access_token")))
+          .accept(MediaType.APPLICATION_JSON, MediaType.valueOf("application/jwt"))
           .retrieve()
-          .toEntity(new ParameterizedTypeReference<Map<String, Object>>() {
-          })
-          .getBody();
+          .toEntity(String.class);
+
+      final ProtectedJwt userInfoResult = this.parseUserInfo(userInfoResponse, selectedRp);
+      final Map<String, Object> userInfo = userInfoResult.claims();
 
       final Optional<OIDCClaimsRequest> authClaims = Optional.ofNullable(authRequest.getOIDCClaims())
           .or(() -> {
@@ -190,7 +198,9 @@ public class OidcController {
             }
           });
 
-      final Map<String, Object> idTokenClaims = SignedJWT.parse((String) tokenResponse.get("id_token")).getJWTClaimsSet().toJSONObject();
+      final ProtectedJwt idTokenResult =
+          this.parseProtectedJwt((String) tokenResponse.get("id_token"), selectedRp);
+      final Map<String, Object> idTokenClaims = idTokenResult.claims();
       final Map<String, Object> requestParameters = new HashMap<>(Map.of("iss", iss));
       Optional.ofNullable(state).ifPresent(s -> requestParameters.put("state", s));
 
@@ -231,6 +241,9 @@ public class OidcController {
           .idTokenClaims(idTokenClaims)
           .authorizationRequest(authRequest.toHTTPRequest().getURI().toASCIIString())
           .userInfoClaims(userInfo)
+          .idTokenProtection(idTokenResult.protection())
+          .userInfoProtection(userInfoResult.protection())
+          .responseProtection(ProtectionInfo.builder().format("JSON").build())
           .requestParameters(requestParameters)
           .responseParameters(responseParameters)
           .response(tokenResponse);
@@ -286,6 +299,92 @@ public class OidcController {
     catch (final ParseException e) {
       log.debug("Access token is not a signed JWT - treating it as an opaque token");
       return Map.of();
+    }
+  }
+
+  /**
+   * The claims of a JWT together with a description of how it was protected.
+   *
+   * @param claims the claims of the JWT (empty if it could not be parsed or decrypted)
+   * @param protection how the JWT was protected
+   */
+  private record ProtectedJwt(Map<String, Object> claims, ProtectionInfo protection) {
+  }
+
+  /**
+   * Parses a UserInfo response, which is either a plain JSON object or a JWT (signed and/or encrypted).
+   *
+   * @param response the UserInfo response
+   * @param rp the relying party (holding the keys needed for decryption)
+   * @return the UserInfo claims along with how they were protected
+   */
+  private ProtectedJwt parseUserInfo(final ResponseEntity<String> response, final OidcRp rp) {
+    final String body = Optional.ofNullable(response.getBody()).orElse("");
+    final MediaType contentType = response.getHeaders().getContentType();
+    if (Objects.nonNull(contentType) && contentType.getSubtype().toLowerCase().contains("jwt")) {
+      return this.parseProtectedJwt(body, rp);
+    }
+    try {
+      final Map<String, Object> claims =
+          new ObjectMapper().readerFor(Map.class).readValue(body);
+      return new ProtectedJwt(new HashMap<>(claims), ProtectionInfo.builder().format("JSON").build());
+    }
+    catch (final Exception e) {
+      log.warn("Failed to parse UserInfo response", e);
+      return new ProtectedJwt(new HashMap<>(), ProtectionInfo.builder()
+          .note("Failed to parse UserInfo response: %s".formatted(e.getMessage()))
+          .build());
+    }
+  }
+
+  /**
+   * Parses a JWT that may be signed, encrypted, encrypted and signed, or neither, and reports how it was protected.
+   *
+   * @param token the serialized JWT
+   * @param rp the relying party (holding the keys needed for decryption)
+   * @return the claims of the JWT along with how it was protected
+   */
+  private ProtectedJwt parseProtectedJwt(final String token, final OidcRp rp) {
+    final ProtectionInfo.ProtectionInfoBuilder protection = ProtectionInfo.builder();
+    if (Objects.isNull(token) || token.isBlank()) {
+      return new ProtectedJwt(new HashMap<>(), ProtectionInfo.builder().note("Not present in the response").build());
+    }
+    try {
+      JWT jwt = JWTParser.parse(token);
+      if (jwt instanceof final EncryptedJWT encrypted) {
+        final JWEHeader header = encrypted.getHeader();
+        protection.encrypted(true)
+            .format("Encrypted JWT")
+            .encryptionAlgorithm(Optional.ofNullable(header.getAlgorithm()).map(Object::toString).orElse(null))
+            .encryptionMethod(
+                Optional.ofNullable(header.getEncryptionMethod()).map(EncryptionMethod::getName).orElse(null))
+            .encryptionKeyId(header.getKeyID());
+
+        final Optional<JWT> decrypted = this.decrypt(encrypted, rp);
+        if (decrypted.isEmpty()) {
+          return new ProtectedJwt(new HashMap<>(), protection
+              .note("Could not be decrypted with any of the client's encryption keys")
+              .build());
+        }
+        jwt = decrypted.get();
+      }
+      if (jwt instanceof final SignedJWT signed) {
+        final JWSHeader header = signed.getHeader();
+        protection.signed(true)
+            .signatureAlgorithm(Optional.ofNullable(header.getAlgorithm()).map(Object::toString).orElse(null))
+            .signatureKeyId(header.getKeyID())
+            .signatureType(Optional.ofNullable(header.getType()).map(JOSEObjectType::toString).orElse(null));
+      }
+      final ProtectionInfo built = protection.build();
+      if (Objects.isNull(built.getFormat())) {
+        built.setFormat(built.isSigned() ? "Signed JWT" : "Plain JWT");
+      }
+      return new ProtectedJwt(new HashMap<>(jwt.getJWTClaimsSet().toJSONObject()), built);
+    }
+    catch (final ParseException e) {
+      log.warn("Failed to parse JWT", e);
+      return new ProtectedJwt(new HashMap<>(),
+          protection.note("Failed to parse: %s".formatted(e.getMessage())).build());
     }
   }
 
@@ -399,5 +498,28 @@ public class OidcController {
           return builder.status(ScopeValidationResult.Status.OK).build();
         })
         .toList();
+  }
+
+  /**
+   * Attempts to decrypt an encrypted JWT using the encryption credentials of the relying party.
+   *
+   * @param encrypted the encrypted JWT
+   * @param rp the relying party
+   * @return the decrypted JWT - a {@link SignedJWT} if the payload is a nested signed JWT - or an empty
+   *     {@link Optional} if decryption failed
+   */
+  private Optional<JWT> decrypt(final EncryptedJWT encrypted, final OidcRp rp) {
+    for (final PkiCredential credential : rp.getCredentials().getCredentialsForEncryption()) {
+      try {
+        encrypted.decrypt(JoseUtils.decrypter(credential));
+        return Optional.of(Optional.ofNullable(encrypted.getPayload().toSignedJWT())
+            .map(JWT.class::cast)
+            .orElse(encrypted));
+      }
+      catch (final Exception e) {
+        log.debug("Failed to decrypt JWT using credential '{}'", credential.getName(), e);
+      }
+    }
+    return Optional.empty();
   }
 }
