@@ -24,8 +24,11 @@ test-output
 .factorypath
 
 # Intelij
+.idea/*
+!.idea/inspectionProfiles
+!.idea/copyright
+!.idea/codeStyles
 *.iml
-.idea
 .run
 out
 
