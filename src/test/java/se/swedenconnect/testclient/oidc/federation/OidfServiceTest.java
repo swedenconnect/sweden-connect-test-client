@@ -97,7 +97,6 @@ class OidfServiceTest {
     assertEquals(OP + "/auth", op.getAuthorizationEndpoint());
     assertEquals(OP + "/token", op.getTokenEndpoint());
     assertEquals(OP + "/userinfo", op.getUserInfoEndpoint());
-    assertEquals(OP + "/logout", op.getLogoutEndpoint());
     assertEquals(OP + "/.well-known/openid-federation", op.getMetadataEndpoint());
 
     // The metadata is taken as-is from the resolve response - the trust anchor has already applied the policies.
@@ -264,7 +263,6 @@ class OidfServiceTest {
     metadata.put("authorization_endpoint", OP + "/auth");
     metadata.put("token_endpoint", OP + "/token");
     metadata.put("userinfo_endpoint", OP + "/userinfo");
-    metadata.put("end_session_endpoint", OP + "/logout");
     metadata.put("jwks", new JSONObject(new JWKSet(this.opKey.toPublicJWK()).toJSONObject()));
     return metadata;
   }

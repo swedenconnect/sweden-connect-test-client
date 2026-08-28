@@ -372,8 +372,6 @@ public class OidfService {
         .authorizationEndpoint(metadata.getAsString("authorization_endpoint"))
         .tokenEndpoint(metadata.getAsString("token_endpoint"))
         .userInfoEndpoint(metadata.getAsString("userinfo_endpoint"))
-        .logoutEndpoint(Optional.ofNullable(metadata.getAsString("end_session_endpoint"))
-            .orElseGet(() -> metadata.getAsString("revocation_endpoint")))
         .metadataEndpoint(OidfClient.entityConfigurationUrl(op.getValue()))
         .source(OidcOp.Source.FEDERATION)
         .trustAnchor(trustAnchor.getValue())
