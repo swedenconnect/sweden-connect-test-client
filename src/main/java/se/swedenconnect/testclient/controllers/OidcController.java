@@ -15,8 +15,6 @@
  */
 package se.swedenconnect.testclient.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
@@ -62,6 +60,8 @@ import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcRp;
 import se.swedenconnect.testclient.oidc.ScopeClaimRegistry;
 import se.swedenconnect.testclient.utils.JoseUtils;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.text.ParseException;
 import java.time.Instant;
@@ -94,6 +94,9 @@ public class OidcController {
    */
   public static final String REDIRECTION_URL_BASE = "/oidc/redirect";
 
+  /** Mapper used for the JSON bodies that are exchanged with the OP (token and UserInfo endpoints). */
+  private static final ObjectMapper objectMapper = JsonMapper.builder().build();
+
   @RequestMapping(path = REDIRECTION_URL_BASE + "/{rpSuffix}", method = {RequestMethod.GET, RequestMethod.POST})
   public ModelAndView handleRedirection(@Nonnull final HttpServletRequest request,
                                         @PathVariable("rpSuffix") @Nonnull final String rp,
@@ -102,7 +105,7 @@ public class OidcController {
                                         @RequestParam(value = "state", required = false) final String state,
                                         @RequestParam(value = "iss", required = false) final String iss,
                                         @RequestParam(value = "code", required = false) final String code) throws JOSEException,
-      ParseException, JsonProcessingException {
+      ParseException {
     final AuthenticationRequest authRequest = (AuthenticationRequest) httpSession.getAttribute("auth_request");
     final OidcOp selectedOp = (OidcOp) httpSession.getAttribute("selected_op");
     final OidcRp selectedRp = (OidcRp) httpSession.getAttribute("selected_rp");
@@ -158,7 +161,7 @@ public class OidcController {
     final Map<String, String> errorBody = new HashMap<>();
     final RestClient.ResponseSpec.ErrorHandler errorHandler = (a, b) -> {
       final Map<String, String> errorMap =
-          (Map<String, String>) new ObjectMapper().readerFor(Map.class).readValue(b.getBody().readAllBytes());
+          (Map<String, String>) objectMapper.readerFor(Map.class).readValue(b.getBody().readAllBytes());
       errorBody.putAll(errorMap);
       throw new RuntimeException("Token exchange error");
     };
@@ -208,13 +211,8 @@ public class OidcController {
       Optional.ofNullable(authRequest.getNonce()).ifPresent(nonce1 -> requestParameters.put("nonce", nonce1.getValue()));
       Optional.ofNullable(authRequest.getACRValues()).ifPresent(acrs -> requestParameters.put("acr_values", acrs));
       Optional.ofNullable(authRequest.getRedirectionURI()).ifPresent(redirection -> requestParameters.put("redirect_uri", redirection));
-      Optional.ofNullable(httpSession.getAttribute("jwt_claims")).map(JWTClaimsSet.class::cast).ifPresent(jwt -> {
-        try {
-          requestParameters.put("jwt_claims", new ObjectMapper().writeValueAsString(jwt.toJSONObject()));
-        } catch (JsonProcessingException e) {
-          throw new RuntimeException(e);
-        }
-      });
+      Optional.ofNullable(httpSession.getAttribute("jwt_claims")).map(JWTClaimsSet.class::cast).ifPresent(
+          jwt -> requestParameters.put("jwt_claims", objectMapper.writeValueAsString(jwt.toJSONObject())));
       Optional.ofNullable(httpSession.getAttribute("plain_jwt")).map(JWT.class::cast).ifPresent(jwt -> requestParameters.put(
           "plain_jwt", jwt.serialize()));
       Optional.ofNullable(httpSession.getAttribute("encrypted_plain_jwt")).map(JWT.class::cast).ifPresent(jwt -> requestParameters.put(
@@ -323,7 +321,7 @@ public class OidcController {
     }
     try {
       final Map<String, Object> claims =
-          new ObjectMapper().readerFor(Map.class).readValue(body);
+          objectMapper.readerFor(Map.class).readValue(body);
       return new ProtectedJwt(new HashMap<>(claims), ProtectionInfo.builder().format("JSON").build());
     }
     catch (final Exception e) {
