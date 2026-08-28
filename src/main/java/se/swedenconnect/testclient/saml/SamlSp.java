@@ -139,7 +139,7 @@ public class SamlSp {
 
     if (properties.getEntityCategories() != null) {
       Extensions extensions = template.getExtensions();
-      if (extensions != null) {
+      if (extensions == null) {
         extensions = ExtensionsBuilder.builder().build();
         template.setExtensions(extensions);
       }
