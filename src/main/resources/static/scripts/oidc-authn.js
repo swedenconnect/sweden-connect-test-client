@@ -511,8 +511,6 @@ class OIDCAuthenticationResult {
             }
             userInfoDiv.show();
 
-            this.displayScopeValidation(resultData.scopeValidation);
-
             // RFC 8707 refresh token grant
             const refreshCard = $('#oidc-authn-result-refresh');
             const rtg = this.authnRequestData?.parameters?.refreshTokenGrant;
@@ -652,58 +650,6 @@ class OIDCAuthenticationResult {
         }
 
         detailsDiv.show();
-    }
-
-    /**
-     * Displays, per requested scope, the claims the scope is defined to deliver and whether they were received.
-     *
-     * @param scopeValidation the validation results reported by the server
-     */
-    displayScopeValidation(scopeValidation) {
-        const card = $('#oidc-authn-result-scope-validation');
-        const tbody = $('#oidc-scope-validation-tbody').empty();
-        if (!scopeValidation || scopeValidation.length === 0) {
-            card.hide();
-            return;
-        }
-
-        const statusClass = {
-            OK:        'table-text table-success',
-            MISSING:   'table-text table-danger',
-            WARNING:   'table-text table-warning',
-            UNKNOWN:   'table-text text-muted',
-            NO_CLAIMS: 'table-text text-muted'
-        };
-        const statusText = {
-            OK:        'All claims of the scope were received',
-            MISSING:   'Claims are missing',
-            WARNING:   'Delivered, but not as specified',
-            UNKNOWN:   'Unknown scope - not validated',
-            NO_CLAIMS: 'The scope does not deliver any claims'
-        };
-
-        for (const result of scopeValidation) {
-            const cls = statusClass[result.status] || 'table-text';
-            tbody.append(this.createRow(result.scope, result.message || statusText[result.status] || '', cls, cls));
-
-            const oneOfSatisfied = (result.claims || [])
-                .some(c => c.requirement === 'ONE_OF' && c.received);
-
-            for (const claim of (result.claims || [])) {
-                const expected = claim.requirement !== 'OPTIONAL'
-                    && !(claim.requirement === 'ONE_OF' && oneOfSatisfied);
-                let rowClass = 'table-text';
-                if (!claim.received) {
-                    rowClass = expected ? 'table-text table-danger' : 'table-text text-muted';
-                }
-                const requirement = claim.requirement === 'ONE_OF' ? 'one of' : claim.requirement.toLowerCase();
-                const received = claim.received
-                    ? 'Received in ' + claim.receivedIn
-                    : 'Not received (expected in ' + claim.expectedLocation + ', ' + requirement + ')';
-                tbody.append(this.createRow('\u00a0\u00a0\u00a0\u00a0' + claim.claim, received, rowClass, rowClass));
-            }
-        }
-        card.show();
     }
 
     createRow(title, contents, thClass = 'table-text', tdClass = 'table-text') {

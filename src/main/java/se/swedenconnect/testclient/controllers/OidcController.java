@@ -25,7 +25,6 @@ import com.nimbusds.jose.util.Pair;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
@@ -54,14 +53,11 @@ import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
 import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcRp;
-import se.swedenconnect.testclient.oidc.ScopeClaimRegistry;
 import se.swedenconnect.testclient.utils.JoseUtils;
 
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -227,7 +223,6 @@ public class OidcController {
       final OIDCResponse.OIDCResponseBuilder responseBuilder = OIDCResponse.builder()
           .accessToken(accessToken)
           .accessTokenClaims(accessTokenClaims(accessToken))
-          .scopeValidation(validateScopes(requestedScopes(authRequest), idTokenClaims, userInfo))
           .idTokenClaims(idTokenClaims)
           .authorizationRequest(authRequest.toHTTPRequest().getURI().toASCIIString())
           .userInfoClaims(userInfo)
@@ -287,117 +282,5 @@ public class OidcController {
       log.debug("Access token is not a signed JWT - treating it as an opaque token");
       return Map.of();
     }
-  }
-
-  /**
-   * Gets the scopes that were requested, either as a request parameter or in the request object.
-   *
-   * @param authRequest the authentication request
-   * @return the requested scopes
-   */
-  private List<String> requestedScopes(final AuthenticationRequest authRequest) {
-    final List<String> scopes = new ArrayList<>(
-        Optional.ofNullable(authRequest.getScope()).map(Scope::toStringList).orElseGet(List::of));
-
-    Optional.ofNullable(httpSession.getAttribute("jwt_claims"))
-        .map(JWTClaimsSet.class::cast)
-        .map(claims -> claims.getClaim("scope"))
-        .filter(String.class::isInstance)
-        .map(String.class::cast)
-        .ifPresent(scope -> Arrays.stream(scope.split("\\s+"))
-            .filter(s -> !s.isBlank())
-            .filter(s -> !scopes.contains(s))
-            .forEach(scopes::add));
-
-    return scopes;
-  }
-
-  /**
-   * Checks, for each requested scope, whether the claims that the scope is defined to deliver were received.
-   *
-   * @param scopes the requested scopes
-   * @param idTokenClaims the claims of the ID Token
-   * @param userInfoClaims the claims received from the UserInfo endpoint
-   * @return one result per requested scope
-   */
-  private static List<ScopeValidationResult> validateScopes(final List<String> scopes,
-      final Map<String, Object> idTokenClaims, final Map<String, Object> userInfoClaims) {
-
-    return scopes.stream()
-        .map(scope -> {
-          final Optional<List<ScopeClaimRegistry.ScopeClaim>> registered = ScopeClaimRegistry.getClaims(scope);
-          if (registered.isEmpty()) {
-            return ScopeValidationResult.builder()
-                .scope(scope)
-                .status(ScopeValidationResult.Status.UNKNOWN)
-                .message("The scope is not defined by the Swedish OpenID Connect or Sweden Connect specifications")
-                .build();
-          }
-          final List<ScopeClaimRegistry.ScopeClaim> scopeClaims = registered.get();
-          if (scopeClaims.isEmpty()) {
-            return ScopeValidationResult.builder()
-                .scope(scope)
-                .status(ScopeValidationResult.Status.NO_CLAIMS)
-                .message("The scope does not by itself deliver any claims")
-                .build();
-          }
-
-          final List<ScopeValidationResult.ClaimValidationResult> results = scopeClaims.stream()
-              .map(claim -> {
-                final List<String> receivedIn = new ArrayList<>();
-                if (Objects.nonNull(idTokenClaims) && idTokenClaims.containsKey(claim.name())) {
-                  receivedIn.add(ScopeClaimRegistry.Location.ID_TOKEN.getDisplayName());
-                }
-                if (Objects.nonNull(userInfoClaims) && userInfoClaims.containsKey(claim.name())) {
-                  receivedIn.add(ScopeClaimRegistry.Location.USER_INFO.getDisplayName());
-                }
-                return ScopeValidationResult.ClaimValidationResult.builder()
-                    .claim(claim.name())
-                    .expectedLocation(claim.location().getDisplayName())
-                    .requirement(claim.requirement().name())
-                    .received(!receivedIn.isEmpty())
-                    .receivedIn(receivedIn.isEmpty() ? null : String.join(", ", receivedIn))
-                    .build();
-              })
-              .toList();
-
-          final List<String> missingMandatory = results.stream()
-              .filter(r -> ScopeClaimRegistry.Requirement.MANDATORY.name().equals(r.getRequirement()))
-              .filter(r -> !r.isReceived())
-              .map(ScopeValidationResult.ClaimValidationResult::getClaim)
-              .toList();
-
-          final List<ScopeValidationResult.ClaimValidationResult> oneOf = results.stream()
-              .filter(r -> ScopeClaimRegistry.Requirement.ONE_OF.name().equals(r.getRequirement()))
-              .toList();
-          final long oneOfReceived = oneOf.stream()
-              .filter(ScopeValidationResult.ClaimValidationResult::isReceived)
-              .count();
-
-          final ScopeValidationResult.ScopeValidationResultBuilder builder = ScopeValidationResult.builder()
-              .scope(scope)
-              .claims(results);
-
-          if (!missingMandatory.isEmpty()) {
-            return builder
-                .status(ScopeValidationResult.Status.MISSING)
-                .message("Missing claim(s): %s".formatted(String.join(", ", missingMandatory)))
-                .build();
-          }
-          if (!oneOf.isEmpty() && oneOfReceived == 0) {
-            return builder
-                .status(ScopeValidationResult.Status.MISSING)
-                .message("None of the mutually exclusive claims of the scope was received")
-                .build();
-          }
-          if (oneOfReceived > 1) {
-            return builder
-                .status(ScopeValidationResult.Status.WARNING)
-                .message("The claims of the scope are mutually exclusive, but more than one was received")
-                .build();
-          }
-          return builder.status(ScopeValidationResult.Status.OK).build();
-        })
-        .toList();
   }
 }
