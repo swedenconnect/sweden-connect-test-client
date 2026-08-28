@@ -21,7 +21,7 @@
 
   <groupId>se.swedenconnect</groupId>
   <artifactId>test-client</artifactId>
-  <version>1.0.8-SNAPSHOT</version>
+  <version>1.0.8</version>
 
   <name>swedenconnect-test-client</name>
   <description>Sweden Connect Test SAML SP and Test OIDC RP</description>
