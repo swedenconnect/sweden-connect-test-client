@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2025 Sweden Connect
+  ~ Copyright 2025-2026 Sweden Connect
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
   <groupId>se.swedenconnect</groupId>
   <artifactId>test-client</artifactId>
-  <version>0.0.7</version>
+  <version>0.0.8-SNAPSHOT</version>
 
   <name>swedenconnect-test-client</name>
   <description>Sweden Connect Test SAML SP and Test OIDC RP</description>
