@@ -453,13 +453,33 @@ class OIDCAuthenticationResult {
                 }
             }
             responseDiv.show();
-            const accessTokenTableDiv = accessTokenDiv.find('tbody');
-            for (var prop in resultData.accessTokenClaims) {
-                if (Object.prototype.hasOwnProperty.call(resultData.accessTokenClaims, prop)) {
-                    accessTokenTableDiv.append(this.createRow(prop, resultData.accessTokenClaims[prop]));
-                }
+
+            const accessTokenButton = $('#oidc-authn-result-view-access-token');
+            const rawAccessToken = resultData.accessToken
+                || (resultData.response && resultData.response.access_token);
+            accessTokenDiv.hide();
+            if (rawAccessToken) {
+                accessTokenButton.show().off('click').click(() => {
+                    const accessTokenTableDiv = accessTokenDiv.find('tbody').empty();
+                    const claims = resultData.accessTokenClaims || {};
+                    if (Object.keys(claims).length > 0) {
+                        for (const prop in claims) {
+                            if (Object.prototype.hasOwnProperty.call(claims, prop)) {
+                                accessTokenTableDiv.append(this.createRow(prop, claims[prop]));
+                            }
+                        }
+                    }
+                    else {
+                        accessTokenTableDiv.append(this.createRow('Format', 'Opaque token (not a JWT)'));
+                        accessTokenTableDiv.append(this.createRow('access_token', rawAccessToken));
+                    }
+                    accessTokenDiv.show();
+                    accessTokenButton.hide();
+                });
             }
-            accessTokenDiv.show();
+            else {
+                accessTokenButton.hide();
+            }
             const idTokenTableDiv = idTokenDiv.find('tbody');
             for (var prop in resultData.idTokenClaims) {
                 if (Object.prototype.hasOwnProperty.call(resultData.idTokenClaims, prop)) {

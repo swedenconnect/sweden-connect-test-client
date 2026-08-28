@@ -18,6 +18,8 @@ import java.util.Map;
 @NoArgsConstructor
 public class OIDCResponse {
   private Map<String, Object> accessTokenClaims;
+  /** The raw access token - it is not necessarily a JWT. */
+  private String accessToken;
   private Map<String, Object> idTokenClaims;
   private Map<String, Object> userInfoClaims;
   private Map<String, Object> responseParameters;

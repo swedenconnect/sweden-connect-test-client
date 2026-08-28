@@ -218,8 +218,11 @@ public class OidcController {
       Optional.ofNullable(iss).ifPresent(s -> responseParameters.put("iss", s));
       Optional.ofNullable(code).ifPresent(s -> responseParameters.put("code", s));
 
+      final String accessToken = (String) tokenResponse.get("access_token");
+
       final OIDCResponse.OIDCResponseBuilder responseBuilder = OIDCResponse.builder()
-          .accessTokenClaims(SignedJWT.parse((String) tokenResponse.get("access_token")).getJWTClaimsSet().toJSONObject())
+          .accessToken(accessToken)
+          .accessTokenClaims(accessTokenClaims(accessToken))
           .idTokenClaims(idTokenClaims)
           .authorizationRequest(authRequest.toHTTPRequest().getURI().toASCIIString())
           .userInfoClaims(userInfo)
@@ -258,6 +261,26 @@ public class OidcController {
     } catch (final RuntimeException e) {
       return new ModelAndView("redirect:/oidc/redirect/%s?error=%s&error_description=%s"
           .formatted(rp, errorBody.get("error"), errorBody.get("error_description")));
+    }
+  }
+
+  /**
+   * Extracts the claims of an access token. The access token is not required to be a JWT - if it is an opaque string
+   * an empty map is returned.
+   *
+   * @param accessToken the raw access token
+   * @return the claims of the access token, or an empty map if it is not a JWT
+   */
+  private static Map<String, Object> accessTokenClaims(final String accessToken) {
+    if (Objects.isNull(accessToken)) {
+      return Map.of();
+    }
+    try {
+      return SignedJWT.parse(accessToken).getJWTClaimsSet().toJSONObject();
+    }
+    catch (final ParseException e) {
+      log.debug("Access token is not a signed JWT - treating it as an opaque token");
+      return Map.of();
     }
   }
 }
