@@ -3,9 +3,11 @@
 # Release Notes
 
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
-### Version 1.0.9 - Upcomming
+### Version 1.0.9
 
-- BUG using internal RestClient when loading oidc metadata so that TLS config is used here as well.
+Date: Not yet release
+
+- A bug was fixed where TLS configuration for the service was not picked up when loading OIDC metadata.
 
 ### Version 1.0.8
 
