@@ -71,8 +71,8 @@ public class OidcConfiguration {
   }
 
   @Bean
-  OIDCOPMetadataFetcher metadataFetcher() {
-    return new OIDCOPMetadataFetcher(RestClient.builder().build());
+  OIDCOPMetadataFetcher metadataFetcher(@Nonnull final RestClient restClient) {
+    return new OIDCOPMetadataFetcher(restClient);
   }
 
   @Bean("testclient.oidc.OpList")
