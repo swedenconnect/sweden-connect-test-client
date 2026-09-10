@@ -327,12 +327,18 @@ testclient:
 An OpenID Provider that is not part of a federation, or that should be available even when OpenID Federation is turned
 off, is configured under `testclient.oidc.ops`.
 
+All four endpoints below are required. Unlike an OP discovered via OpenID Federation, a statically configured OP's
+`authorization-endpoint`, `token-endpoint` and `user-info-endpoint` are **not** derived from its metadata document -
+they are read directly from these properties and used as-is when the test client talks to the OP.
+`metadata-endpoint` is only used to display/fetch the OP's metadata for inspection in the user interface (and to
+resolve its JWKS); it has no effect on which endpoints the test client actually calls.
+
 | Property | Description | Type | Default value |
 | :--- | :--- | :--- | :--- |
 | `entity-id` | The entity identifier, i.e., the issuer, of the OP. | String | - |
 | `display-name` | The name displayed in the user interface. | String | the entity identifier |
 | `description` | A description displayed in the user interface. | String | - |
-| `metadata-endpoint` | The URL where the OP publishes its metadata, normally `<entity-id>/.well-known/openid-configuration`. Used to read the endpoints and keys of the OP. | String | - |
+| `metadata-endpoint` | The URL where the OP publishes its metadata, normally `<entity-id>/.well-known/openid-configuration`. Used only for display/inspection in the UI and to resolve the OP's JWKS - not to read the endpoints below. | String | - |
 | `authorization-endpoint` | The authorization endpoint of the OP. | String | - |
 | `token-endpoint` | The token endpoint of the OP. | String | - |
 | `user-info-endpoint` | The UserInfo endpoint of the OP. | String | - |
