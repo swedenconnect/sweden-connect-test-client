@@ -54,16 +54,31 @@ public class OidcRp {
   @Getter
   private final ClientCredentials credentials;
 
+  /** Whether the RP's keys are published via {@code jwks_uri} rather than embedded in the metadata. */
+  @Getter
+  private final boolean useJwksUrl;
+
+  /** The URL where this RP:s JWKS is published. Only meaningful when {@link #useJwksUrl} is {@code true}. */
+  @Getter
+  private final String jwksUri;
+
+  /** The RP:s public key set. */
+  @Getter
+  private final JWKSet jwkSet;
+
   private final OIDCClientMetadata metadata;
 
   public OidcRp(@Nonnull final String entityId, @Nonnull final String description,
       @Nonnull final String pathSuffix, @Nonnull final ClientCredentials clientCredentials,
-      @Nonnull final String metadataJson, @Nonnull final String redirectUri)
+      @Nonnull final String metadataJson, @Nonnull final String redirectUri,
+      final boolean useJwksUrl, @Nonnull final String jwksUri)
       throws ParseException, com.nimbusds.oauth2.sdk.ParseException {
     this.entityId = entityId;
     this.description = description;
     this.pathSuffix = pathSuffix;
     this.credentials = clientCredentials;
+    this.useJwksUrl = useJwksUrl;
+    this.jwksUri = jwksUri;
 
     final JSONObject json = (JSONObject) jsonParser.parse(metadataJson);
     this.metadata = OIDCClientMetadata.parse(json);
@@ -73,8 +88,14 @@ public class OidcRp {
     // TODO: other metadata
     final JWKSet jwkSet = new JWKSet(JwkUtils.declareUse(
         jwkTransformer.apply(this.credentials.getCredentialForSigning()), KeyUse.SIGNATURE, null));
+    this.jwkSet = jwkSet.toPublicJWKSet();
 
-    this.metadata.setJWKSet(jwkSet.toPublicJWKSet());
+    if (this.useJwksUrl) {
+      this.metadata.setJWKSetURI(URI.create(this.jwksUri));
+    }
+    else {
+      this.metadata.setJWKSet(this.jwkSet);
+    }
 
     // this.metadata.toJSONObject(true).toJSONString();
 

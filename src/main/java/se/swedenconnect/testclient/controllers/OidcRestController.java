@@ -114,7 +114,8 @@ public class OidcRestController {
     return this.oidcRps.stream()
         .map(rp -> new OidcRpInfoModel(rp.getEntityId(), rp.getDescription(),
             this.urlBuilderBean.buildUrl(
-                "/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset()))))
+                "/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset())),
+            rp.isUseJwksUrl() ? rp.getJwksUri() : null))
         .toList();
   }
 
@@ -142,6 +143,14 @@ public class OidcRestController {
     }).getMetadata().toJSONObject(true);
   }
 
+  @GetMapping(value = "/rp/jwks")
+  public JSONObject getJwks(@RequestParam("rp") final String entityId) {
+    final JWKSet jwkSet = this.oidcRps.stream().filter(rp -> rp.getEntityId().equals(entityId)).findFirst()
+        .orElseThrow(() -> new RuntimeException("Failed to find JWKS for %s".formatted(entityId)))
+        .getJwkSet();
+    return new JSONObject(jwkSet.toJSONObject());
+  }
+
   @GetMapping(value = "/op/metadata")
   public JSONObject getOpMetadata(@RequestParam("op") final String entityId) {
     return this.fetcher.getOPMetadata(this.opRegistry.get(entityId));
@@ -152,7 +161,8 @@ public class OidcRestController {
     final List<OpenIdRelyingPartyModel> relyingParties = this.oidcRps.stream()
         .map(rp -> new OpenIdRelyingPartyModel(rp.getEntityId(), rp.getMetadata().getName(), rp.getDescription(),
             this.urlBuilderBean.buildUrl(
-                "/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset()))))
+                "/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset())),
+            rp.isUseJwksUrl() ? rp.getJwksUri() : null))
         .toList();
 
     final List<OpenIdProviderModel> providers = this.opRegistry.getOps().stream()
@@ -385,6 +395,9 @@ public class OidcRestController {
 
     @JsonProperty("metadata_url")
     private String metadataUrl;
+
+    @JsonProperty("jwks_url")
+    private String jwksUrl;
   }
 
   @Data
@@ -398,6 +411,9 @@ public class OidcRestController {
 
     @JsonProperty("metadata_url")
     private String metadataUrl;
+
+    @JsonProperty("jwks_url")
+    private String jwksUrl;
   }
 
   @Data
