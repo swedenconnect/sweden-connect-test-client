@@ -1,0 +1,11 @@
+name: Versioned publication of docker image
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  ghcr-release:
+    uses: ./.github/workflows/docker-release.yml
+    secrets: inherit
+    with:
+      service-path: .
