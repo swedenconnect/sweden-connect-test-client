@@ -20,6 +20,7 @@ import lombok.Setter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,10 +77,25 @@ public class OidcProperties implements InitializingBean {
         Assert.notEmpty(this.openidFedAuthorities,
             "testclient.oidc.openid-fed-authorities must be set when OpenID Federation is enabled");
       }
+      for (int i = 0; i < this.ops.size(); i++) {
+        this.validateOp(this.ops.get(i), i);
+      }
     }
     if (this.openidFedAuthorities == null) {
       this.openidFedAuthorities = new ArrayList<>();
     }
+  }
+
+  private void validateOp(final OidcOpProperties op, final int index) {
+    final String opId = StringUtils.hasText(op.getEntityId()) ? op.getEntityId() : "ops[%d]".formatted(index);
+    Assert.hasText(op.getAuthorizationEndpoint(),
+        "Missing authorization-endpoint for OIDC OP '%s'".formatted(opId));
+    Assert.hasText(op.getTokenEndpoint(),
+        "Missing token-endpoint for OIDC OP '%s'".formatted(opId));
+    Assert.hasText(op.getUserInfoEndpoint(),
+        "Missing user-info-endpoint for OIDC OP '%s'".formatted(opId));
+    Assert.hasText(op.getMetadataEndpoint(),
+        "Missing metadata-endpoint for OIDC OP '%s'".formatted(opId));
   }
 
 }
