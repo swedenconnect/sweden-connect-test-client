@@ -1,0 +1,63 @@
+name: docker-release.yml
+on:
+  workflow_call:
+    inputs:
+      service-path:
+        required: true
+        type: string
+      frontend-path:
+        type: string
+      revision-property:
+        type: string
+        default: revision
+jobs:
+  docker-ghcr-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: 'Login to GitHub Container Registry'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+      - uses: actions/setup-node@v4
+      - if: ${{ inputs.frontend-path != '' }}
+        run: mkdir -p ${{inputs.service-path}}/src/main/resources/static
+      - if: ${{ inputs.frontend-path != '' }}
+        run: npm install
+        working-directory: ${{inputs.frontend-path}}
+      - if: ${{ inputs.frontend-path != '' }}
+        run: npm run build
+        working-directory: ${{inputs.frontend-path}}
+      - if: ${{ inputs.frontend-path != '' }}
+        run: cp -r ${{ inputs.frontend-path }}/dist/* ${{inputs.service-path}}/src/main/resources/static
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+          cache: 'maven'
+      - name: Set Maven version from tag name
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          REVISION_PROPERTY: ${{ inputs.revision-property }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          echo "TAG:$TAG"
+          NEW_VERSION=${TAG#v}
+          echo "New version is $NEW_VERSION"
+          mvn versions:set-property -DgenerateBackupPoms=false -Dproperty=$REVISION_PROPERTY \
+          -DnewVersion=$NEW_VERSION --no-transfer-progress
+
+      - name: Publish image
+        run: |
+          DOCKER_REPO=ghcr.io mvn clean install jib:build -Ddocker.repository=ghcr.io --no-transfer-progress
+
+        working-directory: ${{inputs.service-path}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.SC_ACTION_SECRET }}
