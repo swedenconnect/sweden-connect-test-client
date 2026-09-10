@@ -28,7 +28,7 @@ All application specific settings live under the `testclient` prefix. Standard S
 <a name="building-and-running"></a>
 ## Building and running
 
-The application requires **Java 21**. There is no Maven wrapper in the repository, so a locally installed Maven is
+The application requires **Java 21-25**. There is no Maven wrapper in the repository, so a locally installed Maven is
 used.
 
 ```bash

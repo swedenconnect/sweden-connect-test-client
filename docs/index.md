@@ -36,6 +36,9 @@ The tool is deployed in the Sweden Connect test environments:
 - [Configuration and Deployment](configuration.md) - How the application is built, run and configured, and the
   complete set of `testclient.*` properties for the SAML and OpenID Connect sides.
 
+- [Building a Release Docker Image](docker-release.md) - How to trigger a versioned Docker image build via a git
+  tag.
+
 -----
 
 Copyright &copy; 2025-2026, [Sweden Connect](https://swedenconnect.se). Licensed under version 2.0 of the [Apache License](http://www.apache.org/licenses/LICENSE-2.0).
