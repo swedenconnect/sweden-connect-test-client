@@ -8,6 +8,8 @@
 Date: Not yet release
 
 - A bug was fixed where TLS configuration for the service was not picked up when loading OIDC metadata.
+- Added `testclient.oidc.rps[].use-jwks-url` to publish an RP:s keys via `jwks_uri` instead of embedding them in the
+  metadata, along with a `GET /oidc/rp/jwks?rp=` endpoint that serves the keys.
 
 ### Version 1.0.8
 

@@ -107,7 +107,8 @@ final class TestFederation {
       final PkiCredential credential = new BasicCredential(key.toPublicKey(), key.toPrivateKey());
       final ClientCredentials credentials =
           new ClientCredentials(credential, null, credential, null, credential, credential, credential);
-      return new OidcRp(entityId, "Test RP", "testrp1", credentials, metadata, entityId + "/redirect");
+      return new OidcRp(entityId, "Test RP", "testrp1", credentials, metadata, entityId + "/redirect",
+          false, entityId + "/jwks");
     }
     catch (final Exception e) {
       throw new IllegalArgumentException("Failed to create test RP", e);

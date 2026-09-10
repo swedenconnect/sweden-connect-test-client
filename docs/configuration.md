@@ -288,11 +288,19 @@ federation, the federation version is used.
 | `description` | A description of the RP, displayed in the user interface. **Required.** | String | - |
 | `credentials` | The credentials of the RP, see [Credentials](#credentials). | Credentials | `testclient.default-credential` |
 | `metadata` | The `openid_relying_party` metadata of the RP, given as a JSON string. **Required.** | String | - |
+| `use-jwks-url` | Whether the RP:s keys are published via `jwks_uri` instead of being embedded directly (`jwks`) in the RP:s metadata. See below. | Boolean | `false` |
 | `trust-marks[]` | The trust marks that this RP publishes in its entity configuration. If assigned, the trust marks under `testclient.oidc.federation.trust-marks` are not used for this RP. See [Trust marks](#trust-marks). | List | the federation trust marks |
 
 The `metadata` setting is parsed as OpenID Connect client metadata. Two of its members are always set by the
 application and can not be assigned in the JSON: the redirection URI, which is
 `<base-url>/oidc/redirect/{path-suffix}`, and the JWK set, which is built from the signing credential of the RP.
+
+By default, the RP:s public keys are embedded directly in its metadata as `jwks`. Setting `use-jwks-url: true`
+publishes a `jwks_uri` instead (`<base-url>/oidc/rp/jwks?rp={entity-id}`), pointing at a JWKS endpoint that serves
+the same keys - useful for testing an OP that expects key rotation via a URL rather than a static, embedded key set.
+This endpoint follows the same pattern as the RP metadata endpoint (`<base-url>/oidc/rp/metadata?rp={entity-id}`),
+with the RP:s entity identifier given as the `rp` request parameter, and is available for every RP regardless of
+`use-jwks-url`.
 
 Note that the back-channel exchange that the test client performs authenticates using `private_key_jwt`, so the
 metadata should declare `"token_endpoint_auth_method": "private_key_jwt"`.

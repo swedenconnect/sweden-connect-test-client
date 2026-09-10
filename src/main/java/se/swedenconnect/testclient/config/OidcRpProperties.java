@@ -61,6 +61,14 @@ public class OidcRpProperties implements InitializingBean {
   private String metadata;
 
   /**
+   * Whether the RP's public keys should be published via a {@code jwks_uri} pointing to a JWKS endpoint instead of
+   * being embedded directly ({@code jwks}) in the RP's metadata.
+   */
+  @Getter
+  @Setter
+  private boolean useJwksUrl = false;
+
+  /**
    * The trust marks to publish in the RP:s OpenID Federation entity configuration. If not assigned, the trust marks
    * configured under {@code testclient.oidc.federation.trust-marks} are used.
    */
