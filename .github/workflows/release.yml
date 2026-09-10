@@ -8,5 +8,4 @@ jobs:
     uses: ./.github/workflows/docker-release.yml
     secrets: inherit
     with:
-      service-path: /
-      revision-property: service-revision
+      service-path: .

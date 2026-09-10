@@ -7,9 +7,6 @@ on:
         type: string
       frontend-path:
         type: string
-      revision-property:
-        type: string
-        default: revision
 jobs:
   docker-ghcr-publish:
     runs-on: ubuntu-latest
@@ -45,14 +42,12 @@ jobs:
       - name: Set Maven version from tag name
         if: startsWith(github.ref, 'refs/tags/')
         env:
-          REVISION_PROPERTY: ${{ inputs.revision-property }}
           TAG: ${{ github.ref_name }}
         run: |
           echo "TAG:$TAG"
           NEW_VERSION=${TAG#v}
           echo "New version is $NEW_VERSION"
-          mvn versions:set-property -DgenerateBackupPoms=false -Dproperty=$REVISION_PROPERTY \
-          -DnewVersion=$NEW_VERSION --no-transfer-progress
+          mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$NEW_VERSION --no-transfer-progress
 
       - name: Publish image
         run: |

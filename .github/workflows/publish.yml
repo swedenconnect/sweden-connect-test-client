@@ -39,11 +39,9 @@ jobs:
           echo "TAG:$TAG"
           NEW_VERSION=${TAG#v}
           echo "New version is $NEW_VERSION"
-          mvn versions:set-property -DgenerateBackupPoms=false -Dproperty=service-revision \
-          -DnewVersion=$NEW_VERSION --no-transfer-progress
+          mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$NEW_VERSION --no-transfer-progress
       - name: Publish image
         run: |
           DOCKER_REPO=ghcr.io mvn clean package jib:build -Ddocker.repository=ghcr.io --no-transfer-progress
-        working-directory: service
         env:
           GITHUB_TOKEN: ${{ secrets.SC_ACTION_SECRET }}
