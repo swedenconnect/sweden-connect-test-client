@@ -11,6 +11,8 @@ Date: 2026-09-13
   by declaring `"logo_uri": "<logo>"` in its metadata, which is resolved to `<base-url>/{path-suffix}/logo.svg`.
 - Changed the RP JWKS endpoint from `/oidc/rp/jwks?rp={entity-id}` to `/{path-suffix}/jwks`, matching the URL
   pattern used by the other per-RP endpoints. The old endpoint has been removed.
+- OIDC authentication requests now send PKCE (`code_challenge` with method S256) in the request URL by default.
+- A bug was fixed where the `code_challenge` claim of a request object held the code verifier instead of the challenge.
 
 ### Version 1.0.9
 
