@@ -17,10 +17,7 @@ package se.swedenconnect.testclient.controllers;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.shaded.gson.ExclusionStrategy;
-import com.nimbusds.jose.shaded.gson.FieldAttributes;
-import com.nimbusds.jose.shaded.gson.Gson;
-import com.nimbusds.jose.shaded.gson.GsonBuilder;
+import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
@@ -30,8 +27,6 @@ import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.OIDCScopeValue;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,44 +42,30 @@ import java.util.function.Function;
  */
 public class AuthorizationRequestCustomizer {
 
-  public static final Gson GSON = new GsonBuilder()
-      .registerTypeAdapter(OidcMessageParameterModel.class, new OidcMessageSerializer())
-      .addSerializationExclusionStrategy(new ExclusionStrategy() {
-        @Override
-        public boolean shouldSkipField(final FieldAttributes fieldAttributes) {
-          return "requestBody".equals(fieldAttributes.getName()) || "valuePresent".equals(fieldAttributes.getName());
-        }
-
-        @Override
-        public boolean shouldSkipClass(final Class<?> aClass) {
-          return false;
-        }
-      })
-      .create();
-
+  /**
+   * Applies the parameters of the request URL, and the request object, to the request builder.
+   * <p>
+   * The user message is sent as a JSON object serialized into the parameter, and the sign request as a JWT whose claims
+   * set is the sign request object.
+   * </p>
+   *
+   * @param builder the request builder
+   * @param jwkFunction function giving the key for a key ID
+   * @param resolver the resolver for the request URL
+   * @return the builder
+   * @throws JOSEException for signing or encryption errors
+   * @throws ParseException for invalid parameter values
+   */
   public static AuthenticationRequest.Builder customize(
       final AuthenticationRequest.Builder builder,
       final Function<String, JWK> jwkFunction,
       final AuthorizationParameterResolver resolver
   ) throws JOSEException, ParseException {
 
-    resolver.getUserMessage()
-        .ifPresent(um ->
-            builder.customParameter("https://id.oidc.se/param/userMessage", GSON.toJson(um))
-        );
-
-    resolver.getSignMessage()
-        .ifPresent(sig -> {
-          if (sig.getB64Encode() && sig.getTbsData() != null) {
-            final String tbsData =
-                Base64.getEncoder().encodeToString(sig.getTbsData().getBytes(StandardCharsets.UTF_8));
-            sig.setTbsData(tbsData);
-          }
-          else {
-            sig.setTbsData(sig.getTbsData());
-          }
-          builder.customParameter("https://id.oidc.se/param/signRequest", GSON.toJson(sig));
-        });
+    resolver.getUserMessage().ifPresent(um -> builder.customParameter(OidcMessageSerializer.USER_MESSAGE,
+        JSONObjectUtils.toJSONString(OidcMessageSerializer.toUserMessage(um))));
+    resolver.getSignRequestJWT(jwkFunction).ifPresent(jwt ->
+        builder.customParameter(OidcMessageSerializer.SIGN_REQUEST, jwt.serialize()));
 
     resolver.getNonce().ifPresent(builder::nonce);
     resolver.getState().ifPresent(builder::state);

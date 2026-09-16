@@ -993,6 +993,21 @@ class OIDCAuthnRequest {
     /** Enabled parameters go in the request object - client_id, response_type and scope also in the URL. */
     static MODE_REQUEST_BODY = 'requestBody';
 
+    /** The scope requesting a signature, for which tbs_data is included by default. */
+    static SCOPE_SIGN = 'https://id.oidc.se/scope/sign';
+
+    /** The scope requesting a signature approval, for which tbs_data is excluded by default. */
+    static SCOPE_SIGN_APPROVAL = 'https://id.oidc.se/scope/signApproval';
+
+    /**
+     * Gets the name of a message member in the user message and sign message objects.
+     * @param langCode the language code, or null for a message without language code
+     * @returns {string} the member name
+     */
+    static messageKey(langCode) {
+        return langCode ? 'message#' + langCode : 'message';
+    }
+
     static AUTHN_CONTEXT_CLASS_REF_URIS = [
         "http://id.elegnamnden.se/loa/1.0/loa1",
         "http://id.elegnamnden.se/loa/1.0/loa2",
@@ -1256,28 +1271,24 @@ class OIDCAuthnRequest {
 
 
         let umCheckbox = $("#oidc-request-um-present");
+        let rbCheckbox = $('#oidc-request-um-request-body');
         let um64 = $('#oidc-request-um-b64');
-        um64.prop("checked", parent.pars["userMessage"]["b64Encode"]);
         um64.change(function () {
             parent.pars["userMessage"]["b64Encode"] = this.checked;
-        })
+        });
         umCheckbox.change(function () {
             umDiv.toggle(this.checked || rbCheckbox.prop("checked"));
             parent.pars["userMessage"]["valuePresent"] = this.checked;
         });
-        let rbCheckbox = $('#oidc-request-um-request-body');
         rbCheckbox.change(function () {
             umDiv.toggle(umCheckbox.prop("checked") || this.checked);
             parent.pars["userMessage"]["requestBody"] = this.checked;
         });
         let umMimeType = $('#oidc-request-um-mimetype-select');
         umMimeType.change(function () {
-            parent.pars["userMessage"]["mime_type"] = umMimeType.prop("value");
+            parent.pars["userMessage"]["mime_type"] = umMimeType.val() || null;
         });
-        umCheckbox.change();
-        umMimeType.change();
-
-        let sigDiv = $('#oidc-request-sig-div');
+        this.refreshUserMessage();
 
         let sigAddMessageDiv = $('#oidc-request-sig-add-drop-div');
         sigAddMessageDiv.empty();
@@ -1306,36 +1317,104 @@ class OIDCAuthnRequest {
         }
 
         let sigCheckbox = $('#oidc-request-sig-present');
-        let sigb64Checkbox = $('#oidc-request-sig-b64')
+        let sigb64Checkbox = $('#oidc-request-sig-b64');
         let sigRbCheckbox = $('#oidc-request-sig-request-body');
-        sigb64Checkbox.prop("checked", parent.pars["signMessage"]["b64Encode"]);
         sigb64Checkbox.change(function () {
             parent.pars["signMessage"]["b64Encode"] = this.checked;
-        })
-        sigCheckbox.change(function () {
-            sigDiv.prop("hidden", !(this.checked || sigRbCheckbox.prop("checked")));
-            parent.pars["signMessage"]["valuePresent"] = this.checked;
         });
-
-
+        sigCheckbox.change(function () {
+            parent.pars["signMessage"]["valuePresent"] = this.checked;
+            parent.updateSignMessageView(true);
+        });
         sigRbCheckbox.change(function () {
-            sigDiv.prop("hidden", !(this.checked || sigCheckbox.prop("checked")));
             parent.pars["signMessage"]["requestBody"] = this.checked;
+            parent.updateSignMessageView(true);
         });
 
         let sigMimeType = $('#oidc-request-sig-mimetype-select');
         sigMimeType.change(function () {
-            parent.pars["signMessage"]["mime_type"] = sigMimeType.prop('value');
+            parent.signMessageObject()["mime_type"] = sigMimeType.val() || null;
         });
 
         let tbsTextarea = $('#oidc-request-tbs-textarea');
-        tbsTextarea.prop('value', parent.pars["signMessage"]["tbsData"] || '');
         tbsTextarea.on('input change', function () {
             parent.pars["signMessage"]["tbsData"] = tbsTextarea.prop('value');
         });
+        $('#oidc-request-tbs-include').change(function () {
+            parent.pars["signMessage"]["includeTbsData"] = this.checked;
+            tbsTextarea.prop('disabled', !this.checked);
+        });
 
-        sigCheckbox.change();
-        sigMimeType.change();
+        let sigJwtSign = $('#oidc-request-sig-jwt-sign');
+        let sigJwtSignKey = $('#oidc-request-sig-jwt-signkey-select');
+        sigJwtSignKey.empty();
+        (this.pars["keys"]["signKeys"] || []).forEach(key => {
+            let description = key["alg"] + " Kid: " + key["kid"];
+            if (key["description"] !== null && key["description"] !== undefined) {
+                description = description + " " + key["description"];
+            }
+            sigJwtSignKey.append($('<option>', { value: key["kid"], text: description }));
+        });
+        sigJwtSign.change(function () {
+            parent.pars["signMessage"]["signJwt"] = this.checked;
+            sigJwtSignKey.prop('disabled', !this.checked);
+        });
+        sigJwtSignKey.change(function () {
+            parent.pars["signMessage"]["signKey"] = sigJwtSignKey.val();
+        });
+        $('#oidc-request-sig-jwt-encrypt').change(function () {
+            parent.pars["signMessage"]["encryptJwt"] = this.checked;
+        });
+
+        this.refreshSignMessage();
+    }
+
+    /**
+     * Gets the sign message object of the sign request - the messages and their MIME type - creating it if missing.
+     * @returns {object} the sign message object
+     */
+    signMessageObject() {
+        if (!this.pars.signMessage.signMessage) {
+            this.pars.signMessage.signMessage = {};
+        }
+        return this.pars.signMessage.signMessage;
+    }
+
+    /**
+     * Tells whether tbs_data should be included according to the scope. Both the URL scope and the request object
+     * scope are considered: tbs_data is included if https://id.oidc.se/scope/sign is present, excluded if
+     * https://id.oidc.se/scope/signApproval is present without it, and included if neither is present.
+     * @returns {boolean} whether tbs_data should be included
+     */
+    tbsDataIncludedByScope() {
+        const scopes = new Set();
+        for (const value of [this.pars.scope ? this.pars.scope.value : null, this.pars.requestBodyScope]) {
+            (value || '').split(/\s+/).filter(s => s).forEach(s => scopes.add(s));
+        }
+        if (scopes.has(OIDCAuthnRequest.SCOPE_SIGN)) {
+            return true;
+        }
+        return !scopes.has(OIDCAuthnRequest.SCOPE_SIGN_APPROVAL);
+    }
+
+    /**
+     * Shows the sign message area when the sign request is placed anywhere, and the settings of the JWT that carries
+     * the sign request when it is placed in the URL. When the area is expanded the "TBS Data" box may be set from the
+     * scope, see tbsDataIncludedByScope().
+     * @param applyScopeRule true to set the "TBS Data" box from the scope if the area goes from hidden to shown
+     */
+    updateSignMessageView(applyScopeRule) {
+        const sig = this.pars.signMessage;
+        const sigDiv = $('#oidc-request-sig-div');
+        const expanded = !!(sig.valuePresent || sig.requestBody);
+        const wasHidden = sigDiv.prop('hidden');
+        sigDiv.prop('hidden', !expanded);
+        $('#oidc-request-sig-jwt-div').prop('hidden', !sig.valuePresent);
+        if (applyScopeRule && expanded && wasHidden) {
+            sig.includeTbsData = this.tbsDataIncludedByScope();
+            $('#oidc-request-tbs-include').prop('checked', sig.includeTbsData);
+            $('#oidc-request-tbs-textarea').prop('disabled', !sig.includeTbsData);
+        }
     }
 
     /**
@@ -1448,6 +1527,7 @@ class OIDCAuthnRequest {
         $('#oidc-request-um-request-body').prop('checked', this.pars.userMessage.requestBody || false);
         $('#oidc-request-sig-present').prop('checked', this.pars.signMessage.valuePresent || false);
         $('#oidc-request-sig-request-body').prop('checked', this.pars.signMessage.requestBody || false);
+        this.updateSignMessageView(false);
         this.computeClaims();
         this.updateModeButtons();
     }
@@ -1498,7 +1578,7 @@ class OIDCAuthnRequest {
 
         let msgLabel = $('<label>', {
             class: 'col-sm-2',
-            'data-langcode': msg.lang_code,
+            'data-langcode': msg.lang_code || '',
             for: msgId
         });
         if (msg.lang_code) {
@@ -1520,21 +1600,17 @@ class OIDCAuthnRequest {
             text: msg.message || ''
         });
         textAreaDiv.append(textArea);
-        let parent = this
-        if (sig) {
-            textArea.change(function () {
-                parent.pars["signMessage"]["signMessage"]["message#" + msg.lang_code] = textArea.prop('value');
-            });
-        }
-        else {
-            textArea.change(function () {
-                parent.pars.userMessage["message#" + msg.lang_code] = textArea.prop('value');
-            });
-        }
+        let parent = this;
+        const key = OIDCAuthnRequest.messageKey(msg.lang_code);
+        const messages = () => sig ? parent.signMessageObject() : parent.pars.userMessage;
+        textArea.on('input change', function () {
+            messages()[key] = textArea.prop('value');
+        });
         let textAreaCloseButton = $('<button>', {
             type: 'button',
             class: 'btn-close align-self-start p-2',
             click: function () {
+                delete messages()[key];
                 msgDiv.remove();
             }
         }).css({
@@ -2378,7 +2454,7 @@ class OIDCAuthnRequest {
         }
         if (template.signMessage !== undefined) {
             this.pars.signMessage = this.mergeDeep(this.pars.signMessage, template.signMessage);
-            this.refreshSignMessage();
+            this.refreshSignMessage(template.signMessage.includeTbsData === undefined);
         }
         if (template.userMessage !== undefined) {
             this.pars.userMessage = this.mergeDeep(this.pars.userMessage, template.userMessage);
@@ -2481,8 +2557,8 @@ class OIDCAuthnRequest {
         messagesDiv.find('label[data-langcode]').closest('.row').remove();
         const messages = messagesObj || {};
         for (const lang of AuthnRequest.UM_POSSIBLE_LANGUAGES) {
-            const key = 'message#' + lang.code;
-            if (messages[key] !== undefined) {
+            const key = OIDCAuthnRequest.messageKey(lang.code);
+            if (messages[key] !== undefined && messages[key] !== null) {
                 const msgDiv = this.createUserMessageDiv(
                     { lang_code: lang.code, language: lang.text, message: messages[key] },
                     sig
@@ -2503,9 +2579,7 @@ class OIDCAuthnRequest {
         $('#oidc-request-um-request-body').prop('checked', um.requestBody || false);
         $('#oidc-request-um-b64').prop('checked', um.b64Encode || false);
         $('#oidc-request-um-div').toggle(!!(um.valuePresent || um.requestBody));
-        if (um.mime_type) {
-            $('#oidc-request-um-mimetype-select').val(um.mime_type);
-        }
+        $('#oidc-request-um-mimetype-select').val(um.mime_type || '');
         this.refreshMessageRows($('#oidc-request-um-messages-div'), um, false);
     }
 
@@ -2666,31 +2740,27 @@ class OIDCAuthnRequest {
 
     /**
      * Refreshes the sign message UI from this.pars.signMessage without rebinding event handlers.
+     * @param applyScopeRule true to set the "TBS Data" box from the scope if the area goes from hidden to shown
      */
-    refreshSignMessage() {
+    refreshSignMessage(applyScopeRule = false) {
         const sig = this.pars.signMessage;
 
-        const sigCheckbox = $('#oidc-request-sig-present');
-        const sigRbCheckbox = $('#oidc-request-sig-request-body');
-        const sigb64Checkbox = $('#oidc-request-sig-b64');
-        const sigDiv = $('#oidc-request-sig-div');
-        const sigMimeType = $('#oidc-request-sig-mimetype-select');
-        const tbsTextarea = $('#oidc-request-tbs-textarea');
-        const sigMessagesDiv = $('#oidc-request-sig-messages-div');
+        $('#oidc-request-sig-present').prop('checked', sig.valuePresent || false);
+        $('#oidc-request-sig-request-body').prop('checked', sig.requestBody || false);
+        $('#oidc-request-sig-b64').prop('checked', sig.b64Encode || false);
+        $('#oidc-request-sig-mimetype-select').val(this.signMessageObject().mime_type || '');
 
-        sigCheckbox.prop('checked', sig.valuePresent || false);
-        sigRbCheckbox.prop('checked', sig.requestBody || false);
-        sigb64Checkbox.prop('checked', sig.b64Encode || false);
+        const includeTbsData = sig.includeTbsData !== false;
+        $('#oidc-request-tbs-include').prop('checked', includeTbsData);
+        $('#oidc-request-tbs-textarea').prop('value', sig.tbsData || '').prop('disabled', !includeTbsData);
 
-        sigDiv.prop('hidden', !(sig.valuePresent || sig.requestBody));
+        const signJwt = sig.signJwt !== false;
+        $('#oidc-request-sig-jwt-sign').prop('checked', signJwt);
+        $('#oidc-request-sig-jwt-signkey-select').val(sig.signKey).prop('disabled', !signJwt);
+        $('#oidc-request-sig-jwt-encrypt').prop('checked', sig.encryptJwt || false);
 
-        if (sig.mime_type) {
-            sigMimeType.val(sig.mime_type);
-        }
-
-        tbsTextarea.prop('value', sig.tbsData || '');
-
-        this.refreshMessageRows(sigMessagesDiv, sig.signMessage, true);
+        this.updateSignMessageView(applyScopeRule);
+        this.refreshMessageRows($('#oidc-request-sig-messages-div'), sig.signMessage, true);
     }
 
 }

@@ -156,9 +156,10 @@
       "requestBody": true,
       "valuePresent": false,
       "b64Encode": true,
-      "mime_type": "text/plain",
+      "includeTbsData": true,
       "tbsData": "Sign message",
       "signMessage": {
+        "mime_type": "text/plain",
         "message#sv": "Sign: Meddelande",
         "message#en": "Sign: Message"
       }

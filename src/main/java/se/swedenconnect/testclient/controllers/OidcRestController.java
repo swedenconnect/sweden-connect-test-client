@@ -228,18 +228,8 @@ public class OidcRestController {
     return OIDCAuthnRequestParameterModel.builder()
         .op(op)
         .rp(rp)
-        .signMessage(SignatureParameterModel.builder()
-            .b64Encode(true)
-            .signMessage(OidcMessageParameterModel.builder().build())
-            .requestBody(false)
-            .valuePresent(false)
-            .build())
-        .userMessage(OidcMessageParameterModel.builder()
-            .b64Encode(true)
-            .messageSwedish("msg")
-            .valuePresent(false)
-            .requestBody(false)
-            .build())
+        .signMessage(createDefaultSignRequest(signKey.getKeyID()))
+        .userMessage(createDefaultUserMessage())
         .scope(new ModelParameter("openid", false, true))
         .requestBodyScope("openid")
         .requestMode("request")
@@ -260,6 +250,43 @@ public class OidcRestController {
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false).build())
+        .build();
+  }
+
+  /**
+   * Creates the initial sign request of the request builder. The TBS data and messages are Base64-encoded, the
+   * message MIME type is {@code text/plain}, and in the request URL the sign request is a signed JWT that is not
+   * encrypted.
+   *
+   * @param signKey the key ID of the RP's registered signing key, which signs the sign request JWT
+   * @return the default sign request
+   */
+  static SignatureParameterModel createDefaultSignRequest(final String signKey) {
+    return SignatureParameterModel.builder()
+        .b64Encode(true)
+        .includeTbsData(true)
+        .signMessage(OidcMessageParameterModel.builder().mimeType("text/plain").build())
+        .signJwt(true)
+        .signKey(signKey)
+        .encryptJwt(false)
+        .requestBody(false)
+        .valuePresent(false)
+        .build();
+  }
+
+  /**
+   * Creates the initial user message of the request builder. The messages are Base64-encoded and the MIME type is
+   * {@code text/plain}.
+   *
+   * @return the default user message
+   */
+  static OidcMessageParameterModel createDefaultUserMessage() {
+    return OidcMessageParameterModel.builder()
+        .b64Encode(true)
+        .mimeType("text/plain")
+        .messageSwedish("msg")
+        .valuePresent(false)
+        .requestBody(false)
         .build();
   }
 

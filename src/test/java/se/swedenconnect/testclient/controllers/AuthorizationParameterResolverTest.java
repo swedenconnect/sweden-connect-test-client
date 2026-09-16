@@ -15,10 +15,24 @@
  */
 package se.swedenconnect.testclient.controllers;
 
+import com.nimbusds.jose.Algorithm;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.ECDSAVerifier;
+import com.nimbusds.jose.crypto.RSADecrypter;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.jose.util.Pair;
+import com.nimbusds.jwt.EncryptedJWT;
+import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.JWTParser;
+import com.nimbusds.jwt.PlainJWT;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.oauth2.sdk.id.ClientID;
@@ -40,7 +54,9 @@ import tools.jackson.databind.node.ObjectNode;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +67,8 @@ import java.util.stream.Stream;
 
 /**
  * Tests for {@link AuthorizationParameterResolver} - where PKCE, state and nonce are placed in an authentication
- * request, and the outcome of the request templates.
+ * request, how the user message and sign request extensions are sent, the JWT:s of the request, and the outcome of the
+ * request templates.
  *
  * @author Martin Lindström
  */
@@ -64,14 +81,27 @@ class AuthorizationParameterResolverTest {
 
   private static final String USER_MESSAGE = "https://id.oidc.se/param/userMessage";
   private static final String SIGN_REQUEST = "https://id.oidc.se/param/signRequest";
+  private static final String SCOPE_SIGN_APPROVAL = "https://id.oidc.se/scope/signApproval";
 
   private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
+  /** The RP's registered signing key. */
   private static JWK key;
+
+  /** Another signing key. */
+  private static JWK otherKey;
+
+  /** The OP's encryption key. */
+  private static JWK encKey;
+
+  private static Map<String, JWK> keys;
 
   @BeforeAll
   static void generateKey() throws Exception {
     key = new RSAKeyGenerator(2048).keyID("key").generate();
+    otherKey = new ECKeyGenerator(Curve.P_256).keyID("other").generate();
+    encKey = new RSAKeyGenerator(2048).keyID("enc").generate();
+    keys = Map.of(key.getKeyID(), key, otherKey.getKeyID(), otherKey, encKey.getKeyID(), encKey);
   }
 
   @Test
@@ -373,14 +403,385 @@ class AuthorizationParameterResolverTest {
     Assertions.assertEquals(challengeOf(result.verifier()), result.claims().getClaim("code_challenge"));
   }
 
+  @Test
+  void signRequestOnlyInRequestObjectWithSignApprovalScopeAndDefaults() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    place(model.getScope(), true, true);
+    model.getScope().setValue("openid " + SCOPE_SIGN_APPROVAL);
+    model.setRequestBodyScope("openid " + SCOPE_SIGN_APPROVAL);
+    final SignatureParameterModel sig = model.getSignMessage();
+    placeRow(model, SIGN_REQUEST, false, true);
+    // What the UI does with the "TBS Data" box when the area is expanded with this scope
+    sig.setIncludeTbsData(false);
+    sig.setTbsData("Data to sign");
+    sig.getSignMessage().setMessageSwedish("Meddelande");
+    sig.getSignMessage().setMessageEnglish("Message");
+
+    final Result result = generate(model);
+
+    Assertions.assertFalse(result.parameters().containsKey(SIGN_REQUEST));
+    final Map<String, Object> signRequest = map(requestObjectClaims(result).getClaim(SIGN_REQUEST));
+    Assertions.assertEquals(Set.of("sign_message"), signRequest.keySet());
+    Assertions.assertEquals(Map.of(
+        "message#sv", b64("Meddelande"),
+        "message#en", b64("Message"),
+        "mime_type", "text/plain"), signRequest.get("sign_message"));
+  }
+
+  @Test
+  void extensionsAreJsonObjectsInSerializedRequestObject() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    placeRow(model, USER_MESSAGE, false, true);
+    placeRow(model, SIGN_REQUEST, false, true);
+
+    final Result result = generate(model);
+
+    final String payload = JWTParser.parse(result.url("request")).getParsedParts()[1].decodeToString();
+    final Map<String, Object> json = JSONObjectUtils.parse(payload);
+    Assertions.assertInstanceOf(Map.class, json.get(USER_MESSAGE));
+    Assertions.assertInstanceOf(Map.class, json.get(SIGN_REQUEST));
+  }
+
+  static Stream<Arguments> mimeTypes() {
+    return Stream.of(USER_MESSAGE, SIGN_REQUEST)
+        .flatMap(extension -> Stream.of(true, false)
+            .flatMap(inUrl -> Stream.of(null, "", "text/plain", "text/markdown", "text/dummy")
+                .map(mimeType -> Arguments.of(extension, inUrl, mimeType))));
+  }
+
+  @ParameterizedTest(name = "{0}: inUrl={1}, mimeType={2}")
+  @MethodSource("mimeTypes")
+  void mimeTypeIsSentUnlessNotIncluded(final String extension, final boolean inUrl, final String mimeType)
+      throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    placeRow(model, extension, inUrl, !inUrl);
+    messages(model, extension).setMimeType(mimeType);
+    model.getAdvanced().getState().setRequestBody(true);
+
+    final Map<String, Object> message = message(extension, generate(model), inUrl);
+
+    if (mimeType == null || mimeType.isEmpty()) {
+      Assertions.assertFalse(message.containsKey("mime_type"), "mime_type must not be sent: " + message);
+    }
+    else {
+      Assertions.assertEquals(mimeType, message.get("mime_type"));
+    }
+  }
+
+  static Stream<Arguments> extensionPlacements() {
+    return Stream.of(USER_MESSAGE, SIGN_REQUEST)
+        .flatMap(extension -> Stream.of(Arguments.of(extension, true), Arguments.of(extension, false)));
+  }
+
+  @ParameterizedTest(name = "{0}: inUrl={1}")
+  @MethodSource("extensionPlacements")
+  void allLanguageVariantsAreWritten(final String extension, final boolean inUrl) throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    placeRow(model, extension, inUrl, !inUrl);
+    final OidcMessageParameterModel messages = messages(model, extension);
+    messages.setMessageSwedish("sv");
+    messages.setMessageEnglish("en");
+    messages.setMessageGerman("de");
+    messages.setMessageFrench("fr");
+    messages.setMessageItalian("Messaggio");
+    messages.setMessageSpanish("es");
+    messages.setMessageDummy("xx");
+    messages.setMessage("none");
+    model.getAdvanced().getState().setRequestBody(true);
+
+    final Map<String, Object> message = message(extension, generate(model), inUrl);
+
+    Assertions.assertEquals(b64("Messaggio"), message.get("message#it"));
+    Assertions.assertEquals(Set.of("message#sv", "message#en", "message#de", "message#fr", "message#it", "message#es",
+        "message#xx", "message", "mime_type"), message.keySet());
+  }
+
+  @ParameterizedTest(name = "{0}: inUrl={1}")
+  @MethodSource("extensionPlacements")
+  void messagesAreSentAsEnteredWhenNotBase64Encoded(final String extension, final boolean inUrl) throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    placeRow(model, extension, inUrl, !inUrl);
+    if (USER_MESSAGE.equals(extension)) {
+      model.getUserMessage().setB64Encode(false);
+    }
+    else {
+      model.getSignMessage().setB64Encode(false);
+      model.getSignMessage().setTbsData("Data");
+    }
+    messages(model, extension).setMessageSwedish("Meddelande");
+    model.getAdvanced().getState().setRequestBody(true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals("Meddelande", message(extension, result, inUrl).get("message#sv"));
+    if (SIGN_REQUEST.equals(extension)) {
+      Assertions.assertEquals("Data", signRequest(result, inUrl).get("tbs_data"));
+    }
+  }
+
+  @Test
+  void userMessageInUrlIsJsonWithoutUiSettings() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, USER_MESSAGE, true, false);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(Map.of("message#sv", b64("msg"), "mime_type", "text/plain"),
+        JSONObjectUtils.parse(result.url(USER_MESSAGE)));
+  }
+
+  @Test
+  void signRequestInBothPlacesIsEncodedOnceInEach() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    placeRow(model, SIGN_REQUEST, true, true);
+    model.getSignMessage().setTbsData("Data to sign");
+    model.getSignMessage().getSignMessage().setMessageSwedish("Meddelande");
+
+    final Result result = generate(model);
+
+    for (final boolean inUrl : List.of(true, false)) {
+      final Map<String, Object> signRequest = signRequest(result, inUrl);
+      Assertions.assertEquals(Set.of("tbs_data", "sign_message"), signRequest.keySet(), "inUrl=" + inUrl);
+      Assertions.assertEquals("Data to sign", unb64(signRequest.get("tbs_data")), "inUrl=" + inUrl);
+      Assertions.assertEquals("Meddelande", unb64(map(signRequest.get("sign_message")).get("message#sv")));
+    }
+    Assertions.assertEquals("Data to sign", model.getSignMessage().getTbsData(), "The model must not be changed");
+  }
+
+  static Stream<Arguments> tbsDataSettings() {
+    return Stream.of(
+        Arguments.of(true, "Data", true),
+        Arguments.of(null, "Data", true),
+        Arguments.of(false, "Data", false),
+        Arguments.of(true, null, false),
+        Arguments.of(true, "", true));
+  }
+
+  @ParameterizedTest(name = "includeTbsData={0}, tbsData={1}")
+  @MethodSource("tbsDataSettings")
+  void tbsDataIsSentWhenIncluded(final Boolean include, final String tbsData, final boolean expected)
+      throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    placeRow(model, SIGN_REQUEST, true, true);
+    model.getSignMessage().setIncludeTbsData(include);
+    model.getSignMessage().setTbsData(tbsData);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(expected, signRequest(result, true).containsKey("tbs_data"), "In URL");
+    Assertions.assertEquals(expected, signRequest(result, false).containsKey("tbs_data"), "In request object");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = { "key", "other" })
+  void signRequestInUrlIsJwtSignedWithSelectedKey(final String kid) throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, SIGN_REQUEST, true, false);
+    model.getSignMessage().setTbsData("Data");
+    model.getSignMessage().setSignKey(kid);
+    // The request object signing key does not apply
+    model.getKeys().setSignKey("key");
+
+    final Result result = generate(model);
+
+    final SignedJWT jwt = SignedJWT.parse(result.url(SIGN_REQUEST));
+    Assertions.assertEquals(kid, jwt.getHeader().getKeyID());
+    Assertions.assertTrue(jwt.verify(verifier(keys.get(kid))), "Signature must verify with the selected key");
+    final JWK unrelatedKey = keys.get(kid) instanceof ECKey
+        ? new ECKeyGenerator(Curve.P_256).generate()
+        : new RSAKeyGenerator(2048).generate();
+    Assertions.assertFalse(jwt.verify(verifier(unrelatedKey)));
+    Assertions.assertEquals(Set.of("tbs_data", "sign_message"), jwt.getJWTClaimsSet().getClaims().keySet(),
+        "The claims set is the sign request object only");
+  }
+
+  @Test
+  void signRequestInUrlIsSignedWithRegisteredKeyAndNotEncryptedByDefault() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, SIGN_REQUEST, true, false);
+
+    final JWT jwt = JWTParser.parse(generate(model).url(SIGN_REQUEST));
+
+    final SignedJWT signed = Assertions.assertInstanceOf(SignedJWT.class, jwt);
+    Assertions.assertEquals(key.getKeyID(), signed.getHeader().getKeyID());
+    Assertions.assertTrue(signed.verify(verifier(key)));
+  }
+
+  @Test
+  void unsignedSignRequestInUrlIsUnsecuredJwt() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, SIGN_REQUEST, true, false);
+    model.getSignMessage().setSignJwt(false);
+    model.getSignMessage().setSignKey(null);
+
+    final JWT jwt = JWTParser.parse(generate(model).url(SIGN_REQUEST));
+
+    Assertions.assertInstanceOf(PlainJWT.class, jwt);
+    Assertions.assertEquals(Algorithm.NONE, jwt.getHeader().getAlgorithm());
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = { true, false })
+  void encryptedSignRequestInUrlIsNestedJwt(final boolean signed) throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, SIGN_REQUEST, true, false);
+    model.getSignMessage().setTbsData("Data");
+    model.getSignMessage().setSignJwt(signed);
+    model.getSignMessage().setSignKey("other");
+    model.getSignMessage().setEncryptJwt(true);
+
+    final JWT inner = decryptNested(generate(model).url(SIGN_REQUEST));
+
+    if (signed) {
+      final SignedJWT signedJwt = Assertions.assertInstanceOf(SignedJWT.class, inner);
+      Assertions.assertTrue(signedJwt.verify(verifier(otherKey)));
+    }
+    else {
+      Assertions.assertInstanceOf(PlainJWT.class, inner);
+    }
+    Assertions.assertEquals(b64("Data"), inner.getJWTClaimsSet().getClaim("tbs_data"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = { true, false })
+  void encryptedRequestObjectIsNestedJwt(final boolean signed) throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getRequestObject().setSignRequest(signed);
+    model.getRequestObject().setEncryptRequest(true);
+    model.getAdvanced().getState().setRequestBody(true);
+
+    final Result result = generate(model);
+
+    final JWT inner = decryptNested(result.url("request"));
+    if (signed) {
+      Assertions.assertTrue(Assertions.assertInstanceOf(SignedJWT.class, inner).verify(verifier(key)));
+    }
+    else {
+      Assertions.assertInstanceOf(PlainJWT.class, inner);
+    }
+    Assertions.assertEquals(result.claims().toJSONObject(), inner.getJWTClaimsSet().toJSONObject());
+    Assertions.assertNull(inner.getJWTClaimsSet().getClaim("payload"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = { "request", SIGN_REQUEST })
+  void encryptionFailsTheSameWayWithoutUsableEncryptionKey(final String jwt) {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getKeys().setEncKey(null);
+    if ("request".equals(jwt)) {
+      model.getRequestObject().setEncryptRequest(true);
+      model.getAdvanced().getState().setRequestBody(true);
+    }
+    else {
+      placeRow(model, SIGN_REQUEST, true, false);
+      model.getSignMessage().setEncryptJwt(true);
+    }
+
+    final RuntimeException e = Assertions.assertThrows(RuntimeException.class, () -> generate(model));
+    Assertions.assertEquals("Failed to determine key for kid null", e.getMessage());
+  }
+
+  @ParameterizedTest
+  @MethodSource("templateNames")
+  void templatesGenerateRequests(final String name) throws Exception {
+    final OIDCAuthnRequestParameterModel model = applyTemplate(defaultModel(), template(name));
+
+    final Result result = generate(model);
+
+    Assertions.assertFalse(result.parameters().isEmpty());
+  }
+
+  @Test
+  void signHiddenTemplateSendsSignRequestInEncryptedRequestObject() throws Exception {
+    final OIDCAuthnRequestParameterModel model = applyTemplate(defaultModel(), template("Sign Hidden"));
+
+    final Result result = generate(model);
+
+    final Map<String, Object> signRequest = map(decryptNested(result.url("request")).getJWTClaimsSet()
+        .getClaim(SIGN_REQUEST));
+    Assertions.assertEquals("Sign message", unb64(signRequest.get("tbs_data")));
+    Assertions.assertEquals(Map.of(
+        "message#sv", b64("Sign: Meddelande"),
+        "message#en", b64("Sign: Message"),
+        "mime_type", "text/plain"), signRequest.get("sign_message"));
+  }
+
+  static Stream<String> templateNames() throws Exception {
+    return templates().stream().map(t -> t.get("name").asString());
+  }
+
+  private static OidcMessageParameterModel messages(final OIDCAuthnRequestParameterModel model,
+      final String extension) {
+    return USER_MESSAGE.equals(extension) ? model.getUserMessage() : model.getSignMessage().getSignMessage();
+  }
+
+  /**
+   * Gets the message object of an extension, i.e., the user message or the sign message of the sign request.
+   */
+  private static Map<String, Object> message(final String extension, final Result result, final boolean inUrl)
+      throws Exception {
+    if (SIGN_REQUEST.equals(extension)) {
+      return map(signRequest(result, inUrl).get("sign_message"));
+    }
+    return inUrl
+        ? JSONObjectUtils.parse(result.url(USER_MESSAGE))
+        : map(requestObjectClaims(result).getClaim(USER_MESSAGE));
+  }
+
+  /**
+   * Gets the sign request from the URL, where it is a signed or unsecured JWT, or from the request object.
+   */
+  private static Map<String, Object> signRequest(final Result result, final boolean inUrl) throws Exception {
+    return inUrl
+        ? JWTParser.parse(result.url(SIGN_REQUEST)).getJWTClaimsSet().getClaims()
+        : map(requestObjectClaims(result).getClaim(SIGN_REQUEST));
+  }
+
+  /**
+   * Gets the claims of the request object as sent, i.e., parsed from the {@code request} parameter.
+   */
+  private static JWTClaimsSet requestObjectClaims(final Result result) throws Exception {
+    return JWTParser.parse(result.url("request")).getJWTClaimsSet();
+  }
+
+  /**
+   * Decrypts an encrypted JWT with the OP's key, and checks that it is a nested JWT.
+   */
+  private static JWT decryptNested(final String serialized) throws Exception {
+    final EncryptedJWT encrypted = EncryptedJWT.parse(serialized);
+    Assertions.assertEquals("JWT", encrypted.getHeader().getContentType());
+    Assertions.assertEquals(encKey.getKeyID(), encrypted.getHeader().getKeyID());
+    encrypted.decrypt(new RSADecrypter(encKey.toRSAKey()));
+    return JWTParser.parse(encrypted.getPayload().toString());
+  }
+
+  private static JWSVerifier verifier(final JWK jwk) throws Exception {
+    return jwk instanceof final ECKey ecKey ? new ECDSAVerifier(ecKey) : new RSASSAVerifier(jwk.toRSAKey());
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> map(final Object value) {
+    return Assertions.assertInstanceOf(Map.class, value, "Expected a JSON object");
+  }
+
+  private static String b64(final String value) {
+    return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+  }
+
+  private static String unb64(final Object value) {
+    return new String(Base64.getDecoder().decode((String) value), StandardCharsets.UTF_8);
+  }
+
   /**
    * The outcome of generating a request.
    *
    * @param parameters the parameters of the URL that is sent
    * @param claims the claims of the request object, or {@code null} if there is no request object
    * @param verifier the code verifier saved for the token request, or {@code null}
+   * @param session the attributes saved in the session
    */
-  private record Result(Map<String, List<String>> parameters, JWTClaimsSet claims, CodeVerifier verifier) {
+  private record Result(Map<String, List<String>> parameters, JWTClaimsSet claims, CodeVerifier verifier,
+      Map<String, Object> session) {
 
     String url(final String name) {
       return Optional.ofNullable(this.parameters.get(name)).map(List::getFirst).orElse(null);
@@ -403,7 +804,9 @@ class AuthorizationParameterResolverTest {
         URI.create(model.getRedirectUri().getValue()))
         .endpointURI(URI.create(AUTHORIZATION_ENDPOINT));
     builder.maxAge(0);
-    final Function<String, JWK> kidToJwk = kid -> key;
+    // As OidcRestController, which fails for a key ID that does not name a key
+    final Function<String, JWK> kidToJwk = kid -> Optional.ofNullable(kid).map(keys::get)
+        .orElseThrow(() -> new RuntimeException("Failed to determine key for kid %s".formatted(kid)));
     final AuthorizationParameterResolver resolver = new AuthorizationParameterResolver(model, false, session::put);
     final AuthenticationRequest request = AuthorizationRequestCustomizer.customize(builder, kidToJwk, resolver).build();
 
@@ -412,7 +815,7 @@ class AuthorizationParameterResolverTest {
     final Pair<CodeChallengeMethod, CodeVerifier> verifier =
         (Pair<CodeChallengeMethod, CodeVerifier>) session.get(AuthorizationParameterResolver.CODE_VERIFIER_ATTRIBUTE);
     return new Result(URLUtils.parseParameters(uri.getRawQuery()), (JWTClaimsSet) session.get("jwt_claims"),
-        verifier != null ? verifier.getRight() : null);
+        verifier != null ? verifier.getRight() : null, session);
   }
 
   private static String challengeOf(final CodeVerifier verifier) {
@@ -429,18 +832,8 @@ class AuthorizationParameterResolverTest {
         .requestMode("request")
         .op("https://op.example.com")
         .rp(RP)
-        .signMessage(SignatureParameterModel.builder()
-            .b64Encode(true)
-            .signMessage(OidcMessageParameterModel.builder().build())
-            .requestBody(false)
-            .valuePresent(false)
-            .build())
-        .userMessage(OidcMessageParameterModel.builder()
-            .b64Encode(true)
-            .messageSwedish("msg")
-            .valuePresent(false)
-            .requestBody(false)
-            .build())
+        .signMessage(OidcRestController.createDefaultSignRequest(key.getKeyID()))
+        .userMessage(OidcRestController.createDefaultUserMessage())
         .scope(new ModelParameter("openid", false, true))
         .redirectUri(new ModelParameter(REDIRECT_URI, false, true))
         .clientId(new ModelParameter(RP, false, true))
@@ -449,7 +842,7 @@ class AuthorizationParameterResolverTest {
         .advanced(OidcRestController.createDefaultAdvancedOptions())
         .keys(KeyOptionsParameterModel.builder()
             .signKey(key.getKeyID())
-            .encKey(key.getKeyID())
+            .encKey(encKey.getKeyID())
             .moduleEnabled(true)
             .build())
         .requestObject(RequestObjectParamterModel.builder()
