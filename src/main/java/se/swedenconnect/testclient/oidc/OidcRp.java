@@ -24,6 +24,7 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
+import se.swedenconnect.testclient.controllers.OidcRpLogoController;
 import se.swedenconnect.testclient.credentials.ClientCredentials;
 import se.swedenconnect.testclient.utils.JwkUtils;
 
@@ -80,7 +81,9 @@ public class OidcRp {
     this.useJwksUrl = useJwksUrl;
     this.jwksUri = jwksUri;
 
-    final JSONObject json = (JSONObject) jsonParser.parse(metadataJson);
+    final String resolvedMetadataJson =
+        metadataJson.replace(OidcRpLogoController.LOGO_PLACEHOLDER, entityId + "/logo.svg");
+    final JSONObject json = (JSONObject) jsonParser.parse(resolvedMetadataJson);
     this.metadata = OIDCClientMetadata.parse(json);
     this.metadata.setRedirectionURI(URI.create(redirectUri));
 

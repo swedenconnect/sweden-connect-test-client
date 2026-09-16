@@ -143,14 +143,6 @@ public class OidcRestController {
     }).getMetadata().toJSONObject(true);
   }
 
-  @GetMapping(value = "/rp/jwks")
-  public JSONObject getJwks(@RequestParam("rp") final String entityId) {
-    final JWKSet jwkSet = this.oidcRps.stream().filter(rp -> rp.getEntityId().equals(entityId)).findFirst()
-        .orElseThrow(() -> new RuntimeException("Failed to find JWKS for %s".formatted(entityId)))
-        .getJwkSet();
-    return new JSONObject(jwkSet.toJSONObject());
-  }
-
   @GetMapping(value = "/op/metadata")
   public JSONObject getOpMetadata(@RequestParam("op") final String entityId) {
     return this.fetcher.getOPMetadata(this.opRegistry.get(entityId));

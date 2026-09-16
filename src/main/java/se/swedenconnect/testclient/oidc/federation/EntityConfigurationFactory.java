@@ -53,9 +53,6 @@ public class EntityConfigurationFactory {
   /** The immediate superiors of our RP:s. */
   private final List<EntityID> authorityHints;
 
-  /** The URI of the logotype published in the RP metadata. */
-  private final String logoUri;
-
   /** The resolver getting the trust marks that our RP:s publish (null if no trust marks are configured). */
   private final TrustMarkResolver trustMarkResolver;
 
@@ -70,18 +67,14 @@ public class EntityConfigurationFactory {
    *
    * @param properties the federation settings
    * @param authorityHints the immediate superiors of our RP:s
-   * @param baseUrl the base URL of the application - the logotype published in the RP metadata is served from
-   *     here, meaning that it resides on the same host as the RP entity identifiers
    * @param trustMarkResolver the resolver getting the trust marks to publish (may be {@code null})
    */
   public EntityConfigurationFactory(@Nonnull final OidfProperties properties,
-      @Nonnull final List<EntityID> authorityHints, @Nonnull final String baseUrl,
+      @Nonnull final List<EntityID> authorityHints,
       @Nullable final TrustMarkResolver trustMarkResolver) {
     this.properties = properties;
     this.authorityHints = authorityHints;
     this.trustMarkResolver = trustMarkResolver;
-    this.logoUri = (baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl)
-        + (this.properties.getLogoPath().startsWith("/") ? "" : "/") + this.properties.getLogoPath();
   }
 
   /**
@@ -224,9 +217,6 @@ public class EntityConfigurationFactory {
     }
     if (!metadata.containsKey("organization_number")) {
       metadata.put("organization_number", this.properties.getOrganizationNumber());
-    }
-    if (!metadata.containsKey("logo_uri")) {
-      metadata.put("logo_uri", this.logoUri);
     }
     return metadata;
   }

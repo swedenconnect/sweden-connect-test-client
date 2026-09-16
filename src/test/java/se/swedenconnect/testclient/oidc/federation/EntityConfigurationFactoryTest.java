@@ -51,7 +51,6 @@ class EntityConfigurationFactoryTest {
 
   private static final String RP_ENTITY_ID = "https://client.example.com/testrp1";
   private static final String TRUST_ANCHOR = "https://ta.example.com";
-  private static final String BASE_URL = "https://client.example.com";
   private static final String TRUST_MARK_ISSUER = "https://tmi.example.com";
   private static final String TRUST_MARK_TYPE = "https://tmi.example.com/trust-mark/test-sp";
 
@@ -59,7 +58,7 @@ class EntityConfigurationFactoryTest {
   void createsSelfSignedEntityConfiguration() throws Exception {
     final OidcRp rp = TestFederation.createRp(RP_ENTITY_ID);
     final EntityConfigurationFactory factory = new EntityConfigurationFactory(
-        properties(), List.of(new EntityID(TRUST_ANCHOR)), BASE_URL, null);
+        properties(), List.of(new EntityID(TRUST_ANCHOR)), null);
 
     final EntityStatement statement = factory.createEntityConfiguration(rp);
 
@@ -89,7 +88,7 @@ class EntityConfigurationFactoryTest {
   void publishesRpAndFederationEntityMetadata() throws Exception {
     final OidcRp rp = TestFederation.createRp(RP_ENTITY_ID);
     final EntityConfigurationFactory factory = new EntityConfigurationFactory(
-        properties(), List.of(new EntityID(TRUST_ANCHOR)), BASE_URL, null);
+        properties(), List.of(new EntityID(TRUST_ANCHOR)), null);
 
     final EntityStatementClaimsSet claims = factory.createEntityConfiguration(rp).getClaimsSet();
 
@@ -102,7 +101,9 @@ class EntityConfigurationFactoryTest {
     // Fields that are mandatory in the Sweden Connect federation.
     assertEquals("pairwise", rpMetadata.getAsString("subject_type"));
     assertEquals("2021006883", rpMetadata.getAsString("organization_number"));
-    assertEquals(BASE_URL + "/images/logo.svg", rpMetadata.getAsString("logo_uri"));
+    // No default logo_uri is filled in - an RP gets one only by declaring it itself, e.g. using the <logo>
+    // placeholder (see OidcRpLogoController).
+    assertFalse(rpMetadata.containsKey("logo_uri"));
 
     // The client keys published in the metadata must be declared for signature use.
     final JWKSet metadataKeys = JWKSet.parse((Map<String, Object>) rpMetadata.get("jwks"));
@@ -128,7 +129,7 @@ class EntityConfigurationFactoryTest {
         }
         """);
     final EntityConfigurationFactory factory = new EntityConfigurationFactory(
-        properties(), List.of(new EntityID(TRUST_ANCHOR)), BASE_URL, null);
+        properties(), List.of(new EntityID(TRUST_ANCHOR)), null);
 
     final JSONObject rpMetadata = factory.createEntityConfiguration(rp).getClaimsSet()
         .getMetadata(EntityType.OPENID_RELYING_PARTY);
@@ -154,7 +155,7 @@ class EntityConfigurationFactoryTest {
     properties.getTrustMarks().add(tm);
 
     final EntityConfigurationFactory factory = new EntityConfigurationFactory(
-        properties, List.of(new EntityID(TRUST_ANCHOR)), BASE_URL,
+        properties, List.of(new EntityID(TRUST_ANCHOR)),
         new TrustMarkResolver(properties, new OidfClient(RestClient.builder().build()), Map.of()));
 
     final EntityStatementClaimsSet claims = factory.createEntityConfiguration(rp).getClaimsSet();
@@ -184,7 +185,7 @@ class EntityConfigurationFactoryTest {
     properties.getTrustMarks().add(tm);
 
     final EntityConfigurationFactory factory = new EntityConfigurationFactory(
-        properties, List.of(new EntityID(TRUST_ANCHOR)), BASE_URL,
+        properties, List.of(new EntityID(TRUST_ANCHOR)),
         new TrustMarkResolver(properties, new OidfClient(RestClient.builder().build()), Map.of()));
 
     final IllegalArgumentException e =
@@ -196,7 +197,7 @@ class EntityConfigurationFactoryTest {
   void cachesEntityConfiguration() {
     final OidcRp rp = TestFederation.createRp(RP_ENTITY_ID);
     final EntityConfigurationFactory factory = new EntityConfigurationFactory(
-        properties(), List.of(new EntityID(TRUST_ANCHOR)), BASE_URL, null);
+        properties(), List.of(new EntityID(TRUST_ANCHOR)), null);
 
     assertSame(factory.getEntityConfiguration(rp), factory.getEntityConfiguration(rp));
   }
