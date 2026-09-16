@@ -38,8 +38,6 @@ import se.swedenconnect.testclient.oidc.federation.OidfService;
 import se.swedenconnect.testclient.oidc.federation.TrustMarkResolver;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -113,8 +111,7 @@ public class OidcConfiguration {
       }
       entityIds.add(entityId);
 
-      final String jwksUri = this.urlBuilder.buildUrl(
-          "/oidc/rp/jwks?rp=" + URLEncoder.encode(entityId, StandardCharsets.UTF_8));
+      final String jwksUri = this.urlBuilder.buildUrl(p.getPathSuffix(), "jwks");
 
       rps.add(new OidcRp(entityId, p.getDescription(), p.getPathSuffix(),
           ClientCredentials.create(
@@ -165,9 +162,8 @@ public class OidcConfiguration {
     @Bean
     EntityConfigurationFactory entityConfigurationFactory(
         @Qualifier("testclient.oidc.fed.authorities") @Nonnull final List<EntityID> authorities,
-        @Qualifier("testclient.BaseUrl") @Nonnull final String baseUrl,
         @Nonnull final TrustMarkResolver trustMarkResolver) {
-      return new EntityConfigurationFactory(this.federationProperties, authorities, baseUrl, trustMarkResolver);
+      return new EntityConfigurationFactory(this.federationProperties, authorities, trustMarkResolver);
     }
 
     @Bean

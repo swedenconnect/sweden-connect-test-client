@@ -48,7 +48,11 @@ testclient:
     openid-fed-authorities:
       - https://www.dummy.com
     federation:
-      enabled: false
+      enabled: true
+      trust-anchors:
+        - entity-id: https://sandbox.swedenconnect.se/trustanchor
+          discover-ops: true
+
       # The trust anchors of the federation(s) we participate in. The jwks setting is optional - if it is not given,
       # the trust anchor's entity configuration is downloaded and its self-declared keys are used (test only).
       #trust-anchors:
@@ -70,8 +74,7 @@ testclient:
       auto-configure-ops: true
       refresh-interval: 10m
       entity-configuration-validity: 24h
-      # Mandatory RP metadata fields that are filled in unless the RP declares them itself.
-      organization-number: "2021006883"
+
       subject-type: pairwise
       entity-metadata:
         organization-name: "Sweden Connect"
@@ -95,6 +98,9 @@ testclient:
         metadata: |
           {
             "response_types" : [ "code" ],
+            "organization_number": "2021006883"
+            "organization_identifier": "urn:glue:iso6523:0007:2021006883",
+            "logo_uri":"<logo>",
             "grant_types" : [ "authorization_code" ],
             "client_name" : "Sweden Connect Test-RP 1",
             "client_name#sv" : "Sweden Connect Test-RP 1",
