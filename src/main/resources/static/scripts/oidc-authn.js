@@ -757,6 +757,10 @@ class OIDCSetupAuthentication {
 
         const self = this;
 
+        if (!TestClient.isOidfEnabled()) {
+            $('#oidc-view-ec').hide();
+        }
+
         $('#oidc-rp-select').change(function () {
             let selectedRp = $(this).val() === 'none' ? null : $(this).val();
             OIDC_STATE.setSelectedRp(selectedRp);
@@ -781,6 +785,23 @@ class OIDCSetupAuthentication {
                        },
                        error: (error) => {
                            console.error("Failed to get RP metadata: " + JSON.stringify(error));
+                       }
+                   });
+        });
+
+        $('#oidc-view-ec').click(function () {
+            let entityId = $(this).val();
+            $.ajax({
+                       url: entityId + '/.well-known/openid-federation',
+                       type: 'GET',
+                       data: {
+                           plain: true
+                       },
+                       success: (statement) => {
+                           codeViewer.displayJson(entityId, statement);
+                       },
+                       error: (error) => {
+                           console.error("Failed to get entity configuration: " + JSON.stringify(error));
                        }
                    });
         });
@@ -896,6 +917,7 @@ class OIDCSetupAuthentication {
                     rpUrl.attr('href', rp.metadata_url);
                     rpUrl.text(rp.metadata_url);
                     $('#oidc-view-metadata').attr('value', rp.entity_id);
+                    $('#oidc-view-ec').attr('value', rp.entity_id);
                     $('#oidc-rp-info').show();
 
                     if (OIDC_STATE.getSelectedOp()) {

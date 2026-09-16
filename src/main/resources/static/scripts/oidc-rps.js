@@ -37,11 +37,9 @@ class OidcRelyingParties {
     for (let rp of info) {
       let rpDiv = $('<div>');
       rpDiv.append($('<h4>', {
-        text: rp.entity_id
+        text: rp['entity-id']
       }));
-      let table = $('<table>', {
-        class: 'table table-hover'
-      }).append($('<tbody>')
+      let tbody = $('<tbody>')
           .append($('<tr>')
               .append($('<th>', {
                 scope: 'row',
@@ -65,7 +63,28 @@ class OidcRelyingParties {
                   .append($('<span>', {
                     class: 'bi bi-box-arrow-up-right',
                     style: 'margin-left: 0.25rem;'
-                  })))));
+                  }))));
+      if (TestClient.isOidfEnabled()) {
+        tbody.append($('<tr>')
+            .append($('<th>', {
+              scope: 'row',
+              text: "Entity Statement"
+            }))
+            .append($('<td>')
+                .append($('<a>', {
+                  href: rp['entity-id'] + '/.well-known/openid-federation?plain=true',
+                  text: rp['entity-id'] + '/.well-known/openid-federation',
+                  target: '_blank',
+                  rel: 'noopener'
+                }))
+                .append($('<span>', {
+                  class: 'bi bi-box-arrow-up-right',
+                  style: 'margin-left: 0.25rem;'
+                }))));
+      }
+      let table = $('<table>', {
+        class: 'table table-hover'
+      }).append(tbody);
       rpDiv.append(table);
       rpList.append(rpDiv);
     }

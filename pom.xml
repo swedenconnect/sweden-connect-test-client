@@ -21,7 +21,7 @@
 
   <groupId>se.swedenconnect</groupId>
   <artifactId>test-client</artifactId>
-  <version>1.0.9-SNAPSHOT</version>
+  <version>1.0.10-SNAPSHOT</version>
 
   <name>swedenconnect-test-client</name>
   <description>Sweden Connect Test SAML SP and Test OIDC RP</description>
@@ -389,10 +389,8 @@
             <image>amazoncorretto:25.0.1</image>
           </from>
           <to>
-            <image>${DOCKER_REPO}/swedenconnect/sweden-connect-test-client</image>
-            <tags>
-              <tag>${project.version}</tag>
-            </tags>
+            <!-- Tagged with the version only - "latest" is added by the release workflow (-Djib.to.tags=latest) -->
+            <image>${DOCKER_REPO}/swedenconnect/sweden-connect-test-client:${project.version}</image>
           </to>
           <container>
             <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
@@ -420,6 +418,9 @@
             <configuration>
               <to>
                 <image>local/${project.artifactId}</image>
+                <tags>
+                  <tag>${project.version}</tag>
+                </tags>
               </to>
             </configuration>
           </execution>

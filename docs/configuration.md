@@ -88,6 +88,8 @@ The following is derived from the base URL and the `path-suffix` of each configu
 | `<base-url>/oidc/redirect/{rp-path-suffix}` | The redirect URI of an OIDC RP. |
 | `<base-url>/{rp-path-suffix}` | The entity identifier of an OIDC RP. |
 | `<base-url>/{rp-path-suffix}/.well-known/openid-federation` | The OpenID Federation entity configuration of an OIDC RP. |
+| `<base-url>/{rp-path-suffix}/logo.svg` | A generated logotype for an OIDC RP, see [The Relying Parties](#the-relying-parties). |
+| `<base-url>/{rp-path-suffix}/jwks` | The JWK set of an OIDC RP, see [The Relying Parties](#the-relying-parties). |
 
 Note that a SAML SP entity identifier is configured explicitly (`entity-id`), whereas an OIDC RP entity identifier
 is always the base URL followed by the RP:s `path-suffix`.
@@ -296,14 +298,17 @@ application and can not be assigned in the JSON: the redirection URI, which is
 `<base-url>/oidc/redirect/{path-suffix}`, and the JWK set, which is built from the signing credential of the RP.
 
 By default, the RP:s public keys are embedded directly in its metadata as `jwks`. Setting `use-jwks-url: true`
-publishes a `jwks_uri` instead (`<base-url>/oidc/rp/jwks?rp={entity-id}`), pointing at a JWKS endpoint that serves
-the same keys - useful for testing an OP that expects key rotation via a URL rather than a static, embedded key set.
-This endpoint follows the same pattern as the RP metadata endpoint (`<base-url>/oidc/rp/metadata?rp={entity-id}`),
-with the RP:s entity identifier given as the `rp` request parameter, and is available for every RP regardless of
-`use-jwks-url`.
+publishes a `jwks_uri` instead (`<base-url>/{path-suffix}/jwks`), pointing at a JWKS endpoint that serves the same
+keys - useful for testing an OP that expects key rotation via a URL rather than a static, embedded key set. This
+endpoint is available for every RP regardless of `use-jwks-url`.
 
 Note that the back-channel exchange that the test client performs authenticates using `private_key_jwt`, so the
 metadata should declare `"token_endpoint_auth_method": "private_key_jwt"`.
+
+If an RP declares `"logo_uri": "<logo>"` in its metadata, the placeholder `<logo>` is replaced with
+`<base-url>/{path-suffix}/logo.svg` - a simple logotype, generated on the fly, showing the RP:s path suffix next to
+the Sweden Connect mosaic. This is useful for telling RP:s apart in an OP:s UI without having to host a real
+logotype somewhere.
 
 ```yaml
 testclient:
@@ -384,7 +389,6 @@ configured `authority_hints` and the trust marks. It is signed with the metadata
 | `entity-configuration-validity` | The validity of the entity configurations that we publish. | Duration | `24h` |
 | `client-registration-types[]` | The `client_registration_types` declared in our RP metadata. | List of strings | `automatic` |
 | `organization-number` | The Swedish organization number published as `organization_number` in the RP metadata, unless the RP declares its own. Exactly ten digits, no hyphen. **Required.** | String | - |
-| `logo-path` | The path, relative to the base URL, of the logotype published as `logo_uri` in the RP metadata. It is given as a path since the logotype has to be served from the same host as the RP entity identifiers. | String | `/images/logo.svg` |
 | `subject-type` | The `subject_type` declared in our RP metadata, unless the RP declares its own. | String | `pairwise` |
 | `entity-metadata.organization-name` | The organization name of the `federation_entity` metadata. | String | - |
 | `entity-metadata.contacts[]` | The contacts of the `federation_entity` metadata. | List of strings | empty |

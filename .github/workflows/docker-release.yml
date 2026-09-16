@@ -1,58 +1,55 @@
-name: docker-release.yml
+# Publishes the Docker image of a release when a version tag is pushed.
+#
+# The Maven version is set manually and committed before tagging, so the tag must match it: the tag v1.0.9 requires
+# the version 1.0.9 in pom.xml. The image is tagged with the version and with latest.
+name: Release Docker image
+
 on:
-  workflow_call:
-    inputs:
-      service-path:
-        required: true
-        type: string
-      frontend-path:
-        type: string
+  push:
+    tags:
+      - 'v*'
+
+# Narrowed to what building and pushing the image requires.
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  docker-ghcr-publish:
+  publish:
+    name: Publish Docker image
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: read
-      attestations: write
-      id-token: write
+
     steps:
-      - uses: actions/checkout@v4
-      - name: 'Login to GitHub Container Registry'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{github.actor}}
-          password: ${{secrets.GITHUB_TOKEN}}
-      - uses: actions/setup-node@v4
-      - if: ${{ inputs.frontend-path != '' }}
-        run: mkdir -p ${{inputs.service-path}}/src/main/resources/static
-      - if: ${{ inputs.frontend-path != '' }}
-        run: npm install
-        working-directory: ${{inputs.frontend-path}}
-      - if: ${{ inputs.frontend-path != '' }}
-        run: npm run build
-        working-directory: ${{inputs.frontend-path}}
-      - if: ${{ inputs.frontend-path != '' }}
-        run: cp -r ${{ inputs.frontend-path }}/dist/* ${{inputs.service-path}}/src/main/resources/static
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '25'
           cache: 'maven'
-      - name: Set Maven version from tag name
-        if: startsWith(github.ref, 'refs/tags/')
+
+      - name: Check that the tag matches the Maven version
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          echo "TAG:$TAG"
-          NEW_VERSION=${TAG#v}
-          echo "New version is $NEW_VERSION"
-          mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$NEW_VERSION --no-transfer-progress
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --no-transfer-progress)
+          if [[ "${VERSION}" == *-SNAPSHOT ]]; then
+            echo "::error::The Maven version ${VERSION} is a snapshot - set the release version in pom.xml before tagging"
+            exit 1
+          fi
+          if [[ "${TAG}" != "v${VERSION}" ]]; then
+            echo "::error::The tag ${TAG} does not match the Maven version ${VERSION} - expected the tag v${VERSION}"
+            exit 1
+          fi
 
-      - name: Publish image
-        run: |
-          DOCKER_REPO=ghcr.io mvn clean install jib:build -Ddocker.repository=ghcr.io --no-transfer-progress
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-        working-directory: ${{inputs.service-path}}
+      - name: Build and publish image
         env:
-          GITHUB_TOKEN: ${{ secrets.SC_ACTION_SECRET }}
+          DOCKER_REPO: ghcr.io
+        run: mvn clean package jib:build -Djib.to.tags=latest --no-transfer-progress
