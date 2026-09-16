@@ -5,11 +5,13 @@
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
 ### Version 1.0.9
 
-Date: Not yet release
+Date: Not yet released
 
 - A bug was fixed where TLS configuration for the service was not picked up when loading OIDC metadata.
 - Added the testclient.oidc.rps[].use-jwks-url configuration setting that allows Relying Party keys to be published 
   via jwks_uri instead of having them embedded in the metadata.
+- OIDC authentication requests now send PKCE (`code_challenge` with method S256) in the request URL by default.
+- A bug was fixed where the `code_challenge` claim of a request object held the code verifier instead of the challenge.
 
 ### Version 1.0.8
 

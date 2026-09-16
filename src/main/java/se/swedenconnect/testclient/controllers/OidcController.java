@@ -121,7 +121,8 @@ public class OidcController {
     }
 
     final Optional<Pair<CodeChallengeMethod, CodeVerifier>> codeVerifier = Optional.ofNullable(
-        (Pair<CodeChallengeMethod, CodeVerifier>) httpSession.getAttribute("code_verifier")
+        (Pair<CodeChallengeMethod, CodeVerifier>) httpSession.getAttribute(
+            AuthorizationParameterResolver.CODE_VERIFIER_ATTRIBUTE)
     );
 
     final PkiCredential credentialForSigning = selectedRp.getCredentials()
