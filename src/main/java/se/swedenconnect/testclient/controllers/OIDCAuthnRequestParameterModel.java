@@ -38,7 +38,18 @@ import java.util.Map;
 public class OIDCAuthnRequestParameterModel {
   private String op;
   private String rp;
+  /** The scope. Its value is the scope sent in the request URL. */
   private ModelParameter scope;
+  /**
+   * The scope sent in the request object when the scope's "In Request Body" box is checked. If {@code null}, the value
+   * of {@link #scope} is used, as in templates and requests exported before the scope had two lines.
+   */
+  private String requestBodyScope;
+  /**
+   * The mode of the request builder, {@code request} or {@code requestBody}. Only used by the UI, which carries it in
+   * exported requests.
+   */
+  private String requestMode;
   private ModelParameter clientId;
   private ModelParameter redirectUri;
   private ModelParameter acrValues;

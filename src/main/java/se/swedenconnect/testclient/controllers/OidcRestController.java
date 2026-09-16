@@ -241,6 +241,8 @@ public class OidcRestController {
             .requestBody(false)
             .build())
         .scope(new ModelParameter("openid", false, true))
+        .requestBodyScope("openid")
+        .requestMode("request")
         .redirectUri(new ModelParameter(selectedRp.getMetadata().getRedirectionURI().toASCIIString(), false, true))
         .clientId(new ModelParameter(selectedRp.getEntityId(), false, true))
         .acrValues(new ModelParameter("", false, false))
@@ -305,17 +307,17 @@ public class OidcRestController {
 
       // A verifier left over from an earlier request must not reach the token request of this one
       httpSession.removeAttribute(AuthorizationParameterResolver.CODE_VERIFIER_ATTRIBUTE);
-      final AuthenticationRequest authRequest = AuthorizationRequestCustomizer.customize(
-          builder,
-          kidtoJwkFunction(opJWKS),
-          new AuthorizationParameterResolver(model, false, httpSession::setAttribute)
-      ).build();
+      final AuthorizationParameterResolver resolver =
+          new AuthorizationParameterResolver(model, false, httpSession::setAttribute);
+      final AuthenticationRequest authRequest =
+          AuthorizationRequestCustomizer.customize(builder, kidtoJwkFunction(opJWKS), resolver).build();
+      final String asciiString = AuthorizationRequestCustomizer.toURI(authRequest, resolver).toASCIIString();
 
       httpSession.setAttribute("auth_request", authRequest);
+      httpSession.setAttribute(OidcController.SESSION_NAME_AUTH_REQUEST_URI, asciiString);
       httpSession.setAttribute("selected_op", selectedOp);
       httpSession.setAttribute("selected_rp", selectedRp);
 
-      final String asciiString = authRequest.toHTTPRequest().getURI().toASCIIString();
       log.info(asciiString);
       return OIDCAuthnRequestModel.builder()
           .method("GET")

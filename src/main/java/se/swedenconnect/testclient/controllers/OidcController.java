@@ -89,6 +89,9 @@ public class OidcController {
 
   public static final String SESSION_NAME_OIDC_RESPONSE = "sctc.oidcResponse";
 
+  /** The URI of the authentication request as it was sent - it may differ from what the request object describes. */
+  public static final String SESSION_NAME_AUTH_REQUEST_URI = "auth_request_uri";
+
   /**
    * The base path for the redirection URLs.
    */
@@ -114,7 +117,7 @@ public class OidcController {
           OIDCResponse.builder()
               .errors(List.of("error:%s Error Description:%s".formatted(error, errorDescription)))
               .opError(true)
-              .authorizationRequest(authRequest.toHTTPRequest().getURI().toASCIIString())
+              .authorizationRequest(this.sentRequestUri(authRequest))
               .build()
       );
       return new ModelAndView("redirect:/");
@@ -241,7 +244,7 @@ public class OidcController {
           .accessTokenClaims(accessTokenClaims(accessToken))
           .scopeValidation(validateScopes(requestedScopes(authRequest), idTokenClaims, userInfo))
           .idTokenClaims(idTokenClaims)
-          .authorizationRequest(authRequest.toHTTPRequest().getURI().toASCIIString())
+          .authorizationRequest(this.sentRequestUri(authRequest))
           .userInfoClaims(userInfo)
           .idTokenProtection(idTokenResult.protection())
           .userInfoProtection(userInfoResult.protection())
@@ -386,6 +389,17 @@ public class OidcController {
       return new ProtectedJwt(new HashMap<>(),
           protection.note("Failed to parse: %s".formatted(e.getMessage())).build());
     }
+  }
+
+  /**
+   * Gets the URI of the authentication request as it was sent.
+   *
+   * @param authRequest the authentication request
+   * @return the URI
+   */
+  private String sentRequestUri(final AuthenticationRequest authRequest) {
+    return Optional.ofNullable((String) this.httpSession.getAttribute(SESSION_NAME_AUTH_REQUEST_URI))
+        .orElseGet(() -> authRequest.toHTTPRequest().getURI().toASCIIString());
   }
 
   /**

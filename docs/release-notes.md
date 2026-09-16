@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
 ### Version 1.0.10
 
-Date: <ToBeSet>
+Date: _not yet released_
 
 - Replaced the `testclient.oidc.federation.logo-path` setting with a generated, per-RP logotype. An RP now opts in
   by declaring `"logo_uri": "<logo>"` in its metadata, which is resolved to `<base-url>/{path-suffix}/logo.svg`.
@@ -13,6 +13,8 @@ Date: <ToBeSet>
   pattern used by the other per-RP endpoints. The old endpoint has been removed.
 - OIDC authentication requests now send PKCE (`code_challenge` with method S256) in the request URL by default.
 - A bug was fixed where the `code_challenge` claim of a request object held the code verifier instead of the challenge.
+- The OIDC request builder has new "In Request" and "In Request Body" modes, and the scope can differ between the URL
+  and the request object.
 
 ### Version 1.0.9
 

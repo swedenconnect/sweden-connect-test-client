@@ -22,10 +22,20 @@ import com.nimbusds.jose.shaded.gson.FieldAttributes;
 import com.nimbusds.jose.shaded.gson.Gson;
 import com.nimbusds.jose.shaded.gson.GsonBuilder;
 import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.ResponseType;
+import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.util.URLUtils;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.OIDCScopeValue;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -82,7 +92,8 @@ public class AuthorizationRequestCustomizer {
     resolver.requestBody(jwkFunction).ifPresent(builder::requestObject);
     resolver.getAcrValues().ifPresent(builder::acrValues);
     resolver.getPrompt().ifPresent(builder::prompt);
-    resolver.getScope().ifPresent(builder::scope);
+    // The request library requires openid in the scope. What the URL actually carries is decided by toURI.
+    resolver.getScope().map(AuthorizationRequestCustomizer::withOpenid).ifPresent(builder::scope);
     resolver.getResponseType().ifPresent(builder::responseType);
     resolver.getLoginHint().ifPresent(builder::loginHint);
     resolver.getCodeChallenge().ifPresent(cc -> {
@@ -90,5 +101,47 @@ public class AuthorizationRequestCustomizer {
     });
     resolver.getClaimRequest().ifPresent(builder::claims);
     return builder;
+  }
+
+  /**
+   * Gets the URI that is sent for an authentication request.
+   * <p>
+   * The request library insists on {@code client_id}, {@code response_type}, a {@code scope} containing
+   * {@code openid} and (without a request object) {@code redirect_uri}. The URI is therefore built from the request's
+   * parameters with these four set exactly as the resolver places them, so that each is present only when selected
+   * for the URL.
+   * </p>
+   *
+   * @param request the authentication request built by {@link #customize}
+   * @param resolver the resolver for the request URL
+   * @return the URI to send
+   */
+  public static URI toURI(final AuthenticationRequest request, final AuthorizationParameterResolver resolver) {
+    final Map<String, List<String>> parameters = new LinkedHashMap<>(request.toParameters());
+    setOrRemove(parameters, "client_id", resolver.getClientId().map(ClientID::getValue));
+    setOrRemove(parameters, "response_type", resolver.getResponseType().map(ResponseType::toString));
+    setOrRemove(parameters, "redirect_uri", resolver.getRedirectionURI().map(URI::toString));
+    setOrRemove(parameters, "scope", resolver.getScope().map(Scope::toString));
+
+    final String endpoint = request.getEndpointURI().toString();
+    final String query = URLUtils.serializeParameters(parameters);
+    if (query.isEmpty()) {
+      return URI.create(endpoint);
+    }
+    return URI.create(endpoint + (request.getEndpointURI().getRawQuery() != null ? "&" : "?") + query);
+  }
+
+  private static void setOrRemove(
+      final Map<String, List<String>> parameters, final String name, final Optional<String> value) {
+    value.ifPresentOrElse(v -> parameters.put(name, List.of(v)), () -> parameters.remove(name));
+  }
+
+  private static Scope withOpenid(final Scope scope) {
+    if (scope.contains(OIDCScopeValue.OPENID)) {
+      return scope;
+    }
+    final Scope scopeWithOpenid = new Scope(OIDCScopeValue.OPENID);
+    scopeWithOpenid.addAll(scope);
+    return scopeWithOpenid;
   }
 }
