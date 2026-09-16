@@ -3,9 +3,12 @@
 # Release Notes
 
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
+
+---
+
 ### Version 1.0.10
 
-Date: _not yet released_
+Date: 2026-09-16
 
 - Replaced the `testclient.oidc.federation.logo-path` setting with a generated, per-RP logotype. An RP now opts in
   by declaring `"logo_uri": "<logo>"` in its metadata, which is resolved to `<base-url>/{path-suffix}/logo.svg`.
