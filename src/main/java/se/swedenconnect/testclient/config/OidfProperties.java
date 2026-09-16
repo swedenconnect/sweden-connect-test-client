@@ -100,15 +100,6 @@ public class OidfProperties implements InitializingBean {
   private String organizationNumber;
 
   /**
-   * The path, relative to the application base URL, to the logotype to publish as {@code logo_uri} in the RP
-   * metadata (unless the RP declares its own). The logotype must be served from the same host as the RP entity
-   * identifiers, which is why it is given as a path within this application.
-   */
-  @Getter
-  @Setter
-  private String logoPath = "/images/logo.svg";
-
-  /**
    * The {@code subject_type} to declare in our published RP metadata (unless the RP declares its own).
    */
   @Getter
@@ -151,7 +142,6 @@ public class OidfProperties implements InitializingBean {
       Assert.hasText(this.organizationNumber, "testclient.oidc.federation.organization-number must be set");
       Assert.isTrue(ORGANIZATION_NUMBER_PATTERN.matcher(this.organizationNumber).matches(),
           "testclient.oidc.federation.organization-number must be exactly ten digits");
-      Assert.hasText(this.logoPath, "testclient.oidc.federation.logo-path must be set");
       Assert.hasText(this.subjectType, "testclient.oidc.federation.subject-type must be set");
       this.trustMarks.forEach(TrustMarkProperties::afterPropertiesSet);
       Assert.notNull(this.trustMarkRefreshInterval,
