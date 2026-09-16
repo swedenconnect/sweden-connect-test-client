@@ -1,0 +1,33 @@
+# Creates a GitHub release when a version tag is pushed.
+#
+# Nothing is built and no assets are attached - the release is a pointer to the release notes. Building and publishing
+# the Docker image is left to docker-release.yml, which is triggered by the same tags.
+name: Create GitHub release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Narrowed to what creating a release requires.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+
+    steps:
+      # No checkout is needed - the release is created from the tag that triggered the workflow.
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh release create "${TAG}" \
+            --repo "${REPO}" \
+            --title "${TAG#v}" \
+            --notes "See the [release notes](https://github.com/${REPO}/blob/${TAG}/docs/release-notes.md) for what is included in this release." \
+            --latest
