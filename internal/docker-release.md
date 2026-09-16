@@ -1,4 +1,4 @@
-![Logo](images/sweden-connect.png)
+![Logo](../docs/images/sweden-connect.png)
 
 # Building a Release Docker Image
 
