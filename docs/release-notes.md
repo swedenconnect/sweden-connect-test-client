@@ -12,6 +12,8 @@ Date: Not yet released
   via jwks_uri instead of having them embedded in the metadata.
 - OIDC authentication requests now send PKCE (`code_challenge` with method S256) in the request URL by default.
 - A bug was fixed where the `code_challenge` claim of a request object held the code verifier instead of the challenge.
+- The OIDC request builder has new "In Request" and "In Request Body" modes, and the scope can differ between the URL
+  and the request object.
 
 ### Version 1.0.8
 

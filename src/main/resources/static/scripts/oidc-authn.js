@@ -965,6 +965,12 @@ class OIDCSetupAuthentication {
  */
 class OIDCAuthnRequest {
 
+    /** Enabled parameters go in the request URL. */
+    static MODE_REQUEST = 'request';
+
+    /** Enabled parameters go in the request object - client_id, response_type and scope also in the URL. */
+    static MODE_REQUEST_BODY = 'requestBody';
+
     static AUTHN_CONTEXT_CLASS_REF_URIS = [
         "http://id.elegnamnden.se/loa/1.0/loa1",
         "http://id.elegnamnden.se/loa/1.0/loa2",
@@ -1050,6 +1056,7 @@ class OIDCAuthnRequest {
      */
     init() {
         this.initTemplates();
+        this.initModeButtons();
         this.initRequestObjectOptions();
         this.initAdvancedOptions();
         this.initKeyOptions();
@@ -1149,10 +1156,11 @@ class OIDCAuthnRequest {
         $('#oidc-request-claims-id-add-button')
             .off('click')
             .on('click', function () {
+                parent.switchOnClaims();
                 addClaimFunction('id', $('#oidc-id-claims-table').children().length);
             });
 
-        this.initScopeValues(this.pars.scope);
+        this.initScopeValues();
 
         this.initField(
             '#oidc-request-redirect-present',
@@ -1306,6 +1314,156 @@ class OIDCAuthnRequest {
 
         sigCheckbox.change();
         sigMimeType.change();
+    }
+
+    /**
+     * Gets the boxes that an enabled row gets in a mode.
+     * @param mode the mode
+     * @param alsoInRequest true for the rows that stay in the URL in "In Request Body" mode (client_id, response_type
+     *     and scope - OpenID Connect Core 1.0, section 6.1)
+     * @returns {{valuePresent: boolean, requestBody: boolean}} the "In Request" and "In Request Body" boxes
+     */
+    static placement(mode, alsoInRequest = false) {
+        return mode === OIDCAuthnRequest.MODE_REQUEST_BODY
+            ? {valuePresent: alsoInRequest, requestBody: true}
+            : {valuePresent: true, requestBody: false};
+    }
+
+    /**
+     * Gets the active mode. Requests exported before the modes existed are in "In Request" mode.
+     * @returns {string} the mode
+     */
+    getMode() {
+        return this.pars.requestMode === OIDCAuthnRequest.MODE_REQUEST_BODY
+            ? OIDCAuthnRequest.MODE_REQUEST_BODY
+            : OIDCAuthnRequest.MODE_REQUEST;
+    }
+
+    /**
+     * Gets the rows with the two boxes that are moved by the mode buttons, except the claims row whose "In Request"
+     * box is not part of this.pars. The issuer and audience of the request object options are not included.
+     * @returns {[object, boolean][]} each row's parameter object and whether it stays in the URL in body mode
+     */
+    placementRows() {
+        const adv = this.pars.advanced;
+        return [
+            [this.pars.clientId, true],
+            [this.pars.redirectUri, false],
+            [this.pars.scope, true],
+            [this.pars.acrValues, false],
+            [adv.prompt, false],
+            [adv.responseType, true],
+            [adv.state, false],
+            [adv.nonce, false],
+            [adv.loginHint, false],
+            [adv.codeChallengeMethod, false],
+            [adv.codeChallenge, false],
+            [this.pars.userMessage, false],
+            [this.pars.signMessage, false]
+        ];
+    }
+
+    /**
+     * Initializes the "In Request-mode" and "In Request Body-mode" buttons.
+     */
+    initModeButtons() {
+        this.pars.requestMode = this.getMode();
+        $('#oidc-request-mode-request').off('click').on('click', () => {
+            this.applyMode(OIDCAuthnRequest.MODE_REQUEST);
+        });
+        $('#oidc-request-mode-request-body').off('click').on('click', () => {
+            this.applyMode(OIDCAuthnRequest.MODE_REQUEST_BODY);
+        });
+        this.updateModeButtons();
+    }
+
+    /**
+     * Marks the button of the active mode.
+     */
+    updateModeButtons() {
+        const inRequestBody = this.getMode() === OIDCAuthnRequest.MODE_REQUEST_BODY;
+        $('#oidc-request-mode-request')
+            .toggleClass('active', !inRequestBody)
+            .attr('aria-pressed', String(!inRequestBody));
+        $('#oidc-request-mode-request-body')
+            .toggleClass('active', inRequestBody)
+            .attr('aria-pressed', String(inRequestBody));
+    }
+
+    /**
+     * Activates a mode: every enabled row - a row with at least one box checked - gets the boxes of the mode, and the
+     * request object options are turned on in "In Request Body" mode and off in "In Request" mode. Rows with no box
+     * checked stay off.
+     * @param mode the mode
+     */
+    applyMode(mode) {
+        this.pars.requestMode = mode;
+
+        for (const [par, alsoInRequest] of this.placementRows()) {
+            if (par && (par.valuePresent || par.requestBody)) {
+                Object.assign(par, OIDCAuthnRequest.placement(mode, alsoInRequest));
+            }
+        }
+        const claimsPresent = $('#oidc-request-claims-present');
+        const claimsRequestBody = $('#oidc-request-claims-request-body');
+        if (claimsPresent.prop('checked') || claimsRequestBody.prop('checked')) {
+            const placement = OIDCAuthnRequest.placement(mode);
+            claimsPresent.prop('checked', placement.valuePresent);
+            claimsRequestBody.prop('checked', placement.requestBody);
+            this.pars.claimInRequestBody = placement.requestBody;
+        }
+        this.pars.requestObject.moduleEnabled = mode === OIDCAuthnRequest.MODE_REQUEST_BODY;
+
+        this.refreshField('#oidc-request-client_id-present', '#oidc-request-client_id-request-body',
+            '#oidc-request-client_id-input', 'clientId');
+        this.refreshField('#oidc-request-redirect-present', '#oidc-request-redirect-request-body',
+            '#oidc-request-redirect-input', 'redirectUri');
+        this.refreshScopeValues();
+        this.refreshAcrValues();
+        this.refreshAdvanced();
+        this.refreshRequestObject();
+        $('#oidc-request-um-present').prop('checked', this.pars.userMessage.valuePresent || false);
+        $('#oidc-request-um-request-body').prop('checked', this.pars.userMessage.requestBody || false);
+        $('#oidc-request-sig-present').prop('checked', this.pars.signMessage.valuePresent || false);
+        $('#oidc-request-sig-request-body').prop('checked', this.pars.signMessage.requestBody || false);
+        this.computeClaims();
+        this.updateModeButtons();
+    }
+
+    /**
+     * Switches a row on or off by itself, e.g., when a value is added or the last one removed. Only the boxes of the
+     * active mode are changed - boxes the mode does not use are left as the user set them.
+     * @param par the row's parameter object
+     * @param on whether to switch the row on or off
+     * @param alsoInRequest see placement()
+     */
+    switchRow(par, on, alsoInRequest = false) {
+        const placement = OIDCAuthnRequest.placement(this.getMode(), alsoInRequest);
+        if (placement.valuePresent) {
+            par.valuePresent = on;
+        }
+        if (placement.requestBody) {
+            par.requestBody = on;
+        }
+    }
+
+    /**
+     * Switches the claims row on, with the boxes of the active mode, if none of its boxes is checked.
+     */
+    switchOnClaims() {
+        const claimsPresent = $('#oidc-request-claims-present');
+        const claimsRequestBody = $('#oidc-request-claims-request-body');
+        if (claimsPresent.prop('checked') || claimsRequestBody.prop('checked')) {
+            return;
+        }
+        const placement = OIDCAuthnRequest.placement(this.getMode());
+        if (placement.valuePresent) {
+            claimsPresent.prop('checked', true);
+        }
+        if (placement.requestBody) {
+            claimsRequestBody.prop('checked', true);
+            this.pars.claimInRequestBody = true;
+        }
     }
 
     createUserMessageDiv(msg, sig = false) {
@@ -1827,8 +1985,9 @@ class OIDCAuthnRequest {
                 uris.push($(this).text());
             });
             parent.pars.acrValues.value = uris.join(' ');
-            parent.pars.acrValues.valuePresent = uris.length > 0;
-            oidcRequestAcrCheckbox.prop('checked', uris.length > 0);
+            parent.switchRow(parent.pars.acrValues, uris.length > 0);
+            oidcRequestAcrCheckbox.prop('checked', parent.pars.acrValues.valuePresent || false);
+            oidcRequestAcrRequestBodyCheckbox.prop('checked', parent.pars.acrValues.requestBody || false);
         };
 
         let assignedUris = [];
@@ -1932,47 +2091,76 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Initializes the Scope values element.
-     * @param scope the scope object
+     * Gets the two lines of the scope row. The URL line keeps its values in pars.scope.value and the request body line
+     * in pars.requestBodyScope. Each line has its own list and add controls.
+     * @returns {{prefix: string, get: function(): string, set: function(string)}[]} the URL line and the body line
      */
-    initScopeValues(scope) {
+    scopeLines() {
+        return [
+            {
+                prefix: '#oidc-request-scope',
+                get: () => this.pars.scope.value,
+                set: (value) => { this.pars.scope.value = value; }
+            },
+            {
+                prefix: '#oidc-request-scope-body',
+                get: () => this.pars.requestBodyScope,
+                set: (value) => { this.pars.requestBodyScope = value; }
+            }
+        ];
+    }
+
+    /**
+     * Initializes the Scope values element - both scope lines and the scope row's boxes.
+     */
+    initScopeValues() {
+        let parent = this;
+        if (this.pars.requestBodyScope === undefined || this.pars.requestBodyScope === null) {
+            // Templates and requests exported before the scope had two lines hold a single scope value
+            this.pars.requestBodyScope = this.pars.scope.value;
+        }
+        for (const line of this.scopeLines()) {
+            this.initScopeLine(line);
+        }
+
         let oidcRequestScopeCheckbox = $('#oidc-request-scope-present');
         let oidcRequestScopeRequestBodyCheckbox = $('#oidc-request-scope-request-body');
+        oidcRequestScopeCheckbox.prop('checked', this.pars.scope.valuePresent || false);
+        oidcRequestScopeRequestBodyCheckbox.prop('checked', this.pars.scope.requestBody || false);
 
-        let oidcRequestScopeList = $('#oidc-request-scope-list');
-        let oidcRequestScopeAddDiv = $('#oidc-request-scope-drop-div');
-        let oidcRequestScopeCustomDiv = $('#oidc-request-scope-custom-div');
+        oidcRequestScopeCheckbox.off('change').on('change', function() {
+            parent.pars.scope.valuePresent = oidcRequestScopeCheckbox.prop('checked');
+        });
+        oidcRequestScopeRequestBodyCheckbox.off('change').on('change', function() {
+            parent.pars.scope.requestBody = oidcRequestScopeRequestBodyCheckbox.prop('checked');
+            parent.updateScopeBodyLine();
+        });
 
-        let parent = this;
+        this.scopeBodyLineShown = !!this.pars.scope.requestBody;
+        this.updateScopeBodyLine();
+    }
 
-        // Helper function to update pars.scope.value from the list
+    /**
+     * Initializes one scope line: its list, its "Add Scope" menu and its custom value input.
+     * @param line the scope line, see scopeLines()
+     */
+    initScopeLine(line) {
+        let list = $(line.prefix + '-list');
+        let addDiv = $(line.prefix + '-drop-div');
+        let customDiv = $(line.prefix + '-custom-div');
+        let customInput = $(line.prefix + '-custom');
+
         let updateScopeValue = function() {
             let uris = [];
-            $('#oidc-request-scope-list li span').each(function() {
+            list.find('li span').each(function() {
                 uris.push($(this).text());
             });
-            parent.pars.scope.value = uris.join(' ');
+            line.set(uris.join(' '));
         };
 
-        let assignedUris = [];
-
-        if (scope && scope.value) {
-            assignedUris = scope.value.split(' ').filter(uri => uri.trim() !== '');
-        }
-
-        oidcRequestScopeList.empty();
-        for (let uri of assignedUris) {
-            OIDCAuthnRequest.addSelectedScopeValue(oidcRequestScopeList, uri);
-        }
-        if (assignedUris.length === 0) {
-            oidcRequestScopeList.append($('<li>')
-                .text("-- No scopes assigned --")
-                .addClass('list-group-item d-flex justify-content-between align-items-center'));
-        }
-
-        oidcRequestScopeAddDiv.empty();
+        addDiv.empty();
         for (let uri of OIDCAuthnRequest.SCOPE_URIS) {
-            let option = $('<a>', {
+            addDiv.append($('<a>', {
                 href: 'javascript:void(0)',
                 class: 'dropdown-item',
                 'data-scope-attr': uri,
@@ -1984,52 +2172,30 @@ class OIDCAuthnRequest {
                         return;
                     }
 
-                    oidcRequestScopeCustomDiv.hide();
-                    OIDCAuthnRequest.addSelectedScopeValue(oidcRequestScopeList, uri);
+                    customDiv.hide();
+                    OIDCAuthnRequest.addSelectedScopeValue(list, uri);
                     $(this).addClass('disabled');
                     updateScopeValue();
                 }
-            });
-
-            if (assignedUris.includes(uri)) {
-                option.addClass('disabled');
-            }
-            oidcRequestScopeAddDiv.append(option);
+            }));
         }
-        oidcRequestScopeAddDiv.append($('<a>', {
+        addDiv.append($('<a>', {
             href: 'javascript:void(0)',
             class: 'dropdown-item',
             'data-scope-attr': 'other',
             text: "Enter other scope ...",
             click: function(event) {
                 event.preventDefault();
-                oidcRequestScopeCustomDiv.show();
+                customDiv.show();
             }
         }));
 
-        if (scope) {
-            oidcRequestScopeCheckbox.prop('checked', scope.valuePresent || false);
-            oidcRequestScopeRequestBodyCheckbox.prop('checked', scope.requestBody || false);
-        }
-        else {
-            oidcRequestScopeCheckbox.prop('checked', false);
-            oidcRequestScopeRequestBodyCheckbox.prop('checked', false);
-        }
-
-        oidcRequestScopeCheckbox.change(function() {
-            parent.pars.scope.valuePresent = oidcRequestScopeCheckbox.prop('checked');
-        });
-
-        oidcRequestScopeRequestBodyCheckbox.change(function() {
-            parent.pars.scope.requestBody = oidcRequestScopeRequestBodyCheckbox.prop('checked');
-        });
-
-        oidcRequestScopeList.on('click', 'button.btn-close', function() {
+        list.off('click').on('click', 'button.btn-close', function() {
             let ul = $(this).closest('ul');
             let uri = $(this).closest('li').find('span').text();
             $(this).closest('li').remove();
 
-            let link = oidcRequestScopeAddDiv.find('a[data-scope-attr="' + uri + '"]');
+            let link = addDiv.find('a[data-scope-attr="' + uri + '"]');
             if (link.length > 0) {
                 link.removeClass('disabled');
             }
@@ -2042,16 +2208,58 @@ class OIDCAuthnRequest {
             updateScopeValue();
         });
 
-        $('#oidc-request-scope-custom-button').click(function() {
-            let oidcRequestScopeCustom = $('#oidc-request-scope-custom');
-            let uri = oidcRequestScopeCustom.val().trim();
+        $(line.prefix + '-custom-button').off('click').on('click', function() {
+            let uri = customInput.val().trim();
             if (uri !== '') {
-                OIDCAuthnRequest.addSelectedScopeValue(oidcRequestScopeList, uri);
-                oidcRequestScopeCustom.val('');
-                oidcRequestScopeCustomDiv.hide();
+                OIDCAuthnRequest.addSelectedScopeValue(list, uri);
+                customInput.val('');
+                customDiv.hide();
                 updateScopeValue();
             }
         });
+
+        this.renderScopeLine(line);
+    }
+
+    /**
+     * Rebuilds the list of a scope line from this.pars without rebinding event handlers.
+     * @param line the scope line, see scopeLines()
+     */
+    renderScopeLine(line) {
+        const list = $(line.prefix + '-list');
+        const addDiv = $(line.prefix + '-drop-div');
+        const value = line.get();
+        const assignedUris = value ? value.split(' ').filter(u => u.trim() !== '') : [];
+
+        list.empty();
+        for (const uri of assignedUris) {
+            OIDCAuthnRequest.addSelectedScopeValue(list, uri);
+        }
+        if (assignedUris.length === 0) {
+            list.append($('<li>')
+                .text("-- No scopes assigned --")
+                .addClass('list-group-item d-flex justify-content-between align-items-center'));
+        }
+
+        addDiv.find('a[data-scope-attr]').removeClass('disabled');
+        for (const uri of assignedUris) {
+            addDiv.find('a[data-scope-attr="' + uri + '"]').addClass('disabled');
+        }
+    }
+
+    /**
+     * Shows the request body scope line while the scope's "In Request Body" box is checked. Each time the line
+     * appears, it starts out with the values of the URL line.
+     */
+    updateScopeBodyLine() {
+        const show = !!this.pars.scope.requestBody;
+        if (show && !this.scopeBodyLineShown) {
+            this.pars.requestBodyScope = this.pars.scope.value;
+        }
+        this.scopeBodyLineShown = show;
+        this.renderScopeLine(this.scopeLines()[1]);
+        $('#oidc-request-scope-body-div').toggle(show);
+        $('#oidc-request-scope-url-label').toggle(show);
     }
 
     /**
@@ -2136,6 +2344,10 @@ class OIDCAuthnRequest {
         }
         if (template.scope !== undefined) {
             this.pars.scope = { ...this.pars.scope, ...template.scope };
+            // A template holds a single scope value, which goes to both scope lines
+            if (template.scope.value !== undefined) {
+                this.pars.requestBodyScope = template.scope.value;
+            }
             this.refreshScopeValues();
         }
         if (template.acrValues !== undefined) {
@@ -2191,37 +2403,15 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Rebuilds the scope list UI and updates checkbox states from this.pars.scope
-     * without rebinding the existing event handlers.
+     * Rebuilds the scope lines and updates checkbox states from this.pars without rebinding the existing event
+     * handlers.
      */
     refreshScopeValues() {
         const scope = this.pars.scope;
-        const oidcRequestScopeList = $('#oidc-request-scope-list');
-        const oidcRequestScopeAddDiv = $('#oidc-request-scope-drop-div');
-        const oidcRequestScopeCheckbox = $('#oidc-request-scope-present');
-        const oidcRequestScopeRequestBodyCheckbox = $('#oidc-request-scope-request-body');
-
-        const assignedUris = scope && scope.value
-            ? scope.value.split(' ').filter(u => u.trim() !== '')
-            : [];
-
-        oidcRequestScopeList.empty();
-        for (const uri of assignedUris) {
-            OIDCAuthnRequest.addSelectedScopeValue(oidcRequestScopeList, uri);
-        }
-        if (assignedUris.length === 0) {
-            oidcRequestScopeList.append($('<li>')
-                .text("-- No scopes assigned --")
-                .addClass('list-group-item d-flex justify-content-between align-items-center'));
-        }
-
-        oidcRequestScopeAddDiv.find('a[data-scope-attr]').removeClass('disabled');
-        for (const uri of assignedUris) {
-            oidcRequestScopeAddDiv.find('a[data-scope-attr="' + uri + '"]').addClass('disabled');
-        }
-
-        oidcRequestScopeCheckbox.prop('checked', scope ? (scope.valuePresent || false) : false);
-        oidcRequestScopeRequestBodyCheckbox.prop('checked', scope ? (scope.requestBody || false) : false);
+        this.renderScopeLine(this.scopeLines()[0]);
+        $('#oidc-request-scope-present').prop('checked', scope.valuePresent || false);
+        $('#oidc-request-scope-request-body').prop('checked', scope.requestBody || false);
+        this.updateScopeBodyLine();
     }
 
     /**
@@ -2442,9 +2632,7 @@ class OIDCAuthnRequest {
 
         // Ensure claims are flagged as present so computeClaims writes them
         if (Object.keys(claimMap).length > 0) {
-            if (!$('#oidc-request-claims-present').prop('checked') && !$('#oidc-request-claims-request-body').prop('checked')) {
-                $('#oidc-request-claims-present').prop('checked', true);
-            }
+            this.switchOnClaims();
         }
 
         if (this.pars.claimInRequestBody !== undefined) {

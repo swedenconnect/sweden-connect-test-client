@@ -54,7 +54,7 @@ import java.util.function.Supplier;
  * <p>
  * Every parameter is placed according to its two check boxes: "In Request" ({@code valuePresent}) puts it in the
  * request URL and "In Request Body" ({@code requestBody}) puts it in the request object. The boxes are independent,
- * so a parameter may appear in both locations, in one, or in none.
+ * so a parameter may appear in both locations, in one, or in none. Nothing is added to make the request compliant.
  * </p>
  * <p>
  * A resolver and the request object resolver obtained from {@link #toRequestObjectResolver()} share the values
@@ -139,14 +139,24 @@ public class AuthorizationParameterResolver {
     return this.getValue(this.model.getClientId(), ClientID::new);
   }
 
+  /**
+   * Gets the scope for this location. The URL and the request object each have their own scope value, see
+   * {@link OIDCAuthnRequestParameterModel#getRequestBodyScope()}.
+   *
+   * @return the scope, or an empty optional if no scope is placed here or the scope value is blank
+   */
   public Optional<Scope> getScope() {
-    final Optional<Scope> scope =
-        this.getValue(this.model.getScope(), scopeString -> new Scope(scopeString.split(" ")));
-    if (scope.isEmpty() && !this.forRequestBody) {
-      //Scope needs to be "openid" for request if other scopes are specified in request object
-      return Optional.of(new Scope("openid"));
+    final ModelParameter scope = this.model.getScope();
+    if (!this.isSelected(scope)) {
+      return Optional.empty();
     }
-    return scope;
+    final String value = this.forRequestBody && this.model.getRequestBodyScope() != null
+        ? this.model.getRequestBodyScope()
+        : scope.getValue();
+    if (Objects.isNull(value) || value.isBlank()) {
+      return Optional.empty();
+    }
+    return Optional.of(new Scope(value.trim().split("\\s+")));
   }
 
   public Optional<OidcMessageParameterModel> getUserMessage() {
