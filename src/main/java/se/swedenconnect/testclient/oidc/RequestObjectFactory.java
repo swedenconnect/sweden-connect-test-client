@@ -24,14 +24,12 @@ import com.nimbusds.jose.shaded.gson.ExclusionStrategy;
 import com.nimbusds.jose.shaded.gson.FieldAttributes;
 import com.nimbusds.jose.shaded.gson.Gson;
 import com.nimbusds.jose.shaded.gson.GsonBuilder;
-import com.nimbusds.jose.util.Pair;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.id.Identifier;
-import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
-import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 
 import se.swedenconnect.testclient.controllers.AuthorizationParameterResolver;
 import se.swedenconnect.testclient.controllers.OIDCAuthnRequestParameterModel;
@@ -127,11 +125,11 @@ public class RequestObjectFactory {
     resolver.getScope().ifPresent(scope -> builder.claim("scope", String.join(" ", scope.toStringList())));
     resolver.getResponseType().ifPresent(responseType -> builder.claim("response_type", responseType.toString()));
     resolver.getLoginHint().ifPresent(loginHint -> builder.claim("login_hint", loginHint));
-    if (resolver.getCodeChallenge().isPresent()) {
-      final Pair<CodeChallengeMethod, CodeVerifier> codeChallenge = resolver.getCodeChallenge().get();
-      builder.claim("code_challenge", codeChallenge.getRight().getValue());
-      builder.claim("code_challenge_method", codeChallenge.getLeft());
-    }
+    resolver.getCodeChallenge().ifPresent(codeChallenge -> {
+      builder.claim("code_challenge",
+          CodeChallenge.compute(codeChallenge.getLeft(), codeChallenge.getRight()).getValue());
+      builder.claim("code_challenge_method", codeChallenge.getLeft().getValue());
+    });
     resolver.getClaimRequest()
         .ifPresent(oidcClaimsRequest -> builder.claim("claims", oidcClaimsRequest.toJSONObject()));
 

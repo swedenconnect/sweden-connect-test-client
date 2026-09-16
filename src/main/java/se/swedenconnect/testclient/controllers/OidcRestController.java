@@ -253,15 +253,7 @@ public class OidcRestController {
         .clientId(new ModelParameter(selectedRp.getEntityId(), false, true))
         .acrValues(new ModelParameter("", false, false))
         .claimInRequestBody(false)
-        .advanced(AdvancedOptionsParamterModel.builder()
-            .state(ModelParameter.builder().value(new State().getValue()).valuePresent(true).requestBody(false).build())
-            .nonce(ModelParameter.builder().value(new Nonce().getValue()).valuePresent(true).requestBody(false).build())
-            .prompt(ModelParameter.builder().value("login").valuePresent(true).requestBody(false).build())
-            .loginHint(ModelParameter.builder().value("").valuePresent(false).requestBody(false).build())
-            .responseType(ModelParameter.builder().value("code").valuePresent(true).requestBody(false).build())
-            .codeChallenge(ModelParameter.builder().valuePresent(false).requestBody(false).build())
-            .codeChallengeMethod(ModelParameter.builder().value("S256").valuePresent(false).requestBody(false).build())
-            .moduleEnabled(false).build())
+        .advanced(createDefaultAdvancedOptions())
         .keys(KeyOptionsParameterModel.builder()
             .signKeys(signKeys)
             .encKeys(encryptionKeys)
@@ -274,6 +266,25 @@ public class OidcRestController {
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false).build())
+        .build();
+  }
+
+  /**
+   * Creates the initial advanced options of the request builder. State and nonce are pre-generated, and PKCE (S256) is
+   * sent in the request URL.
+   *
+   * @return the default advanced options
+   */
+  static AdvancedOptionsParamterModel createDefaultAdvancedOptions() {
+    return AdvancedOptionsParamterModel.builder()
+        .state(ModelParameter.builder().value(new State().getValue()).valuePresent(true).requestBody(false).build())
+        .nonce(ModelParameter.builder().value(new Nonce().getValue()).valuePresent(true).requestBody(false).build())
+        .prompt(ModelParameter.builder().value("login").valuePresent(true).requestBody(false).build())
+        .loginHint(ModelParameter.builder().value("").valuePresent(false).requestBody(false).build())
+        .responseType(ModelParameter.builder().value("code").valuePresent(true).requestBody(false).build())
+        .codeChallenge(ModelParameter.builder().valuePresent(true).requestBody(false).build())
+        .codeChallengeMethod(ModelParameter.builder().value("S256").valuePresent(true).requestBody(false).build())
+        .moduleEnabled(false)
         .build();
   }
 
@@ -300,14 +311,12 @@ public class OidcRestController {
 
       builder.maxAge(0);
 
+      // A verifier left over from an earlier request must not reach the token request of this one
+      httpSession.removeAttribute(AuthorizationParameterResolver.CODE_VERIFIER_ATTRIBUTE);
       final AuthenticationRequest authRequest = AuthorizationRequestCustomizer.customize(
           builder,
           kidtoJwkFunction(opJWKS),
-          new AuthorizationParameterResolver(model,
-              false,
-              httpSession::setAttribute,
-              httpSession::getAttribute
-          )
+          new AuthorizationParameterResolver(model, false, httpSession::setAttribute)
       ).build();
 
       httpSession.setAttribute("auth_request", authRequest);

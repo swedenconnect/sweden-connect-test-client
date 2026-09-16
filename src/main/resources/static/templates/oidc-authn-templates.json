@@ -73,9 +73,11 @@
       "audience": { "valuePresent": true }
     },
     "advanced": {
-      "responseType": {"value":  "code", "valutePresent":  true, "requestBody": true},
-      "state": {"valuePresent":  true, "requestBody": true},
-      "nonce": {"valuePresent":  true, "requestBody": true},
+      "responseType": { "value": "code", "valuePresent": true, "requestBody": true },
+      "state": { "valuePresent": false, "requestBody": true },
+      "nonce": { "valuePresent": false, "requestBody": true },
+      "codeChallenge": { "valuePresent": false, "requestBody": true },
+      "codeChallengeMethod": { "valuePresent": false, "requestBody": true },
       "moduleEnabled": true
     }
   },
@@ -104,8 +106,10 @@
     },
     "advanced": {
       "responseType": { "value": "code", "valuePresent": true, "requestBody": true },
-      "state": { "valuePresent": true, "requestBody": true },
-      "nonce": { "valuePresent": true, "requestBody": true },
+      "state": { "valuePresent": false, "requestBody": true },
+      "nonce": { "valuePresent": false, "requestBody": true },
+      "codeChallenge": { "valuePresent": false, "requestBody": true },
+      "codeChallengeMethod": { "valuePresent": false, "requestBody": true },
       "moduleEnabled": true
     },
     "userMessage": {
@@ -141,9 +145,11 @@
       "audience": { "valuePresent": true }
     },
     "advanced": {
-      "responseType": {"value":  "code", "valutePresent":  true, "requestBody": true},
-      "state": {"valuePresent":  true, "requestBody": true},
-      "nonce": {"valuePresent":  true, "requestBody": true},
+      "responseType": { "value": "code", "valuePresent": true, "requestBody": true },
+      "state": { "valuePresent": false, "requestBody": true },
+      "nonce": { "valuePresent": false, "requestBody": true },
+      "codeChallenge": { "valuePresent": false, "requestBody": true },
+      "codeChallengeMethod": { "valuePresent": false, "requestBody": true },
       "moduleEnabled": true
     },
     "signMessage": {
