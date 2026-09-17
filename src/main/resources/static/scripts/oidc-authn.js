@@ -381,6 +381,73 @@ class OIDCAuthenticationResult {
         return result;
     }
 
+    /**
+     * Gets the value of the request parameter - the request object - of the authentication request as it was sent: from
+     * the query string for GET and from the form parameters for POST.
+     * @param sentRequest the sent request, see sentRequest()
+     * @returns {string|null} the request parameter, or null if the request has none
+     */
+    static requestParameter(sentRequest) {
+        if (!sentRequest) {
+            return null;
+        }
+        if (sentRequest.method === 'POST') {
+            const values = (sentRequest.parameters || {})['request'];
+            const value = Array.isArray(values) ? values[0] : values;
+            return typeof value === 'string' ? value : null;
+        }
+        try {
+            return new URL(sentRequest.url).searchParams.get('request');
+        }
+        catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Decodes a signed or unsigned JWT into its header and claims. Nothing is verified.
+     * @param jwt the serialized JWT
+     * @returns {{header: object, claims: object}|null} the header and claims, or null if the value is not a signed or
+     *     unsigned JWT - e.g., an encrypted JWT, or a value that cannot be read as a JWT
+     */
+    static decodeRequestObject(jwt) {
+        if (typeof jwt !== 'string') {
+            return null;
+        }
+        const parts = jwt.split('.');
+        if (parts.length !== 3) {
+            // An encrypted JWT has five parts
+            return null;
+        }
+        const isObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+        try {
+            const header = JSON.parse(OIDCAuthenticationResult.base64UrlDecode(parts[0]));
+            if (!isObject(header) || typeof header.alg !== 'string' || header.enc !== undefined) {
+                return null;
+            }
+            const claims = JSON.parse(OIDCAuthenticationResult.base64UrlDecode(parts[1]));
+            return isObject(claims) ? { header: header, claims: claims } : null;
+        }
+        catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Decodes a Base64url-encoded UTF-8 string.
+     * @param value the encoded value
+     * @returns {string} the decoded string
+     * @throws Error if the value is not valid Base64url or not valid UTF-8
+     */
+    static base64UrlDecode(value) {
+        if (!/^[A-Za-z0-9_-]*$/.test(value) || value.length % 4 === 1) {
+            throw new Error('Invalid Base64url');
+        }
+        const base64 = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4);
+        const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+        return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    }
+
     verifyResponse(responseData) {
 
         const verifyInput = {
@@ -422,15 +489,26 @@ class OIDCAuthenticationResult {
             if (!sentRequest) {
                 return;
             }
-            if (sentRequest.method === 'POST') {
-                codeViewer.displayJson('Authentication Request', {
-                    method: sentRequest.method,
-                    endpoint: sentRequest.url,
-                    parameters: OIDCAuthenticationResult.formParameters(sentRequest.parameters)
-                });
+            const request = sentRequest.method === 'POST'
+                ? {
+                    json: {
+                        method: sentRequest.method,
+                        endpoint: sentRequest.url,
+                        parameters: OIDCAuthenticationResult.formParameters(sentRequest.parameters)
+                    }
+                }
+                : { url: sentRequest.url };
+            const requestObject = OIDCAuthenticationResult.decodeRequestObject(
+                OIDCAuthenticationResult.requestParameter(sentRequest));
+            if (requestObject) {
+                codeViewer.displayParts('Authentication Request', [
+                    { label: 'Request', ...request },
+                    { label: 'Request Object - Header', json: requestObject.header },
+                    { label: 'Request Object - Claims', json: requestObject.claims }
+                ]);
             }
             else {
-                codeViewer.displayURL('Authentication Request', sentRequest.url);
+                codeViewer.displayParts('Authentication Request', [request]);
             }
         });
 
