@@ -1692,7 +1692,7 @@
                     <div class="row mt-4" id="oidc-advanced-keys-request-button-div">
                         <label class="col-sm-6 col-form-label">
                                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                        data-bs-original-title="Request Options allow you to configure specific parameters or behaviors for the authentication request.">
+                                        data-bs-original-title="Options for testing with different keys for signing and encryption.">
                                     Key options
                                   </span>
                         </label>
@@ -1709,9 +1709,9 @@
                     <div class="form-group hide" id="oidc-advanced-keys-request">
                         <div class="row mt-4" id="oidc-advanced-keys-signkey-row">
                             <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The response type.">
+                                 data-bs-original-title="Lets you select a key other than the one registered for the RP.">
                                 <label class="col-form-label text-sm-right"
-                                       for="oidc-request-advanced-signkey-select">Sign Key
+                                       for="oidc-request-advanced-signkey-select">Signature Key
                                 </label>
                             </div>
                             <div class="col-sm-10">
@@ -1723,9 +1723,9 @@
                         </div>
                         <div class="row mt-4" id="oidc-advanced-keys-enckey-row">
                             <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                 data-bs-original-title="The response type.">
+                                 data-bs-original-title="Lets you select an OP key other than the one the OP has registered for encryption.">
                                 <label class="col-form-label text-sm-right"
-                                       for="oidc-request-advanced-signkey-select">Encryption Key
+                                       for="oidc-request-advanced-enckey-select">Encryption Key
                                 </label>
                             </div>
                             <div class="col-sm-10">
@@ -1978,17 +1978,34 @@
                     <hr class="mt-4"/>
                     <div id="oidc-request-submit-div">
                         <div class="row mt-4">
+                            <div class="col-sm-12 d-flex flex-wrap justify-content-between gap-2">
+                                <div>
+                                    <button id="oidc-request-submit-get-button" type="button" class="btn btn-primary">
+                                        Send AuthnRequest - GET
+                                    </button>
+                                    <button id="oidc-request-submit-post-button" type="button" class="btn btn-primary">
+                                        Send AuthnRequest - POST
+                                    </button>
+                                </div>
+                                <div>
+                                    <button id="oidc-request-restart-button" type="button" class="btn btn-primary">
+                                        Restart
+                                    </button>
+                                    <button id="oidc-request-export-button" type="button" class="btn btn-primary">
+                                        Export
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
                             <div class="col-sm-12">
-                                <button id="oidc-request-submit-get-button" type="button" class="btn btn-primary">Send
-                                    AuthnRequest - GET
-                                </button>
-                                <button id="oidc-request-submit-post-button" type="button" class="btn btn-primary">Send
-                                    AuthnRequest - POST
-                                </button>
-                                <button id="oidc-request-restart-button" type="button" class="btn btn-primary">Restart
-                                </button>
-                                <button id="oidc-request-export-button" type="button" class="btn btn-primary">Export
-                                </button>
+                                <div class="form-check" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                     data-bs-original-title="If unchecked, the flow stops after the token request. UserInfo can then be called from the Authentication Result.">
+                                    <input type="checkbox" class="form-check-input" id="oidc-request-call-userinfo-check"
+                                           checked>
+                                    <label class="form-check-label" for="oidc-request-call-userinfo-check">Call UserInfo
+                                        automatically</label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2113,6 +2130,49 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-primary mb-3 hide" id="oidc-authn-result-userinfo-request">
+                    <div class="card-header">Send UserInfo Request</div>
+                    <div class="card-body">
+                        <p class="card-text">Sends a request to the UserInfo endpoint of the OP. The access token is
+                            sent in the Authorization header (Bearer). If the access token is empty, no Authorization
+                            header is sent.</p>
+                        <div class="row">
+                            <div class="col-sm-2">
+                                <label class="col-form-label" for="oidc-userinfo-request-access-token">Access
+                                    Token</label>
+                            </div>
+                            <div class="col-sm-10">
+                                <textarea class="form-control user-message" id="oidc-userinfo-request-access-token"
+                                          rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-2">
+                                <span class="col-form-label">HTTP Method</span>
+                            </div>
+                            <div class="col-sm-10">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="oidc-userinfo-request-method"
+                                           id="oidc-userinfo-request-method-get" value="GET" checked>
+                                    <label class="form-check-label" for="oidc-userinfo-request-method-get">GET</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="oidc-userinfo-request-method"
+                                           id="oidc-userinfo-request-method-post" value="POST">
+                                    <label class="form-check-label" for="oidc-userinfo-request-method-post">POST</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <p class="text-end">
+                                <button id="oidc-userinfo-request-send-button" type="button"
+                                        class="btn btn-primary btn-sm">Send UserInfo Request
+                                </button>
+                            </p>
                         </div>
                     </div>
                 </div>

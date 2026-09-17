@@ -21,6 +21,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
@@ -42,6 +43,7 @@ import net.minidev.json.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -88,6 +90,7 @@ public class OidcRestController {
   private final CredentialBundles credentialBundles;
   private final UrlBuilderBean urlBuilderBean;
   private final RestClient client;
+  private final UserInfoCaller userInfoCaller;
 
   public OidcRestController(
       @Qualifier("testclient.oidc.RpList") @Nonnull final List<OidcRp> oidcRps,
@@ -104,6 +107,7 @@ public class OidcRestController {
     this.credentialBundles = credentialBundles;
     this.urlBuilderBean = urlBuilderBean;
     this.client = client;
+    this.userInfoCaller = new UserInfoCaller(client);
   }
 
   @GetMapping(value = "/session/info")
@@ -129,6 +133,56 @@ public class OidcRestController {
             Optional.ofNullable(op.getSource()).orElse(OidcOp.Source.STATIC).name().toLowerCase(),
             op.getTrustAnchor()))
         .toList();
+  }
+
+  /**
+   * Sends a UserInfo request for the latest authentication ("Send UserInfo Request" on the authentication result). The
+   * request is sent to the UserInfo endpoint of the OP selected for the authentication, and the response is read using
+   * the keys of the RP selected for the authentication.
+   * <p>
+   * The call itself is always reported in the result - error statuses and network errors included. If the
+   * authentication is still in the session, the result also holds the UserInfo parts of the authentication result,
+   * evaluated against the new call.
+   * </p>
+   *
+   * @param request the access token and HTTP method to use
+   * @return the call and its evaluation
+   */
+  @PostMapping(value = "/authn/userinfo", consumes = MediaType.APPLICATION_JSON_VALUE,
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public UserInfoCallModel sendUserInfoRequest(@Nonnull @RequestBody final UserInfoRequestModel request) {
+    final AuthenticationRequest authRequest = (AuthenticationRequest) this.httpSession.getAttribute("auth_request");
+    final OidcOp selectedOp = (OidcOp) this.httpSession.getAttribute("selected_op");
+    final OidcRp selectedRp = (OidcRp) this.httpSession.getAttribute("selected_rp");
+    if (authRequest == null || selectedOp == null || selectedRp == null) {
+      log.info("UserInfo request rejected: there is no OIDC authentication in the session");
+      return new UserInfoCallModel(UserInfoExchange.builder()
+          .error("There is no OIDC authentication in the session - restart the authentication")
+          .build(), null);
+    }
+    final HttpMethod method = Optional.ofNullable(request.getMethod())
+        .filter(m -> !m.isBlank())
+        .map(m -> HttpMethod.valueOf(m.trim().toUpperCase()))
+        .orElse(HttpMethod.GET);
+
+    final UserInfoExchange exchange =
+        this.userInfoCaller.call(selectedOp.getUserInfoEndpoint(), request.getAccessToken(), method, selectedRp);
+
+    @SuppressWarnings("unchecked") final Map<String, Object> idTokenClaims =
+        (Map<String, Object>) this.httpSession.getAttribute(OidcController.SESSION_NAME_ID_TOKEN_CLAIMS);
+    if (idTokenClaims == null) {
+      // No authentication result to update
+      return new UserInfoCallModel(exchange, null);
+    }
+    final JWTClaimsSet jwtClaims = (JWTClaimsSet) this.httpSession.getAttribute("jwt_claims");
+    try {
+      return new UserInfoCallModel(exchange,
+          UserInfoEvaluation.evaluate(authRequest, jwtClaims, idTokenClaims, exchange, true));
+    }
+    catch (final RuntimeException e) {
+      log.info("Failed to evaluate UserInfo response: {}", e.getMessage());
+      return new UserInfoCallModel(exchange, null);
+    }
   }
 
   @PostMapping(value = "/authn/verify", consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -239,6 +293,7 @@ public class OidcRestController {
         .clientId(new ModelParameter(selectedRp.getEntityId(), false, true))
         .acrValues(new ModelParameter("", false, false))
         .claimInRequestBody(false)
+        .callUserInfo(true)
         .advanced(createDefaultAdvancedOptions())
         .keys(KeyOptionsParameterModel.builder()
             .signKeys(signKeys)
@@ -363,6 +418,10 @@ public class OidcRestController {
       httpSession.setAttribute(OidcController.SESSION_NAME_SENT_AUTH_REQUEST, sentRequest);
       httpSession.setAttribute("selected_op", selectedOp);
       httpSession.setAttribute("selected_rp", selectedRp);
+      // The setting governs the redirection handling of this request only
+      httpSession.setAttribute(OidcController.SESSION_NAME_CALL_USERINFO,
+          !Boolean.FALSE.equals(model.getCallUserInfo()));
+      httpSession.removeAttribute(OidcController.SESSION_NAME_ID_TOKEN_CLAIMS);
 
       log.info("{} {}", sentRequest.method(), sentRequest.url());
       return OIDCAuthnRequestModel.builder()
@@ -418,6 +477,37 @@ public class OidcRestController {
     private String url;
     /** For POST the form parameters, for GET {@code null}. */
     private Map<String, List<String>> parameters;
+  }
+
+  /**
+   * A UserInfo request to send.
+   */
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class UserInfoRequestModel {
+
+    /** The access token - if {@code null} or empty, the request is sent without an {@code Authorization} header. */
+    @JsonProperty("access_token")
+    private String accessToken;
+
+    /** The HTTP method, {@code GET} (default) or {@code POST}. */
+    private String method;
+  }
+
+  /**
+   * The result of a UserInfo request.
+   */
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class UserInfoCallModel {
+
+    /** The call - the request as sent and what came back. */
+    private UserInfoExchange exchange;
+
+    /** The UserInfo parts of the authentication result, or {@code null} if there is no result to update. */
+    private UserInfoEvaluation evaluation;
   }
 
   @AllArgsConstructor

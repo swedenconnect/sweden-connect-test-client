@@ -128,6 +128,30 @@ class OidcSendMethodTest {
   }
 
   @Test
+  void theCallUserInfoSettingIsRecordedForEachRequest() throws Exception {
+    final OIDCAuthnRequestParameterModel model = model();
+    this.session.setAttribute(OidcController.SESSION_NAME_ID_TOKEN_CLAIMS, Map.of("sub", "earlier"));
+
+    model.setCallUserInfo(false);
+    this.restController.generateAuthnRequest(model, SentAuthorizationRequest.Method.GET);
+    Assertions.assertEquals(false, this.session.getAttribute(OidcController.SESSION_NAME_CALL_USERINFO));
+    // The ID token of an earlier authentication does not belong to this request
+    Assertions.assertNull(this.session.getAttribute(OidcController.SESSION_NAME_ID_TOKEN_CLAIMS));
+
+    // A later request is governed by its own setting
+    model.setCallUserInfo(true);
+    this.restController.generateAuthnRequest(model, SentAuthorizationRequest.Method.GET);
+    Assertions.assertEquals(true, this.session.getAttribute(OidcController.SESSION_NAME_CALL_USERINFO));
+
+    // A request exported before the setting existed calls UserInfo
+    model.setCallUserInfo(false);
+    this.restController.generateAuthnRequest(model, SentAuthorizationRequest.Method.GET);
+    model.setCallUserInfo(null);
+    this.restController.generateAuthnRequest(model, SentAuthorizationRequest.Method.POST);
+    Assertions.assertEquals(true, this.session.getAttribute(OidcController.SESSION_NAME_CALL_USERINFO));
+  }
+
+  @Test
   void unrecordedSentRequestIsReportedAsGet() throws Exception {
     this.restController.generateAuthnRequest(model(), SentAuthorizationRequest.Method.POST);
     this.session.removeAttribute(OidcController.SESSION_NAME_SENT_AUTH_REQUEST);

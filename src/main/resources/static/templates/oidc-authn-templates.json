@@ -6,7 +6,8 @@
       "value": "openid",
       "valuePresent": true,
       "requestBody": false
-    }
+    },
+    "callUserInfo": true
   },
   {
     "name": "Natural Person Info (LoA3)",
@@ -20,7 +21,8 @@
       "value": "http://id.elegnamnden.se/loa/1.0/loa3",
       "valuePresent": true,
       "requestBody": false
-    }
+    },
+    "callUserInfo": true
   },
   {
     "name": "Natural Person Number (LoA3)",
@@ -34,7 +36,8 @@
       "value": "http://id.elegnamnden.se/loa/1.0/loa3",
       "valuePresent": true,
       "requestBody": false
-    }
+    },
+    "callUserInfo": true
   },
   {
     "name": "Natural Person Org ID (LoA3)",
@@ -48,7 +51,8 @@
       "value": "http://id.elegnamnden.se/loa/1.0/loa3",
       "valuePresent": true,
       "requestBody": false
-    }
+    },
+    "callUserInfo": true
   },
   {
     "name": "Request Object (minimal)",
@@ -79,7 +83,8 @@
       "codeChallenge": { "valuePresent": false, "requestBody": true },
       "codeChallengeMethod": { "valuePresent": false, "requestBody": true },
       "moduleEnabled": true
-    }
+    },
+    "callUserInfo": true
   },
   {
     "name": "User Message Hidden",
@@ -119,7 +124,8 @@
       "mime_type": "text/plain",
       "message#sv": "UserMessage: Meddelande",
       "message#en": "UserMessage: Message"
-    }
+    },
+    "callUserInfo": true
   },
   {
     "name": "Sign Hidden",
@@ -163,6 +169,7 @@
         "message#sv": "Sign: Meddelande",
         "message#en": "Sign: Message"
       }
-    }
+    },
+    "callUserInfo": true
   }
 ]

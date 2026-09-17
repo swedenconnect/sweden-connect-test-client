@@ -43,6 +43,8 @@ public class OIDCResponse {
   /** The raw access token - it is not necessarily a JWT. */
   private String accessToken;
   private Map<String, Object> idTokenClaims;
+  /** The outcome of the UserInfo call - whether UserInfo was called, and if the call failed. */
+  private UserInfoResult userInfoResult;
   private Map<String, Object> userInfoClaims;
   private Map<String, Object> responseParameters;
   private Map<String, Object> requestParameters;

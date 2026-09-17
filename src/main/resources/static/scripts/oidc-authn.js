@@ -617,22 +617,7 @@ class OIDCAuthenticationResult {
                 }
             }
             idTokenDiv.show();
-            const userInfoTableDiv = userInfoDiv.find('tbody');
-            this.appendProtectionRows(userInfoTableDiv, resultData.userInfoProtection);
-            for (var prop in resultData.userInfoClaims) {
-                if (Object.prototype.hasOwnProperty.call(resultData.userInfoClaims, prop)) {
-                    userInfoTableDiv.append(this.createRow(prop, resultData.userInfoClaims[prop])
-                    );
-                }
-            }
-            for (var prop in resultData.missingUserInfoClaims) {
-                if (Object.prototype.hasOwnProperty.call(resultData.missingUserInfoClaims, prop)) {
-                    userInfoTableDiv.append(this.createRow(prop, "Requested value " + prop + " was missing in" +
-                        " Userinfo.",
-                                                           'table-text table-danger',
-                                                           'table-text table-danger'));
-                }
-            }
+            this.displayUserInfo(resultData);
             userInfoDiv.show();
 
             this.displayScopeValidation(resultData.scopeValidation);
@@ -719,6 +704,153 @@ class OIDCAuthenticationResult {
             assertionDiv.hide();
         }
 
+        this.initUserInfoRequest(resultData);
+    }
+
+    /**
+     * Displays the OIDC UserInfo frame - the UserInfo claims, or why there are none. Any previous contents are replaced.
+     * A result saved before UserInfo could be skipped holds no userInfoResult, and its claims were received.
+     * @param resultData the authentication result
+     */
+    displayUserInfo(resultData) {
+        const tbody = $('#oidc-authn-result-userinfo').find('tbody').empty();
+        const result = resultData.userInfoResult;
+        const status = result ? result.status : 'RECEIVED';
+
+        if (status === 'NOT_CALLED') {
+            tbody.append(this.createTextRow('Note', 'No call was made to the UserInfo endpoint - "Call UserInfo'
+                + ' automatically" was not checked. Use "Send UserInfo Request" below to call it.',
+                'table-text table-warning'));
+            return;
+        }
+        if (status === 'FAILED') {
+            tbody.append(this.createTextRow('Note', result.manual
+                ? 'The request sent with "Send UserInfo Request" failed - no UserInfo claims were received.'
+                : 'The UserInfo call failed - no UserInfo claims were received.', 'table-text table-danger'));
+            tbody.append(this.createTextRow('HTTP Status',
+                result.http_status !== null && result.http_status !== undefined
+                    ? String(result.http_status) : 'No response'));
+            if (result.www_authenticate) {
+                tbody.append(this.createTextRow('WWW-Authenticate', result.www_authenticate));
+            }
+            if (result.body) {
+                tbody.append(this.createTextRow('Response Body', result.body));
+            }
+            if (result.error) {
+                tbody.append(this.createTextRow('Error', result.error));
+            }
+            return;
+        }
+
+        if (result && result.manual) {
+            tbody.append(this.createTextRow('Source', 'Received with "Send UserInfo Request"'));
+        }
+        this.appendProtectionRows(tbody, resultData.userInfoProtection);
+        for (const prop in resultData.userInfoClaims) {
+            if (Object.prototype.hasOwnProperty.call(resultData.userInfoClaims, prop)) {
+                tbody.append(this.createRow(prop, resultData.userInfoClaims[prop]));
+            }
+        }
+        for (const prop in resultData.missingUserInfoClaims) {
+            if (Object.prototype.hasOwnProperty.call(resultData.missingUserInfoClaims, prop)) {
+                tbody.append(this.createRow(prop, "Requested value " + prop + " was missing in Userinfo.",
+                                            'table-text table-danger',
+                                            'table-text table-danger'));
+            }
+        }
+    }
+
+    /**
+     * Sets up the "Send UserInfo Request" frame. It is shown on every result except an OP error.
+     * @param resultData the authentication result
+     */
+    initUserInfoRequest(resultData) {
+        const frame = $('#oidc-authn-result-userinfo-request');
+        if (resultData.op_error) {
+            frame.hide();
+            return;
+        }
+        $('#oidc-userinfo-request-access-token').val(
+            resultData.accessToken || (resultData.response && resultData.response.access_token) || '');
+        $('#oidc-userinfo-request-method-get').prop('checked', true);
+        $('#oidc-userinfo-request-send-button').off('click').click(() => this.sendUserInfoRequest(resultData));
+        frame.show();
+    }
+
+    /**
+     * Sends a UserInfo request (made by the backend), shows the request and response in the JSON viewer and, if the
+     * authentication result could be evaluated against the response, updates the UserInfo frame and the scope
+     * validation. Errors are only shown in the viewer.
+     * @param resultData the authentication result
+     */
+    sendUserInfoRequest(resultData) {
+        const request = {
+            access_token: $('#oidc-userinfo-request-access-token').val(),
+            method: $('input[name="oidc-userinfo-request-method"]:checked').val() || 'GET'
+        };
+        const button = $('#oidc-userinfo-request-send-button').prop('disabled', true);
+        $.ajax({
+                   url: buildUrl('/oidc/authn/userinfo'),
+                   type: 'POST',
+                   contentType: 'application/json',
+                   data: JSON.stringify(request),
+                   dataType: 'json',
+                   success: (result) => {
+                       const evaluation = result.evaluation;
+                       if (evaluation) {
+                           resultData.userInfoResult = evaluation.userInfoResult || null;
+                           resultData.userInfoClaims = evaluation.userInfoClaims || null;
+                           resultData.userInfoProtection = evaluation.userInfoProtection || null;
+                           resultData.missingUserInfoClaims = evaluation.missingUserInfoClaims || null;
+                           resultData.scopeValidation = evaluation.scopeValidation || null;
+                           OIDC_STATE.setAuthnResult(resultData);
+                           this.displayUserInfo(resultData);
+                           $('#oidc-authn-result-userinfo').show();
+                           this.displayScopeValidation(resultData.scopeValidation);
+                       }
+                       codeViewer.displayParts('UserInfo Request',
+                                               OIDCAuthenticationResult.userInfoExchangeParts(result.exchange || {}));
+                   },
+                   error: (error) => {
+                       const reason = error && error.status
+                           ? 'the test client answered ' + error.status + ' ' + (error.statusText || '')
+                           : 'no response from the test client';
+                       codeViewer.displayParts('UserInfo Request', [
+                           { label: 'Error', text: 'The UserInfo request could not be sent: ' + reason }
+                       ]);
+                   },
+                   complete: () => {
+                       button.prop('disabled', false);
+                   }
+               });
+    }
+
+    /**
+     * Gets the parts that a UserInfo request is shown with in the JSON viewer - the request as sent, the response
+     * status, headers and raw body, and the claims and protection if the body could be read.
+     * @param exchange the UserInfo request and response, as reported by the server
+     * @returns {object[]} the parts, see CodeViewer.displayParts()
+     */
+    static userInfoExchangeParts(exchange) {
+        const parts = [];
+        if (exchange.request) {
+            parts.push({ label: 'Request', json: exchange.request });
+        }
+        if (exchange.error) {
+            parts.push({ label: 'Error', text: exchange.error });
+        }
+        if (exchange.status !== null && exchange.status !== undefined) {
+            parts.push({ label: 'Response Status', text: String(exchange.status) });
+            parts.push({ label: 'Response Headers', json: exchange.response_headers || {} });
+            parts.push({ label: 'Response Body', text: exchange.body ? exchange.body : '(empty)' });
+        }
+        if (exchange.claims) {
+            parts.push({ label: 'UserInfo Claims', json: exchange.claims });
+        }
+        if (exchange.protection) {
+            parts.push({ label: 'UserInfo Protection', json: exchange.protection });
+        }
+        return parts;
     }
 
     /**
@@ -759,14 +891,16 @@ class OIDCAuthenticationResult {
             MISSING:   'table-text table-danger',
             WARNING:   'table-text table-warning',
             UNKNOWN:   'table-text text-muted',
-            NO_CLAIMS: 'table-text text-muted'
+            NO_CLAIMS: 'table-text text-muted',
+            NOT_CHECKED: 'table-text text-muted'
         };
         const statusText = {
             OK:        'All claims of the scope were received',
             MISSING:   'Claims are missing',
             WARNING:   'Delivered, but not as specified',
             UNKNOWN:   'Unknown scope - not validated',
-            NO_CLAIMS: 'The scope does not deliver any claims'
+            NO_CLAIMS: 'The scope does not deliver any claims',
+            NOT_CHECKED: 'The claims expected from UserInfo were not checked'
         };
 
         for (const result of scopeValidation) {
@@ -781,12 +915,17 @@ class OIDCAuthenticationResult {
                     && !(claim.requirement === 'ONE_OF' && oneOfSatisfied);
                 let rowClass = 'table-text';
                 if (!claim.received) {
-                    rowClass = expected ? 'table-text table-danger' : 'table-text text-muted';
+                    rowClass = expected && !claim.notCheckedReason ? 'table-text table-danger' : 'table-text text-muted';
                 }
                 const requirement = claim.requirement === 'ONE_OF' ? 'one of' : claim.requirement.toLowerCase();
-                const received = claim.received
-                    ? 'Received in ' + claim.receivedIn
-                    : 'Not received (expected in ' + claim.expectedLocation + ', ' + requirement + ')';
+                const expectation = ' (expected in ' + claim.expectedLocation + ', ' + requirement + ')';
+                let received = 'Not received' + expectation;
+                if (claim.received) {
+                    received = 'Received in ' + claim.receivedIn;
+                }
+                else if (claim.notCheckedReason) {
+                    received = 'Not checked, ' + claim.notCheckedReason + expectation;
+                }
                 tbody.append(this.createRow('\u00a0\u00a0\u00a0\u00a0' + claim.claim, received, rowClass, rowClass));
             }
         }
@@ -828,6 +967,19 @@ class OIDCAuthenticationResult {
         if (protection.note) {
             tbody.append(this.createRow('Note', protection.note));
         }
+    }
+
+    /**
+     * Creates a table row whose contents are shown as text - for values that come from the OP.
+     * @param title the row title
+     * @param text the contents
+     * @param cls the class of the row cells
+     * @returns {*|jQuery} the row
+     */
+    createTextRow(title, text, cls = 'table-text') {
+        return $('<tr>')
+            .append($('<th>', { scope: 'row', class: cls, text: title }))
+            .append($('<td>', { class: cls, text: text }));
     }
 
     createRow(title, contents, thClass = 'table-text', tdClass = 'table-text') {
@@ -1373,6 +1525,8 @@ class OIDCAuthnRequest {
         $('#oidc-request-export-button').click(() => {
             this.export();
         });
+
+        this.initCallUserInfo();
 
         let umDiv = $('#oidc-request-um-div');
 
@@ -1939,6 +2093,25 @@ class OIDCAuthnRequest {
         }
         $(presentElement).click(onClickFunction);
         onClickFunction();
+    }
+
+    /**
+     * Initializes the "Call UserInfo automatically" setting. A request that does not hold the setting - e.g., one
+     * exported before the setting existed - calls UserInfo.
+     */
+    initCallUserInfo() {
+        this.pars.callUserInfo = this.pars.callUserInfo !== false;
+        this.refreshCallUserInfo();
+        $('#oidc-request-call-userinfo-check').off('change').on('change', (event) => {
+            this.pars.callUserInfo = $(event.target).prop('checked');
+        });
+    }
+
+    /**
+     * Updates the "Call UserInfo automatically" checkbox from this.pars.
+     */
+    refreshCallUserInfo() {
+        $('#oidc-request-call-userinfo-check').prop('checked', this.pars.callUserInfo !== false);
     }
 
     static hide() {
@@ -2604,6 +2777,10 @@ class OIDCAuthnRequest {
         if (template.keys !== undefined) {
             this.pars.keys = { ...this.pars.keys, ...template.keys };
             this.refreshKeys();
+        }
+        if (template.callUserInfo !== undefined) {
+            this.pars.callUserInfo = template.callUserInfo !== false;
+            this.refreshCallUserInfo();
         }
         if (template.claims !== undefined || template.claimInRequestBody !== undefined) {
             if (template.claims !== undefined) this.pars.claims = template.claims;
