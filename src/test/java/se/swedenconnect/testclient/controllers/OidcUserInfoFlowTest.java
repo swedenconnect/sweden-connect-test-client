@@ -217,16 +217,19 @@ class OidcUserInfoFlowTest {
   }
 
   @Test
-  void aFailedTokenRequestIsStillAnOpError() throws Exception {
+  void aFailedTokenRequestIsATokenEndpointErrorAndUserInfoIsNotCalled() throws Exception {
+    // Only the token request is expected - a UserInfo request would fail the test
     this.server.expect(requestTo(TOKEN_ENDPOINT))
         .andRespond(withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON)
             .body("{\"error\":\"invalid_grant\",\"error_description\":\"Bad code\"}"));
 
-    final String view = this.controller.handleRedirection(new MockHttpServletRequest(), "rp", null, null, "state",
-        UserInfoTestSupport.OP, "code").getViewName();
+    final OIDCResponse response = this.redirect();
 
     this.server.verify();
-    assertEquals("redirect:/oidc/redirect/rp?error=invalid_grant&error_description=Bad code", view);
+    assertNull(response.getOpError());
+    assertEquals("invalid_grant", response.getTokenError().getError());
+    assertEquals("Bad code", response.getTokenError().getErrorDescription());
+    assertNull(response.getUserInfoResult());
   }
 
   @Test

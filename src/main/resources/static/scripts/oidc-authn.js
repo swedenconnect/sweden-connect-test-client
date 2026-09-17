@@ -512,9 +512,24 @@ class OIDCAuthenticationResult {
             }
         });
 
+        const tokenRequestButton = $('#oidc-authn-result-view-token-request');
+        if (resultData.tokenRequest) {
+            tokenRequestButton.show().off('click').click(() => {
+                codeViewer.displayParts('Token Request',
+                                        OIDCAuthenticationResult.tokenRequestParts(resultData.tokenRequest));
+            });
+        }
+        else {
+            tokenRequestButton.hide();
+        }
+
         if (resultData.errors && resultData.errors.length > 0) {
             const heading = resultErrorDiv.find('.card-header');
-            if (resultData.op_error) {
+            if (resultData.tokenError) {
+                heading.text("Token Endpoint Error");
+                resultErrorDiv.addClass('bg-danger');
+            }
+            else if (resultData.op_error) {
                 heading.text("OP Error Status");
                 if (resultData.cancelled) {
                     resultErrorDiv.addClass('bg-secondary');
@@ -761,12 +776,47 @@ class OIDCAuthenticationResult {
     }
 
     /**
-     * Sets up the "Send UserInfo Request" frame. It is shown on every result except an OP error.
+     * Gets the parts that a token request is shown with in the JSON viewer - the request as sent and, if a client
+     * assertion was sent, its decoded header and claims, or its raw value if it could not be decoded.
+     * @param tokenRequest the token request as it was sent, as reported by the server
+     * @returns {object[]} the parts, see CodeViewer.displayParts()
+     */
+    static tokenRequestParts(tokenRequest) {
+        const parameters = tokenRequest.parameters || {};
+        const parts = [{
+            label: 'Request',
+            json: {
+                method: tokenRequest.method,
+                url: tokenRequest.url,
+                headers: tokenRequest.headers || {},
+                parameters: parameters
+            }
+        }];
+        const assertion = tokenRequest.client_assertion;
+        if (assertion) {
+            if (assertion.error) {
+                parts.push({
+                    label: 'Client Assertion',
+                    text: parameters.client_assertion + '\n\nNote: the client assertion could not be decoded - '
+                        + assertion.error
+                });
+            }
+            else {
+                parts.push({ label: 'Client Assertion - Header', json: assertion.header });
+                parts.push({ label: 'Client Assertion - Claims', json: assertion.claims });
+            }
+        }
+        return parts;
+    }
+
+    /**
+     * Sets up the "Send UserInfo Request" frame. It is shown on every result except an OP error and a failed token
+     * request.
      * @param resultData the authentication result
      */
     initUserInfoRequest(resultData) {
         const frame = $('#oidc-authn-result-userinfo-request');
-        if (resultData.op_error) {
+        if (resultData.op_error || resultData.tokenError) {
             frame.hide();
             return;
         }
@@ -1366,7 +1416,17 @@ class OIDCAuthnRequest {
     }
 
     import(base64String) {
-        this.pars = JSON.parse(atob(base64String));
+        const imported = JSON.parse(atob(base64String));
+        // A configuration exported before the token request settings existed gets the defaults of the template, as
+        // does any setting that the imported configuration does not hold
+        const tokenRequest = { ...(this.pars.tokenRequest || {}) };
+        for (const [key, value] of Object.entries(imported.tokenRequest || {})) {
+            if (value !== null && value !== undefined) {
+                tokenRequest[key] = value;
+            }
+        }
+        imported.tokenRequest = tokenRequest;
+        this.pars = imported;
     }
 
     /**
@@ -1378,6 +1438,7 @@ class OIDCAuthnRequest {
         this.initRequestObjectOptions();
         this.initAdvancedOptions();
         this.initKeyOptions();
+        this.initTokenRequestOptions();
         let parent = this;
         let keyOptions = $('#oidc-advanced-keys-request-check');
         keyOptions.click(function () {
@@ -2342,6 +2403,112 @@ class OIDCAuthnRequest {
         encryptionKeySelector.change(() => {
             this.pars["keys"]["encKey"] = encryptionKeySelector.val();
         });
+    }
+
+    /**
+     * The parameter rows of the token request options, in the order they are sent. A row with a placeholder is filled
+     * in by the test client when the request is sent, if left empty.
+     */
+    static TOKEN_REQUEST_PARAMETERS = [
+        { key: 'grantType', name: 'grant_type' },
+        { key: 'code', name: 'code', filledIn: true },
+        { key: 'redirectUri', name: 'redirect_uri' },
+        { key: 'codeVerifier', name: 'code_verifier', filledIn: true },
+        { key: 'clientId', name: 'client_id' },
+        { key: 'clientSecret', name: 'client_secret' },
+        { key: 'clientAssertionType', name: 'client_assertion_type' },
+        { key: 'clientAssertion', name: 'client_assertion', filledIn: true }
+    ];
+
+    /** The claim rows of the client assertion. */
+    static TOKEN_REQUEST_ASSERTION_CLAIMS = [
+        { key: 'assertionIss', name: 'iss' },
+        { key: 'assertionSub', name: 'sub' },
+        { key: 'assertionAud', name: 'aud' },
+        { key: 'assertionIat', name: 'iat', filledIn: true },
+        { key: 'assertionJti', name: 'jti', filledIn: true },
+        { key: 'assertionExp', name: 'exp', filledIn: true }
+    ];
+
+    /** Per client authentication method, the client parameter rows that the method normally sends. */
+    static TOKEN_REQUEST_METHOD_ROWS = {
+        private_key_jwt: ['clientAssertionType', 'clientAssertion'],
+        client_secret_jwt: ['clientAssertionType', 'clientAssertion'],
+        client_secret_post: ['clientId', 'clientSecret'],
+        client_secret_basic: [],
+        none: ['clientId']
+    };
+
+    /** The client parameter rows that are checked or unchecked when the client authentication method is changed. */
+    static TOKEN_REQUEST_CLIENT_ROWS = ['clientId', 'clientSecret', 'clientAssertionType', 'clientAssertion'];
+
+    /**
+     * Initializes the "Token request options" section from this.pars.tokenRequest. The rows are created here, and
+     * their values and include checkboxes are kept in this.pars.tokenRequest.
+     */
+    initTokenRequestOptions() {
+        const settings = this.pars.tokenRequest;
+        this.initModuleCheckbox('#oidc-token-request-check', '#oidc-token-request', 'tokenRequest');
+
+        const createRows = (container, rows) => {
+            container.empty();
+            for (const row of rows) {
+                if (!settings[row.key]) {
+                    settings[row.key] = { value: '', valuePresent: false, requestBody: false };
+                }
+                const id = 'oidc-token-request-' + row.key;
+                const input = $('<input>', { type: 'text', class: 'form-control', id: id + '-input' });
+                if (row.filledIn) {
+                    input.attr('placeholder', 'Filled in at time of sending');
+                }
+                input.on('input change', () => {
+                    settings[row.key].value = input.val();
+                });
+                const include = $('<input>', { type: 'checkbox', class: 'form-check-input', id: id + '-include' });
+                include.on('change', () => {
+                    settings[row.key].valuePresent = include.prop('checked');
+                });
+                container.append($('<div>', { class: 'row mt-4' })
+                    .append($('<div>', { class: 'col-sm-2' })
+                        .append($('<label>', { class: 'col-form-label text-sm-right', for: id + '-input', text: row.name })))
+                    .append($('<div>', { class: 'col-sm-8' }).append(input))
+                    .append($('<div>', { class: 'col-sm-2' })
+                        .append(include)
+                        .append(' ')
+                        .append($('<label>', { for: id + '-include', text: 'Include' }))));
+            }
+        };
+        createRows($('#oidc-token-request-parameters'), OIDCAuthnRequest.TOKEN_REQUEST_PARAMETERS);
+        createRows($('#oidc-token-request-assertion-claim-rows'), OIDCAuthnRequest.TOKEN_REQUEST_ASSERTION_CLAIMS);
+
+        $('#oidc-token-request-auth-method-select').off('change').on('change', (event) => {
+            const method = $(event.target).val();
+            settings.authMethod = method;
+            // The values typed in the rows are kept
+            const checked = OIDCAuthnRequest.TOKEN_REQUEST_METHOD_ROWS[method] || [];
+            for (const key of OIDCAuthnRequest.TOKEN_REQUEST_CLIENT_ROWS) {
+                settings[key].valuePresent = checked.includes(key);
+            }
+            this.refreshTokenRequest();
+        });
+        this.refreshTokenRequest();
+    }
+
+    /**
+     * Refreshes the "Token request options" section from this.pars.tokenRequest without rebinding event handlers.
+     */
+    refreshTokenRequest() {
+        const settings = this.pars.tokenRequest;
+        const method = settings.authMethod || 'private_key_jwt';
+        $('#oidc-token-request-auth-method-select').val(method);
+        for (const row of OIDCAuthnRequest.TOKEN_REQUEST_PARAMETERS.concat(OIDCAuthnRequest.TOKEN_REQUEST_ASSERTION_CLAIMS)) {
+            const id = '#oidc-token-request-' + row.key;
+            const par = settings[row.key] || {};
+            $(id + '-input').val(par.value || '');
+            $(id + '-include').prop('checked', par.valuePresent === true);
+        }
+        $('#oidc-token-request-assertion-claims')
+            .toggle(method === 'private_key_jwt' || method === 'client_secret_jwt');
     }
 
     initModuleSelector(
