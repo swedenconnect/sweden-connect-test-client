@@ -15,6 +15,7 @@
  */
 package se.swedenconnect.testclient.controllers;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -50,7 +51,13 @@ public class ScopeValidationResult {
     UNKNOWN,
 
     /** The scope is known, but does not by itself deliver any claims. */
-    NO_CLAIMS
+    NO_CLAIMS,
+
+    /**
+     * Nothing is missing among the claims that could be checked, but claims expected from UserInfo could not be checked
+     * since UserInfo was not called, or the call failed.
+     */
+    NOT_CHECKED
   }
 
   /** The requested scope. */
@@ -89,5 +96,21 @@ public class ScopeValidationResult {
 
     /** Where the claim was actually received, e.g. {@code ID Token, UserInfo}. */
     private String receivedIn;
+
+    /**
+     * Why it could not be checked whether the claim was received, e.g. {@code UserInfo was not called}. It is
+     * {@code null} if the claim was checked.
+     */
+    private String notCheckedReason;
+
+    /**
+     * Tells whether it could not be checked if the claim was received.
+     *
+     * @return {@code true} if the claim was not checked
+     */
+    @JsonIgnore
+    public boolean isNotChecked() {
+      return this.notCheckedReason != null;
+    }
   }
 }

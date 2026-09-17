@@ -258,10 +258,11 @@ class CodeViewer {
 
   /**
    * Displays one or more parts in the JSON viewer, one after the other. A part is either a URL, shown with each query
-   * parameter on its own line, or JSON, shown pretty-printed. A part with a label gets the label as a heading. "Copy to
-   * clipboard" copies the text as it is shown, labels included.
+   * parameter on its own line, text, shown as it is, or JSON, shown pretty-printed. A part with a label gets the label
+   * as a heading. "Copy to clipboard" copies the text as it is shown, labels included.
    * @param title the title of the viewer
-   * @param parts the parts, each {label?: string, url: string} or {label?: string, json: any}
+   * @param parts the parts, each {label?: string, url: string}, {label?: string, text: string} or
+   *     {label?: string, json: any}
    */
   displayParts(title, parts) {
     const content = $('#json-content').empty();
@@ -274,6 +275,9 @@ class CodeViewer {
       }
       if (part.url !== undefined) {
         content.append(document.createTextNode(CodeViewer.formatUrl(part.url)));
+      }
+      else if (part.text !== undefined) {
+        content.append(document.createTextNode(part.text));
       }
       else {
         content.append($('<span>').html(prettyPrintJson.toHtml(part.json, this.jsonFormat)));

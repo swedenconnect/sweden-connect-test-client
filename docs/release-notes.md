@@ -22,6 +22,8 @@ Date: _not yet released_
 - "View AuthnRequest" shows the header and claims of a signed or unsigned request object.
 - New setting `testclient.oidc.rps[].create-entity-configuration` (default `true`) lets an RP stay outside the
   federation. The "View EC" button is renamed "View Entity Configuration".
+- UserInfo can be skipped with the new "Call UserInfo automatically" setting, and called from the Authentication
+  Result with "Send UserInfo Request", using any access token and GET or POST.
 
 
 ### Version 1.0.10

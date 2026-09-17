@@ -60,4 +60,9 @@ public class OIDCAuthnRequestParameterModel {
   private KeyOptionsParameterModel keys;
   private OidcMessageParameterModel userMessage;
   private SignatureParameterModel signMessage;
+  /**
+   * Whether UserInfo is called automatically after the token request. {@code null}, as in templates and requests
+   * exported before the setting existed, means that it is called.
+   */
+  private Boolean callUserInfo;
 }
