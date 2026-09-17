@@ -8,9 +8,9 @@
 
 ### Version 1.0.11
 
-Date: _not yet released_
+Date: 2026-09-17
 
-- Showing display_name when selecting a OP in the list. The same as in SAML
+- Showing display name when selecting a OP in the list. The same as in SAML
 - A problem where the logotype was not displayed in the footer was fixed.
 - OIDC sign request and user message fixes: both are sent as JSON objects in the request object, the "Base64-encode"
   setting encodes the messages (and the TBS data) without encoding a value twice, the selected MIME type is sent. 
