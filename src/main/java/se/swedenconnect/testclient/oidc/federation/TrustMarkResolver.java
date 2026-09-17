@@ -102,12 +102,19 @@ public class TrustMarkResolver {
   /**
    * Gets the trust marks of the supplied RP. Trust marks that could not be obtained are included in the result with
    * their error message - it is up to the caller to decide what to do about them.
+   * <p>
+   * An RP that has no entity configuration has nowhere to publish trust marks, so no trust marks are fetched for it
+   * and the result is empty.
+   * </p>
    *
    * @param rp the Relying Party
    * @return the trust marks
    */
   @Nonnull
   public List<ResolvedTrustMark> resolve(@Nonnull final OidcRp rp) {
+    if (!rp.hasEntityConfiguration()) {
+      return List.of();
+    }
     final List<ResolvedTrustMark> trustMarks = new ArrayList<>();
     for (final TrustMarkProperties tm : this.trustMarksFor(rp)) {
       trustMarks.add(this.resolve(rp, tm));

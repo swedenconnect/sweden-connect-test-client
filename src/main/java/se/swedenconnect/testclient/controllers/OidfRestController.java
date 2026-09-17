@@ -116,6 +116,7 @@ public class OidfRestController {
             .map(s -> new ListingSourceModel(s.entityId(), s.trustAnchor()))
             .toList())
         .entities(this.rps.stream()
+            .filter(OidcRp::hasEntityConfiguration)
             .map(rp -> new FederationEntityModel(rp.getEntityId(), rp.getDescription(),
                 OidfClient.entityConfigurationUrl(rp.getEntityId()), this.trustMarks(rp)))
             .toList())
@@ -194,7 +195,7 @@ public class OidfRestController {
 
   /**
    * Gets the entity configuration of an entity - either one of ours (which is then created and signed) or a remote
-   * one (which is downloaded).
+   * one (which is downloaded). Asking for the entity configuration of one of our RP:s that has none is an error.
    *
    * @param entityId the entity identifier
    * @return the entity statement, both serialized and decoded
@@ -204,7 +205,12 @@ public class OidfRestController {
     final String statement = this.rps.stream()
         .filter(rp -> entityId.equals(rp.getEntityId()))
         .findFirst()
-        .map(rp -> this.entityConfigurationFactory.getEntityConfiguration(rp).getSignedStatement().serialize())
+        .map(rp -> {
+          if (!rp.hasEntityConfiguration()) {
+            throw new IllegalArgumentException("The RP %s has no Entity Configuration".formatted(entityId));
+          }
+          return this.entityConfigurationFactory.getEntityConfiguration(rp).getSignedStatement().serialize();
+        })
         .orElseGet(() -> this.federationService.fetchEntityConfiguration(new EntityID(entityId))
             .getSignedStatement()
             .serialize());

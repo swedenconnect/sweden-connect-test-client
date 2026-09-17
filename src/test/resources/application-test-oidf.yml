@@ -46,5 +46,19 @@ testclient:
         credentials:
           signing:
             bundle: rsa-4096
+      - path-suffix: "testrp2"
+        description: "Test OIDC RP 2 - not part of the federation"
+        create-entity-configuration: false
+        metadata: |
+          {
+            "response_types" : [ "code" ],
+            "grant_types" : [ "authorization_code" ],
+            "client_name" : "Sweden Connect Test-RP 2",
+            "subject_type" : "pairwise",
+            "token_endpoint_auth_method" : "private_key_jwt"
+          }
+        trust-marks:
+          - trust-mark-type: https://tmi.example.com/trust-mark/test-sp
+            issuer: https://tmi.example.com
   saml:
     enabled: false

@@ -83,9 +83,11 @@ public class EntityConfigurationFactory {
    *
    * @param rp the Relying Party
    * @return an {@link EntityStatement}
+   * @throws IllegalArgumentException if no entity configuration is set up for the RP
    */
   @Nonnull
   public EntityStatement getEntityConfiguration(@Nonnull final OidcRp rp) {
+    assertHasEntityConfiguration(rp);
     final CachedConfiguration cached = this.cache.get(rp.getEntityId());
     if (cached != null && Instant.now().isBefore(cached.renewAt())) {
       return cached.statement();
@@ -107,7 +109,8 @@ public class EntityConfigurationFactory {
   }
 
   /**
-   * Gets the trust marks of the supplied RP - the ones we publish, and the ones we failed to get.
+   * Gets the trust marks of the supplied RP - the ones we publish, and the ones we failed to get. An RP that has no
+   * entity configuration has no trust marks.
    *
    * @param rp the Relying Party
    * @return the trust marks
@@ -134,9 +137,11 @@ public class EntityConfigurationFactory {
    *
    * @param rp the Relying Party
    * @return an {@link EntityStatement}
+   * @throws IllegalArgumentException if no entity configuration is set up for the RP
    */
   @Nonnull
   public EntityStatement createEntityConfiguration(@Nonnull final OidcRp rp) {
+    assertHasEntityConfiguration(rp);
     final OidfSigner signer = this.getSigner(rp);
     final Instant issuedAt = Instant.now();
     final Instant expiresAt = issuedAt.plus(this.properties.getEntityConfigurationValidity());
@@ -160,6 +165,18 @@ public class EntityConfigurationFactory {
     }
     catch (final JOSEException | com.nimbusds.oauth2.sdk.ParseException e) {
       throw new IllegalArgumentException("Failed to create entity configuration for " + rp.getEntityId(), e);
+    }
+  }
+
+  /**
+   * Makes sure that an entity configuration is set up for the supplied RP.
+   *
+   * @param rp the Relying Party
+   * @throws IllegalArgumentException if the RP has no entity configuration
+   */
+  private static void assertHasEntityConfiguration(@Nonnull final OidcRp rp) {
+    if (!rp.hasEntityConfiguration()) {
+      throw new IllegalArgumentException("The RP %s has no Entity Configuration".formatted(rp.getEntityId()));
     }
   }
 

@@ -878,9 +878,8 @@ class OIDCSetupAuthentication {
 
         const self = this;
 
-        if (!TestClient.isOidfEnabled()) {
-            $('#oidc-view-ec').hide();
-        }
+        // Shown for the selected RP only if the server reports that it has an Entity Configuration.
+        $('#oidc-view-ec').hide();
 
         $('#oidc-rp-select').change(function () {
             let selectedRp = $(this).val() === 'none' ? null : $(this).val();
@@ -913,7 +912,7 @@ class OIDCSetupAuthentication {
         $('#oidc-view-ec').click(function () {
             let entityId = $(this).val();
             $.ajax({
-                       url: entityId + '/.well-known/openid-federation',
+                       url: $(this).data('url'),
                        type: 'GET',
                        data: {
                            plain: true
@@ -1038,7 +1037,16 @@ class OIDCSetupAuthentication {
                     rpUrl.attr('href', rp.metadata_url);
                     rpUrl.text(rp.metadata_url);
                     $('#oidc-view-metadata').attr('value', rp.entity_id);
-                    $('#oidc-view-ec').attr('value', rp.entity_id);
+                    let viewEc = $('#oidc-view-ec');
+                    viewEc.attr('value', rp.entity_id);
+                    if (rp.entity_configuration_url) {
+                        viewEc.data('url', rp.entity_configuration_url);
+                        viewEc.show();
+                    }
+                    else {
+                        viewEc.removeData('url');
+                        viewEc.hide();
+                    }
                     $('#oidc-rp-info').show();
 
                     if (OIDC_STATE.getSelectedOp()) {

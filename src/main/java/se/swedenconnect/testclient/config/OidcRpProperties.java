@@ -69,6 +69,14 @@ public class OidcRpProperties implements InitializingBean {
   private boolean useJwksUrl = false;
 
   /**
+   * Whether an OpenID Federation entity configuration is set up for the RP. Only used when OpenID Federation support
+   * is enabled - when it is not, no RP has an entity configuration.
+   */
+  @Getter
+  @Setter
+  private boolean createEntityConfiguration = true;
+
+  /**
    * The trust marks to publish in the RP:s OpenID Federation entity configuration. If not assigned, the trust marks
    * configured under {@code testclient.oidc.federation.trust-marks} are used.
    */

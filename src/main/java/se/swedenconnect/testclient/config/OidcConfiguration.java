@@ -117,7 +117,8 @@ public class OidcConfiguration {
           ClientCredentials.create(
               this.credentialFactory, p.getCredentials(), defaultCredential, nonRegisteredCredential),
           p.getMetadata(), this.urlBuilder.buildUrl(OidcController.REDIRECTION_URL_BASE, p.getPathSuffix()),
-          p.isUseJwksUrl(), jwksUri));
+          p.isUseJwksUrl(), jwksUri,
+          this.properties.getFederation().isEnabled() && p.isCreateEntityConfiguration()));
     }
     return rps;
   }

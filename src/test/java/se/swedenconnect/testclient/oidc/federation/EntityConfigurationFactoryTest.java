@@ -202,6 +202,27 @@ class EntityConfigurationFactoryTest {
     assertSame(factory.getEntityConfiguration(rp), factory.getEntityConfiguration(rp));
   }
 
+  @Test
+  void rpWithoutEntityConfigurationGetsNeitherEntityConfigurationNorTrustMarks() {
+    final OidcRp rp = TestFederation.createRp(RP_ENTITY_ID, TestFederation.RP_METADATA, false);
+
+    final OidfProperties properties = properties();
+    final OidfProperties.TrustMarkProperties tm = new OidfProperties.TrustMarkProperties();
+    tm.setTrustMarkType(TRUST_MARK_TYPE);
+    tm.setIssuer(TRUST_MARK_ISSUER);
+    properties.getTrustMarks().add(tm);
+
+    final EntityConfigurationFactory factory = new EntityConfigurationFactory(
+        properties, List.of(new EntityID(TRUST_ANCHOR)),
+        new TrustMarkResolver(properties, new OidfClient(RestClient.builder().build()), Map.of()));
+
+    final IllegalArgumentException e =
+        assertThrows(IllegalArgumentException.class, () -> factory.getEntityConfiguration(rp));
+    assertEquals("The RP %s has no Entity Configuration".formatted(RP_ENTITY_ID), e.getMessage());
+    assertThrows(IllegalArgumentException.class, () -> factory.createEntityConfiguration(rp));
+    assertTrue(factory.getTrustMarks(rp).isEmpty());
+  }
+
   private static OidfProperties properties() {
     final OidfProperties properties = new OidfProperties();
     properties.setEnabled(true);

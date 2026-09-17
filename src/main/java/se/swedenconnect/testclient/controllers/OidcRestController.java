@@ -29,6 +29,7 @@ import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -56,6 +57,7 @@ import se.swedenconnect.testclient.oidc.OIDCOPMetadataFetcher;
 import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcOpRegistry;
 import se.swedenconnect.testclient.oidc.OidcRp;
+import se.swedenconnect.testclient.oidc.federation.OidfClient;
 import se.swedenconnect.testclient.utils.UrlBuilderBean;
 
 import java.net.URI;
@@ -115,7 +117,7 @@ public class OidcRestController {
         .map(rp -> new OidcRpInfoModel(rp.getEntityId(), rp.getDescription(),
             this.urlBuilderBean.buildUrl(
                 "/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset())),
-            rp.isUseJwksUrl() ? rp.getJwksUri() : null))
+            rp.isUseJwksUrl() ? rp.getJwksUri() : null, entityConfigurationUrl(rp)))
         .toList();
   }
 
@@ -154,7 +156,7 @@ public class OidcRestController {
         .map(rp -> new OpenIdRelyingPartyModel(rp.getEntityId(), rp.getMetadata().getName(), rp.getDescription(),
             this.urlBuilderBean.buildUrl(
                 "/oidc/rp/metadata?rp=" + URLEncoder.encode(rp.getEntityId(), Charset.defaultCharset())),
-            rp.isUseJwksUrl() ? rp.getJwksUri() : null))
+            rp.isUseJwksUrl() ? rp.getJwksUri() : null, entityConfigurationUrl(rp)))
         .toList();
 
     final List<OpenIdProviderModel> providers = this.opRegistry.getOps().stream()
@@ -393,6 +395,17 @@ public class OidcRestController {
     };
   }
 
+  /**
+   * Gets the URL of the entity configuration of the supplied RP.
+   *
+   * @param rp the Relying Party
+   * @return the entity configuration URL, or {@code null} if the RP has no entity configuration
+   */
+  @Nullable
+  private static String entityConfigurationUrl(@Nonnull final OidcRp rp) {
+    return rp.hasEntityConfiguration() ? OidfClient.entityConfigurationUrl(rp.getEntityId()) : null;
+  }
+
   @AllArgsConstructor
   @NoArgsConstructor
   @Getter
@@ -450,6 +463,10 @@ public class OidcRestController {
 
     @JsonProperty("jwks_url")
     private String jwksUrl;
+
+    /** The URL of the RP:s entity configuration, or {@code null} if the RP has none. */
+    @JsonProperty("entity_configuration_url")
+    private String entityConfigurationUrl;
   }
 
   @Data
@@ -466,6 +483,10 @@ public class OidcRestController {
 
     @JsonProperty("jwks_url")
     private String jwksUrl;
+
+    /** The URL of the RP:s entity configuration, or {@code null} if the RP has none. */
+    @JsonProperty("entity_configuration_url")
+    private String entityConfigurationUrl;
   }
 
   @Data

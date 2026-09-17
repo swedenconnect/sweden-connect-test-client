@@ -236,6 +236,21 @@ class TrustMarkResolverTest {
     assertNotNull(trustMarks.get(0).trustMark());
   }
 
+  @Test
+  void noTrustMarksAreFetchedForAnRpWithoutEntityConfiguration() {
+    final OidcRp rpWithoutEc = TestFederation.createRp(RP_ENTITY_ID, TestFederation.RP_METADATA, false);
+    this.properties.getTrustMarks().add(trustMarkProperties());
+    final TrustMarkResolver resolver = new TrustMarkResolver(this.properties, this.client,
+        Map.of(rpWithoutEc.getPathSuffix(), List.of(trustMarkProperties())));
+
+    assertTrue(resolver.resolve(rpWithoutEc).isEmpty());
+    resolver.clearCache();
+    assertTrue(resolver.resolve(rpWithoutEc).isEmpty());
+
+    // No expectations were set up - any request to the issuer would fail the verification.
+    this.server.verify();
+  }
+
   private TrustMarkResolver resolver() {
     this.properties.getTrustMarks().add(trustMarkProperties());
     return new TrustMarkResolver(this.properties, this.client, Map.of());

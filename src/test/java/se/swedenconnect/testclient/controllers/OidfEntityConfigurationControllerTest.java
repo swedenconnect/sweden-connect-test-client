@@ -28,9 +28,11 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -47,6 +49,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OidfEntityConfigurationControllerTest {
 
   private static final String RP_ENTITY_ID = "https://client.example.com/testrp1";
+
+  /** An RP with {@code create-entity-configuration: false}. */
+  private static final String RP_WITHOUT_EC_ENTITY_ID = "https://client.example.com/testrp2";
 
   @Autowired
   private MockMvc mockMvc;
@@ -77,13 +82,78 @@ class OidfEntityConfigurationControllerTest {
   }
 
   @Test
+  void publishesPlainEntityConfiguration() throws Exception {
+    this.mockMvc.perform(get("/testrp1/.well-known/openid-federation").param("plain", "true"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentTypeCompatibleWith("application/json"))
+        .andExpect(jsonPath("$.payload.sub").value(RP_ENTITY_ID));
+  }
+
+  @Test
+  void returnsNotFoundForRpWithoutEntityConfiguration() throws Exception {
+    this.mockMvc.perform(get("/testrp2/.well-known/openid-federation"))
+        .andExpect(status().isNotFound());
+    this.mockMvc.perform(get("/testrp2/.well-known/openid-federation").param("plain", "true"))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
   void publishesFederationInfo() throws Exception {
     this.mockMvc.perform(get("/oidc/federation/info"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.trust_anchors[0]").value("https://ta.example.com"))
+        .andExpect(jsonPath("$.entities.length()").value(1))
         .andExpect(jsonPath("$.entities[0].entity_id").value(RP_ENTITY_ID))
         .andExpect(jsonPath("$.entities[0].entity_configuration_url")
             .value(RP_ENTITY_ID + "/.well-known/openid-federation"));
+  }
+
+  @Test
+  void trustMarkRefreshLeavesOutRpWithoutEntityConfiguration() throws Exception {
+    // testrp2 declares a trust mark of its own, but has no entity configuration and is therefore not listed.
+    this.mockMvc.perform(post("/oidc/federation/trust-marks/refresh"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.entities.length()").value(1))
+        .andExpect(jsonPath("$.entities[0].entity_id").value(RP_ENTITY_ID));
+  }
+
+  @Test
+  void returnsOwnEntityConfiguration() throws Exception {
+    this.mockMvc.perform(get("/oidc/federation/entity-configuration").param("entity_id", RP_ENTITY_ID))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.entity_id").value(RP_ENTITY_ID))
+        .andExpect(jsonPath("$.claims.iss").value(RP_ENTITY_ID));
+  }
+
+  @Test
+  void reportsThatRpHasNoEntityConfiguration() throws Exception {
+    // The RP must not be treated as a remote entity (whose entity configuration would be downloaded) - with no
+    // network available that would give a different error.
+    this.mockMvc.perform(get("/oidc/federation/entity-configuration").param("entity_id", RP_WITHOUT_EC_ENTITY_ID))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error").value("federation_error"))
+        .andExpect(jsonPath("$.message")
+            .value("The RP %s has no Entity Configuration".formatted(RP_WITHOUT_EC_ENTITY_ID)));
+  }
+
+  @Test
+  void rpModelsTellWhichRpsHaveAnEntityConfiguration() throws Exception {
+    final String ecUrl = RP_ENTITY_ID + "/.well-known/openid-federation";
+    this.mockMvc.perform(get("/oidc/authn/info"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.rps.length()").value(2))
+        .andExpect(jsonPath("$.rps[0].entity_id").value(RP_ENTITY_ID))
+        .andExpect(jsonPath("$.rps[0].entity_configuration_url").value(ecUrl))
+        .andExpect(jsonPath("$.rps[1].entity_id").value(RP_WITHOUT_EC_ENTITY_ID))
+        .andExpect(jsonPath("$.rps[1].entity_configuration_url").value(nullValue()));
+
+    this.mockMvc.perform(get("/oidc/rp/info"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].entity-id").value(RP_ENTITY_ID))
+        .andExpect(jsonPath("$[0].entity_configuration_url").value(ecUrl))
+        .andExpect(jsonPath("$[1].entity-id").value(RP_WITHOUT_EC_ENTITY_ID))
+        .andExpect(jsonPath("$[1].entity_configuration_url").value(nullValue()));
   }
 
 }
