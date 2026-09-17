@@ -286,11 +286,14 @@ function postBrowser(url, pars) {
   });
 
   $.each(pars, function(key, value) {
-    form.append($('<input>', {
-      type: 'hidden',
-      name: key,
-      value: value
-    }));
+    // A parameter may be given as a list of values, each sent as its own form field
+    for (const v of (Array.isArray(value) ? value : [value])) {
+      form.append($('<input>', {
+        type: 'hidden',
+        name: key,
+        value: v
+      }));
+    }
   });
 
   $('body').append(form);

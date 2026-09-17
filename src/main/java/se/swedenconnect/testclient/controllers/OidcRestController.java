@@ -309,10 +309,26 @@ public class OidcRestController {
         .build();
   }
 
+  /**
+   * Generates an authentication request, and records it in the session as it is sent.
+   * <p>
+   * The HTTP method is chosen by the send button that is clicked and is not part of the request model. The parameters
+   * are the same for both methods (OpenID Connect Core 1.0, section 3.1.2.1): with GET they are in the query string of
+   * the returned URL, with POST the URL is the authorization endpoint as configured and they are returned as the form
+   * parameters for the browser to post.
+   * </p>
+   *
+   * @param model the request parameter model
+   * @param method the HTTP method used to send the request
+   * @return the request for the browser to send
+   * @throws JOSEException for signing or encryption errors
+   * @throws ParseException for invalid parameter values
+   */
   @PostMapping(value = "/authn/generate", consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
   public OIDCAuthnRequestModel generateAuthnRequest(
-      @Nonnull @RequestBody final OIDCAuthnRequestParameterModel model
+      @Nonnull @RequestBody final OIDCAuthnRequestParameterModel model,
+      @Nonnull @RequestParam("method") final SentAuthorizationRequest.Method method
   ) throws JOSEException, ParseException {
     try {
       final OidcRp selectedRp =
@@ -338,17 +354,19 @@ public class OidcRestController {
           new AuthorizationParameterResolver(model, false, httpSession::setAttribute);
       final AuthenticationRequest authRequest =
           AuthorizationRequestCustomizer.customize(builder, kidtoJwkFunction(opJWKS), resolver).build();
-      final String asciiString = AuthorizationRequestCustomizer.toURI(authRequest, resolver).toASCIIString();
+      final SentAuthorizationRequest sentRequest =
+          AuthorizationRequestCustomizer.toSentRequest(authRequest, resolver, method);
 
       httpSession.setAttribute("auth_request", authRequest);
-      httpSession.setAttribute(OidcController.SESSION_NAME_AUTH_REQUEST_URI, asciiString);
+      httpSession.setAttribute(OidcController.SESSION_NAME_SENT_AUTH_REQUEST, sentRequest);
       httpSession.setAttribute("selected_op", selectedOp);
       httpSession.setAttribute("selected_rp", selectedRp);
 
-      log.info(asciiString);
+      log.info("{} {}", sentRequest.method(), sentRequest.url());
       return OIDCAuthnRequestModel.builder()
-          .method("GET")
-          .url(asciiString)
+          .method(sentRequest.method().name())
+          .url(sentRequest.url())
+          .parameters(sentRequest.parameters())
           .build();
     }
     catch (final Exception e) {
@@ -381,8 +399,12 @@ public class OidcRestController {
   @Setter
   @Builder
   public static class OIDCAuthnRequestModel {
+    /** The HTTP method, {@code GET} or {@code POST}. */
     private String method;
+    /** For GET the full request URL, for POST the authorization endpoint. */
     private String url;
+    /** For POST the form parameters, for GET {@code null}. */
+    private Map<String, List<String>> parameters;
   }
 
   @AllArgsConstructor
