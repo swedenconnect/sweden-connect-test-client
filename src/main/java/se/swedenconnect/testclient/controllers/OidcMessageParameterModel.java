@@ -16,8 +16,6 @@
 package se.swedenconnect.testclient.controllers;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nimbusds.jose.shaded.gson.annotations.Expose;
-import com.nimbusds.jose.shaded.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,6 +25,11 @@ import lombok.Setter;
 /**
  * Model for a multilingual message, used for the user message and sign message extensions. Each language variant is
  * represented by its own field, and {@code message#xx} is a deliberately invalid variant for testing.
+ * <p>
+ * For the user message the model is the whole extension, so it also holds the placement boxes and the Base64 setting.
+ * For the sign message these are held by {@link SignatureParameterModel}, and are not used here. None of them is sent;
+ * see {@link OidcMessageSerializer}.
+ * </p>
  *
  * @author Martin Lindström
  * @author Felix Hellman
@@ -38,33 +41,28 @@ import lombok.Setter;
 @Builder
 public class OidcMessageParameterModel {
   @JsonProperty("message#sv")
-  @SerializedName("message#sv")
   private String messageSwedish;
   @JsonProperty("message#en")
-  @SerializedName("message#en")
   private String messageEnglish;
   @JsonProperty("message#de")
-  @SerializedName("message#de")
   private String messageGerman;
   @JsonProperty("message#fr")
-  @SerializedName("message#fr")
   private String messageFrench;
   @JsonProperty("message#it")
-  @SerializedName("message#it")
   private String messageItalian;
   @JsonProperty("message#es")
-  @SerializedName("message#es")
   private String messageSpanish;
   @JsonProperty("message#xx")
-  @SerializedName("message#xx")
   private String messageDummy;
   @JsonProperty("message")
-  @SerializedName("message")
   private String message;
+  /** The MIME type of the message. If {@code null} or blank, no {@code mime_type} member is sent. */
   @JsonProperty("mime_type")
-  @SerializedName("mime_type")
   private String mimeType;
-  private Boolean requestBody;
+  /** Whether the user message is sent in the request URL. */
   private Boolean valuePresent;
+  /** Whether the user message is sent in the request object. */
+  private Boolean requestBody;
+  /** Whether the message values of the user message are Base64-encoded when sent. */
   private Boolean b64Encode;
 }

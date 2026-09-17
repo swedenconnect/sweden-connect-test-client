@@ -18,81 +18,139 @@ package se.swedenconnect.testclient.oidc;
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.JWEObject;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.shaded.gson.ExclusionStrategy;
-import com.nimbusds.jose.shaded.gson.FieldAttributes;
-import com.nimbusds.jose.shaded.gson.Gson;
-import com.nimbusds.jose.shaded.gson.GsonBuilder;
 import com.nimbusds.jwt.EncryptedJWT;
+import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.PlainJWT;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.id.Identifier;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
-
+import jakarta.annotation.Nonnull;
 import se.swedenconnect.testclient.controllers.AuthorizationParameterResolver;
 import se.swedenconnect.testclient.controllers.OIDCAuthnRequestParameterModel;
-import se.swedenconnect.testclient.controllers.OidcMessageParameterModel;
 import se.swedenconnect.testclient.controllers.OidcMessageSerializer;
+import se.swedenconnect.testclient.controllers.SignatureParameterModel;
 import se.swedenconnect.testclient.utils.JoseUtils;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Creates the request objects - signed and optionally encrypted JWT:s - of an OIDC authentication request.
+ * Creates the JWT:s of an OIDC authentication request - the request object and the sign request that is sent in the
+ * request URL. Each may be signed or unsecured, and optionally encrypted.
+ * <p>
+ * An encrypted JWT is always a nested JWT (RFC 7519, sections 2 and 7.2): the plaintext of the encryption is the
+ * serialized signed or unsecured JWT, and the encryption header has {@code cty: JWT}.
+ * </p>
  *
  * @author Martin Lindström
  * @author Felix Hellman
  */
 public class RequestObjectFactory {
 
-  public static final Gson GSON = new GsonBuilder()
-      .registerTypeAdapter(OidcMessageParameterModel.class, new OidcMessageSerializer())
-      .addSerializationExclusionStrategy(new ExclusionStrategy() {
-        @Override
-        public boolean shouldSkipField(final FieldAttributes fieldAttributes) {
-          return "requestBody".equals(fieldAttributes.getName()) || "valuePresent".equals(fieldAttributes.getName());
-        }
+  /**
+   * Encrypts a signed or unsecured JWT for the encryption key of the key options.
+   *
+   * @param model the request parameter model
+   * @param getJwkFromKid function giving the key for a key ID
+   * @param jwt the JWT to encrypt
+   * @return the encrypted, nested, JWT
+   * @throws JOSEException for encryption errors
+   */
+  @Nonnull
+  public static EncryptedJWT getEncryptedJWT(@Nonnull final OIDCAuthnRequestParameterModel model,
+      @Nonnull final Function<String, JWK> getJwkFromKid, @Nonnull final JWT jwt) throws JOSEException {
+    return encrypt(jwt, getJwkFromKid.apply(model.getKeys().getEncKey()));
+  }
 
-        @Override
-        public boolean shouldSkipClass(final Class<?> aClass) {
-          return false;
-        }
-      })
-      .create();
-
-  public static EncryptedJWT getEncryptedSignedJWT(final OIDCAuthnRequestParameterModel model,
-      final Function<String, JWK> getJwkFromKid, final SignedJWT signedJWT) throws JOSEException {
-    final JWK encKey = getJwkFromKid.apply(model.getKeys().getEncKey());
+  /**
+   * Encrypts a signed or unsecured JWT. The result is a nested JWT whose plaintext is the serialized JWT.
+   *
+   * @param jwt the JWT to encrypt
+   * @param encKey the key to encrypt for
+   * @return the encrypted JWT
+   * @throws JOSEException for encryption errors
+   */
+  @Nonnull
+  public static EncryptedJWT encrypt(@Nonnull final JWT jwt, @Nonnull final JWK encKey) throws JOSEException {
     final JWEHeader header = new JWEHeader.Builder(JoseUtils.keyEncryptionAlgorithm(encKey), EncryptionMethod.A256GCM)
         .contentType("JWT")
         .keyID(encKey.getKeyID())
         .build();
-    final EncryptedJWT encryptedJWT = new EncryptedJWT(header, new JWTClaimsSet.Builder().claim("payload",
-        signedJWT.serialize()).build());
-    encryptedJWT.encrypt(JoseUtils.encrypter(encKey));
-    return encryptedJWT;
+    final JWEObject jwe = new JWEObject(header, new Payload(jwt.serialize()));
+    jwe.encrypt(JoseUtils.encrypter(encKey));
+    try {
+      return EncryptedJWT.parse(jwe.serialize());
+    }
+    catch (final java.text.ParseException e) {
+      throw new JOSEException("Failed to create encrypted JWT", e);
+    }
   }
 
-  public static EncryptedJWT getEncryptedPlainJwt(final OIDCAuthnRequestParameterModel model,
-      final Function<String, JWK> getJwkFromKid, final JWTClaimsSet jwtClaimsSet) throws JOSEException {
-    final JWK encKey = getJwkFromKid.apply(model.getKeys().getEncKey());
-    final JWEHeader header = new JWEHeader.Builder(JoseUtils.keyEncryptionAlgorithm(encKey), EncryptionMethod.A256GCM)
-        .contentType("JWT")
-        .keyID(encKey.getKeyID())
-        .build();
-    final EncryptedJWT encryptedJWT = new EncryptedJWT(header, jwtClaimsSet);
-    encryptedJWT.encrypt(JoseUtils.encrypter(encKey));
-    return encryptedJWT;
+  /**
+   * Signs claims with a key.
+   *
+   * @param claims the claims
+   * @param signKey the key to sign with
+   * @return the signed JWT
+   * @throws JOSEException for signing errors
+   */
+  @Nonnull
+  public static SignedJWT sign(@Nonnull final JWTClaimsSet claims, @Nonnull final JWK signKey) throws JOSEException {
+    final JWSHeader header =
+        new JWSHeader.Builder(JoseUtils.signingAlgorithm(signKey)).keyID(signKey.getKeyID()).build();
+    final SignedJWT signedJWT = new SignedJWT(header, claims);
+    signedJWT.sign(JoseUtils.signer(signKey));
+    return signedJWT;
   }
 
+  /**
+   * Gets the JWT carrying the sign request in the request URL. Its claims set is the sign request object. Depending on
+   * the settings of the sign request it is signed with its selected key or unsecured, and optionally encrypted for the
+   * encryption key of the key options.
+   *
+   * @param model the request parameter model
+   * @param getJwkFromKid function giving the key for a key ID
+   * @return the JWT
+   * @throws JOSEException for signing or encryption errors
+   * @throws ParseException if the sign request is not a valid claims set
+   */
+  @Nonnull
+  public static JWT getSignRequestJWT(@Nonnull final OIDCAuthnRequestParameterModel model,
+      @Nonnull final Function<String, JWK> getJwkFromKid) throws JOSEException, ParseException {
+    final SignatureParameterModel signRequest = model.getSignMessage();
+    final JWTClaimsSet claims;
+    try {
+      claims = JWTClaimsSet.parse(OidcMessageSerializer.toSignRequest(signRequest));
+    }
+    catch (final java.text.ParseException e) {
+      throw new ParseException("Invalid sign request: " + e.getMessage(), e);
+    }
+    final JWT jwt = Boolean.FALSE.equals(signRequest.getSignJwt())
+        ? new PlainJWT(claims)
+        : sign(claims, getJwkFromKid.apply(signRequest.getSignKey()));
+    return Boolean.TRUE.equals(signRequest.getEncryptJwt())
+        ? getEncryptedJWT(model, getJwkFromKid, jwt)
+        : jwt;
+  }
+
+  /**
+   * Gets the claims of the request object.
+   *
+   * @param model the request parameter model
+   * @param resolver the resolver for the request object
+   * @return the claims
+   * @throws ParseException for invalid claims requests
+   */
+  @Nonnull
   public static JWTClaimsSet getClaims(
-      final OIDCAuthnRequestParameterModel model,
-      final AuthorizationParameterResolver resolver
+      @Nonnull final OIDCAuthnRequestParameterModel model,
+      @Nonnull final AuthorizationParameterResolver resolver
   ) throws ParseException {
     final JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder();
     if (model.getRequestObject().getAudience().getRequestBody()) {
@@ -101,19 +159,10 @@ public class RequestObjectFactory {
     if (model.getRequestObject().getIssuer().getRequestBody()) {
       builder.issuer(model.getRequestObject().getIssuer().getValue());
     }
-    resolver.getUserMessage().ifPresent(um -> {
-      builder.claim("https://id.oidc.se/param/userMessage", GSON.toJson(um));
-    });
-    resolver.getSignMessage().ifPresent(sig -> {
-      if (sig.getB64Encode() && sig.getTbsData() != null) {
-        final String tbsData = Base64.getEncoder().encodeToString(sig.getTbsData().getBytes(StandardCharsets.UTF_8));
-        sig.setTbsData(tbsData);
-      }
-      else {
-        sig.setTbsData(sig.getTbsData());
-      }
-      builder.claim("https://id.oidc.se/param/signRequest", GSON.toJson(sig));
-    });
+    resolver.getUserMessage().ifPresent(um ->
+        builder.claim(OidcMessageSerializer.USER_MESSAGE, OidcMessageSerializer.toUserMessage(um)));
+    resolver.getSignMessage().ifPresent(sig ->
+        builder.claim(OidcMessageSerializer.SIGN_REQUEST, OidcMessageSerializer.toSignRequest(sig)));
 
     resolver.getClientId().ifPresent(clientId -> builder.claim("client_id", clientId.getValue()));
     resolver.getNonce().ifPresent(nonce -> builder.claim("nonce", nonce.getValue()));
@@ -136,13 +185,22 @@ public class RequestObjectFactory {
     return builder.build();
   }
 
-  public static SignedJWT getSignedJWT(final OIDCAuthnRequestParameterModel model,
-      final Function<String, JWK> getJwkFromKid, final JWTClaimsSet claims) throws JOSEException {
-    final JWK signKey = getJwkFromKid.apply(model.getKeys().getSignKey());
-    final JWSHeader header =
-        new JWSHeader.Builder(JoseUtils.signingAlgorithm(signKey)).keyID(signKey.getKeyID()).build();
-    final SignedJWT signedJWT = new SignedJWT(header, claims);
-    signedJWT.sign(JoseUtils.signer(signKey));
-    return signedJWT;
+  /**
+   * Signs the request object claims with the signing key of the key options.
+   *
+   * @param model the request parameter model
+   * @param getJwkFromKid function giving the key for a key ID
+   * @param claims the request object claims
+   * @return the signed JWT
+   * @throws JOSEException for signing errors
+   */
+  @Nonnull
+  public static SignedJWT getSignedJWT(@Nonnull final OIDCAuthnRequestParameterModel model,
+      @Nonnull final Function<String, JWK> getJwkFromKid, @Nonnull final JWTClaimsSet claims) throws JOSEException {
+    return sign(claims, getJwkFromKid.apply(model.getKeys().getSignKey()));
+  }
+
+  // Hidden constructor
+  private RequestObjectFactory() {
   }
 }

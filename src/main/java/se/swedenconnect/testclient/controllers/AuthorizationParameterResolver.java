@@ -96,9 +96,11 @@ public class AuthorizationParameterResolver {
   }
 
   private boolean isSelected(final ModelParameter parameter) {
-    return this.forRequestBody
-        ? Boolean.TRUE.equals(parameter.getRequestBody())
-        : Boolean.TRUE.equals(parameter.getValuePresent());
+    return this.isSelected(parameter.getValuePresent(), parameter.getRequestBody());
+  }
+
+  private boolean isSelected(final Boolean valuePresent, final Boolean requestBody) {
+    return this.forRequestBody ? Boolean.TRUE.equals(requestBody) : Boolean.TRUE.equals(valuePresent);
   }
 
   @SuppressWarnings("unchecked")
@@ -159,28 +161,42 @@ public class AuthorizationParameterResolver {
     return Optional.of(new Scope(value.trim().split("\\s+")));
   }
 
+  /**
+   * Gets the user message if it is placed in this location.
+   *
+   * @return the user message model, or an empty optional if the user message is not placed here
+   */
   public Optional<OidcMessageParameterModel> getUserMessage() {
-    return Optional.ofNullable(this.model.getUserMessage()).flatMap(um -> {
-      if (um.getValuePresent() && !forRequestBody) {
-        return Optional.of(um);
-      }
-      if (um.getRequestBody() && forRequestBody) {
-        return Optional.of(um);
-      }
-      return Optional.empty();
-    });
+    return Optional.ofNullable(this.model.getUserMessage())
+        .filter(um -> this.isSelected(um.getValuePresent(), um.getRequestBody()));
   }
 
+  /**
+   * Gets the sign request if it is placed in this location.
+   *
+   * @return the sign request model, or an empty optional if the sign request is not placed here
+   */
   public Optional<SignatureParameterModel> getSignMessage() {
-    return Optional.ofNullable(this.model.getSignMessage()).flatMap(sm -> {
-      if (sm.getValuePresent() && !forRequestBody) {
-        return Optional.of(sm);
-      }
-      if (sm.getRequestBody() && forRequestBody) {
-        return Optional.of(sm);
-      }
+    return Optional.ofNullable(this.model.getSignMessage())
+        .filter(sm -> this.isSelected(sm.getValuePresent(), sm.getRequestBody()));
+  }
+
+  /**
+   * Gets the JWT carrying the sign request in the request URL, see
+   * {@link RequestObjectFactory#getSignRequestJWT(OIDCAuthnRequestParameterModel, Function)}. The request object
+   * carries the sign request as a JSON object instead, so for the request object the result is always empty.
+   *
+   * @param kidToJwkFunction function giving the key for a key ID
+   * @return the JWT, or an empty optional if the sign request is not placed in the request URL
+   * @throws JOSEException for signing or encryption errors
+   * @throws ParseException if the sign request is not a valid claims set
+   */
+  public Optional<JWT> getSignRequestJWT(final Function<String, JWK> kidToJwkFunction)
+      throws JOSEException, ParseException {
+    if (this.forRequestBody || this.getSignMessage().isEmpty()) {
       return Optional.empty();
-    });
+    }
+    return Optional.of(RequestObjectFactory.getSignRequestJWT(this.model, kidToJwkFunction));
   }
 
   public Optional<ResponseType> getResponseType() {
@@ -236,21 +252,19 @@ public class AuthorizationParameterResolver {
       final SignedJWT signedJWT = RequestObjectFactory.getSignedJWT(model, kidToJwtFunction, claims);
       saveFunction.accept("signed_jwt", signedJWT);
       if (model.getRequestObject().getEncryptRequest()) {
-        final EncryptedJWT encryptedJWT =
-            RequestObjectFactory.getEncryptedSignedJWT(model, kidToJwtFunction, signedJWT);
+        final EncryptedJWT encryptedJWT = RequestObjectFactory.getEncryptedJWT(model, kidToJwtFunction, signedJWT);
         saveFunction.accept("encrypted_signed_jwt", encryptedJWT);
         return Optional.of(encryptedJWT);
       }
       return Optional.of(signedJWT);
     }
+    final PlainJWT jwt = new PlainJWT(claims);
+    saveFunction.accept("plain_jwt", jwt);
     if (model.getRequestObject().getEncryptRequest()) {
-      final EncryptedJWT encryptedPlainJwt = RequestObjectFactory.getEncryptedPlainJwt(model, kidToJwtFunction, claims);
+      final EncryptedJWT encryptedPlainJwt = RequestObjectFactory.getEncryptedJWT(model, kidToJwtFunction, jwt);
       saveFunction.accept("encrypted_plain_jwt", encryptedPlainJwt);
       return Optional.of(encryptedPlainJwt);
     }
-
-    final PlainJWT jwt = new PlainJWT(claims);
-    saveFunction.accept("plain_jwt", claims);
     return Optional.of(jwt);
   }
 
