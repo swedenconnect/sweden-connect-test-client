@@ -256,12 +256,43 @@ class CodeViewer {
     jsonViewer.find('.modal').modal('show');
   }
 
-  displayURL(title, text) {
-    $('#json-content').html(text.replace(/.*\?/g, '$&\n\t').replace(/&/g, '$&\n\t'));
+  /**
+   * Displays one or more parts in the JSON viewer, one after the other. A part is either a URL, shown with each query
+   * parameter on its own line, or JSON, shown pretty-printed. A part with a label gets the label as a heading. "Copy to
+   * clipboard" copies the text as it is shown, labels included.
+   * @param title the title of the viewer
+   * @param parts the parts, each {label?: string, url: string} or {label?: string, json: any}
+   */
+  displayParts(title, parts) {
+    const content = $('#json-content').empty();
+    parts.forEach((part, index) => {
+      if (index > 0) {
+        content.append(document.createTextNode('\n\n'));
+      }
+      if (part.label) {
+        content.append($('<span>', { class: 'fw-bold', text: part.label + '\n' }));
+      }
+      if (part.url !== undefined) {
+        content.append(document.createTextNode(CodeViewer.formatUrl(part.url)));
+      }
+      else {
+        content.append($('<span>').html(prettyPrintJson.toHtml(part.json, this.jsonFormat)));
+      }
+    });
+    content.prop('json', content.text());
 
     const jsonViewer = $('#json-viewer');
     jsonViewer.find('.modal-title').text(title);
     jsonViewer.find('.modal').modal('show');
+  }
+
+  /**
+   * Formats a URL for display, with the query string and each of its parameters on its own indented line.
+   * @param url the URL
+   * @returns {string} the formatted URL
+   */
+  static formatUrl(url) {
+    return url.replace(/.*\?/g, '$&\n\t').replace(/&/g, '$&\n\t');
   }
 }
 

@@ -19,6 +19,7 @@ Date: _not yet released_
 - An encrypted request object is now a proper nested JWT (`cty: JWT`) holding the signed or unsecured JWT.
 - Configurations exported before this version are not guaranteed to import correctly.
 - The OIDC authentication request can be sent with GET or POST, using the new "Send AuthnRequest - GET/POST" buttons.
+- "View AuthnRequest" shows the header and claims of a signed or unsigned request object.
 
 
 ### Version 1.0.10
