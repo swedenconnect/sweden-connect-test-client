@@ -16,7 +16,6 @@
 package se.swedenconnect.testclient.controllers;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.nimbusds.jose.shaded.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,6 +28,10 @@ import java.util.stream.Stream;
 
 /**
  * The editable model for the OIDC signature extension, i.e., the sign message and the data to be signed.
+ * <p>
+ * Apart from the sign request itself ({@code tbs_data} and {@code sign_message}) the model holds settings that decide
+ * how the sign request is sent. None of them is sent; see {@link OidcMessageSerializer}.
+ * </p>
  *
  * @author Martin Lindström
  * @author Felix Hellman
@@ -39,13 +42,38 @@ import java.util.stream.Stream;
 @Setter
 @Builder
 public class SignatureParameterModel {
-  @SerializedName("tbs_data")
+  /** The data to be signed. */
   private String tbsData;
-  @SerializedName("sign_message")
+
+  /** The sign message. Its MIME type is the one sent in the {@code sign_message} object. */
   private OidcMessageParameterModel signMessage;
-  private Boolean requestBody;
+
+  /** Whether the sign request is sent in the request URL. */
   private Boolean valuePresent;
+
+  /** Whether the sign request is sent in the request object. */
+  private Boolean requestBody;
+
+  /** Whether the TBS data and the sign message values are Base64-encoded when sent. */
   private Boolean b64Encode;
+
+  /** Whether {@code tbs_data} is sent. If {@code null}, it is sent. */
+  private Boolean includeTbsData;
+
+  /**
+   * Whether the JWT carrying the sign request in the request URL is signed. If {@code false}, it is an unsecured JWT.
+   * If {@code null}, it is signed.
+   */
+  private Boolean signJwt;
+
+  /** The key ID of the key signing the JWT carrying the sign request in the request URL. */
+  private String signKey;
+
+  /**
+   * Whether the JWT carrying the sign request in the request URL is encrypted, with the encryption key of the key
+   * options.
+   */
+  private Boolean encryptJwt;
 
   @JsonIgnore
   public String getPreferredMessage() {

@@ -1742,20 +1742,10 @@
                     <!-- User Message Extension -->
                     <div class="form-group">
                         <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
+                            <label class="col-sm-8 col-form-label">
                 <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                       data-bs-original-title="The UserMessage extension is used to supply the IdP with a message that should be displayed for the user during authentication.">User Message Extension</span>
                             </label>
-                            <div class="col-sm-2">
-                                <input class="form-check-input" type="checkbox" name="oidc-request-um-b64"
-                                       id="oidc-request-um-b64">
-                                <label class="form-check-label ps-3" for="oidc-request-um-b64">
-                                    <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                          data-bs-original-title="Check this box if you want your messages to be base64 encoded for you, otherwise leave blank and enter encoded messages.">
-                                    B64 Encode
-                                </span>
-                                </label>
-                            </div>
                             <div class="col-sm-2">
                                 <div class="form-check d-flex justify-content-end">
                                     <input class="form-check-input" type="checkbox" name="oidc-request-um-request-body"
@@ -1785,12 +1775,28 @@
                         </div>
                         <div id="oidc-request-um-div">
                             <div class="row mt-4">
+                                <div class="col-sm-2"></div>
+                                <div class="col-sm-10">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="oidc-request-um-b64"
+                                               id="oidc-request-um-b64">
+                                        <label class="form-check-label" for="oidc-request-um-b64">
+                                            <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                                  data-bs-original-title="Check this box to have all message values Base64-encoded when the user message is sent. Leave it unchecked to send the messages exactly as entered, e.g., already encoded.">
+                                                Base64-encode
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-4">
                                 <label class="col-sm-2" for="oidc-request-um-mimetype-select">
                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                        data-bs-original-title="The MIME type for all user messages.">MIME Type</span>
+                        data-bs-original-title="The MIME type for all user messages, sent as mime_type. &quot;Not included&quot; sends no mime_type.">MIME Type</span>
                                 </label>
                                 <div class="col-sm-10">
                                     <select class="form-select" id="oidc-request-um-mimetype-select">
+                                        <option value="">Not included</option>
                                         <option value="text/plain">text/plain</option>
                                         <option value="text/markdown">text/markdown</option>
                                         <option value="text/dummy">text/dummy</option>
@@ -1821,23 +1827,12 @@
                     <!-- Sign Message Extension -->
                     <div class="form-group">
                         <div class="row mt-4">
-                            <label class="col-sm-6 col-form-label">
+                            <label class="col-sm-8 col-form-label">
       <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-            data-bs-original-title="The UserMessage extension is used to supply the IdP with a message that should be displayed for the user during authentication.">
+            data-bs-original-title="The signRequest parameter is used to supply the OP with the data to be signed and a message that should be displayed for the user during authentication for signature.">
         Sign Message Extension
       </span>
                             </label>
-                            <div class="col-sm-2">
-                                <input class="form-check-input" type="checkbox" name="oidc-request-sig-b64"
-                                       id="oidc-request-sig-b64">
-                                <label class="form-check-label ps-3" for="oidc-request-sig-b64">
-                                    <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                          data-bs-original-title="Check this box if you want your messages to be base64 encoded for you, otherwise leave blank and enter encoded messages.">
-                                    B64 Encode
-                                </span>
-                                </label>
-
-                            </div>
                             <div class="col-sm-2">
                                 <div class="form-check d-flex justify-content-end">
                                     <input class="form-check-input" type="checkbox" name="oidc-request-sig-request-body"
@@ -1856,7 +1851,7 @@
                                            id="oidc-request-sig-present">
                                     <label class="form-check-label ps-3" for="oidc-request-sig-present">
                                         <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                              data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                              data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter. It is then sent as a JWT.">
                                     In Request
                                 </span>
                                     </label>
@@ -1866,12 +1861,28 @@
 
                         <div id="oidc-request-sig-div">
                             <div class="row mt-4">
+                                <div class="col-sm-2"></div>
+                                <div class="col-sm-10">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="oidc-request-sig-b64"
+                                               id="oidc-request-sig-b64">
+                                        <label class="form-check-label" for="oidc-request-sig-b64">
+                                            <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                                  data-bs-original-title="Check this box to have the TBS data and all sign message values Base64-encoded when the sign request is sent. Leave it unchecked to send them exactly as entered, e.g., already encoded.">
+                                                Base64-encode
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-4">
                                 <label class="col-sm-2" for="oidc-request-sig-mimetype-select">
         <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-              data-bs-original-title="The MIME type for all sign messages.">MIME Type</span>
+              data-bs-original-title="The MIME type for all sign messages, sent as mime_type of sign_message. &quot;Not included&quot; sends no mime_type.">MIME Type</span>
                                 </label>
                                 <div class="col-sm-10">
                                     <select class="form-select" id="oidc-request-sig-mimetype-select">
+                                        <option value="">Not included</option>
                                         <option value="text/plain">text/plain</option>
                                         <option value="text/markdown">text/markdown</option>
                                         <option value="text/dummy">text/dummy</option>
@@ -1882,9 +1893,16 @@
                             <div id="oidc-request-sig-messages-div">
                                 <div class="row mt-4">
                                     <div class="col-sm-2">
-                                        <label class="form-check-label ps-3" for="oidc-request-tbs-textarea">
-                                            TBS Data
-                                        </label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="oidc-request-tbs-include" id="oidc-request-tbs-include">
+                                            <label class="form-check-label" for="oidc-request-tbs-include">
+                                                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                                      data-bs-original-title="Check this box to send tbs_data. It is set each time this section is expanded: on if the scope holds https://id.oidc.se/scope/sign, off if it holds https://id.oidc.se/scope/signApproval but not sign, and on otherwise.">
+                                                    TBS Data
+                                                </span>
+                                            </label>
+                                        </div>
                                     </div>
                                     <div class="col-sm-10">
                                     <textarea class="form-control user-message" id="oidc-request-tbs-textarea" rows="3"
@@ -1908,6 +1926,52 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- The JWT that carries the sign request in the request URL ("In Request" only) -->
+                            <div id="oidc-request-sig-jwt-div">
+                                <div class="row mt-4">
+                                    <label class="col-sm-2">
+                                        <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                              data-bs-original-title="In the request URL the sign request is sent as a JWT whose claims are the sign request.">
+                                            Request JWT
+                                        </span>
+                                    </label>
+                                    <div class="col-sm-10">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="oidc-request-sig-jwt-sign" id="oidc-request-sig-jwt-sign">
+                                            <label class="form-check-label" for="oidc-request-sig-jwt-sign">
+                                                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                                      data-bs-original-title="Check this box to sign the JWT with the selected key. Leave it unchecked to send an unsecured JWT (alg: none).">
+                                                    Signed
+                                                </span>
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="oidc-request-sig-jwt-encrypt" id="oidc-request-sig-jwt-encrypt">
+                                            <label class="form-check-label" for="oidc-request-sig-jwt-encrypt">
+                                                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                                      data-bs-original-title="Check this box to encrypt the JWT for the encryption key selected in the key options. The encrypted JWT holds the signed or unsecured JWT.">
+                                                    Encrypted
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-4">
+                                    <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                         data-bs-original-title="The key signing the JWT. Choose a key other than the registered key to produce a signature the OP cannot verify.">
+                                        <label class="col-form-label text-sm-right"
+                                               for="oidc-request-sig-jwt-signkey-select">Sign Key
+                                        </label>
+                                    </div>
+                                    <div class="col-sm-10">
+                                        <select class="form-select" id="oidc-request-sig-jwt-signkey-select">
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1916,8 +1980,11 @@
                     <div id="oidc-request-submit-div">
                         <div class="row mt-4">
                             <div class="col-sm-12">
-                                <button id="oidc-request-submit-button" type="button" class="btn btn-primary">Send
-                                    AuthnRequest
+                                <button id="oidc-request-submit-get-button" type="button" class="btn btn-primary">Send
+                                    AuthnRequest - GET
+                                </button>
+                                <button id="oidc-request-submit-post-button" type="button" class="btn btn-primary">Send
+                                    AuthnRequest - POST
                                 </button>
                                 <button id="oidc-request-restart-button" type="button" class="btn btn-primary">Restart
                                 </button>

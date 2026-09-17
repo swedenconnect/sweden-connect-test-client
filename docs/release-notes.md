@@ -12,6 +12,14 @@ Date: _not yet released_
 
 - Showing display_name when selecting a OP in the list. The same as in SAML
 - A problem where the logotype was not displayed in the footer was fixed.
+- OIDC sign request and user message fixes: both are sent as JSON objects in the request object, the "Base64-encode"
+  setting encodes the messages (and the TBS data) without encoding a value twice, the selected MIME type is sent. 
+  Internal settings no longer leak into the request.
+- The `signRequest` URL parameter is now a JWT - signed with a selectable key or unsecured, and optionally encrypted.
+- An encrypted request object is now a proper nested JWT (`cty: JWT`) holding the signed or unsecured JWT.
+- Configurations exported before this version are not guaranteed to import correctly.
+- The OIDC authentication request can be sent with GET or POST, using the new "Send AuthnRequest - GET/POST" buttons.
+
 
 ### Version 1.0.10
 
