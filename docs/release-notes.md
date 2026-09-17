@@ -10,7 +10,7 @@
 
 Date: _not yet released_
 
--
+- The OIDC Authentication Result also shows `exp`, `iat`, `nbf`, `auth_time` and `updated_at` as a time in UTC.
 
 ### Version 1.0.11
 

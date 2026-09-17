@@ -239,14 +239,18 @@ public class OidcController {
       Optional.ofNullable(iss).ifPresent(s -> responseParameters.put("iss", s));
       Optional.ofNullable(code).ifPresent(s -> responseParameters.put("code", s));
 
+      final Map<String, Object> accessTokenClaims = accessTokenClaims(accessToken);
       final OIDCResponse.OIDCResponseBuilder responseBuilder = OIDCResponse.builder()
           .accessToken(accessToken)
-          .accessTokenClaims(accessTokenClaims(accessToken))
+          .accessTokenClaims(accessTokenClaims)
+          .accessTokenClaimTimes(ClaimTimes.of(accessTokenClaims))
           .scopeValidation(userInfo.getScopeValidation())
           .idTokenClaims(idTokenClaims)
+          .idTokenClaimTimes(ClaimTimes.of(idTokenClaims))
           .authorizationRequest(this.sentRequest(authRequest))
           .userInfoResult(userInfo.getUserInfoResult())
           .userInfoClaims(userInfo.getUserInfoClaims())
+          .userInfoClaimTimes(userInfo.getUserInfoClaimTimes())
           .missingUserInfoClaims(userInfo.getMissingUserInfoClaims())
           .idTokenProtection(idTokenResult.protection())
           .userInfoProtection(userInfo.getUserInfoProtection())
