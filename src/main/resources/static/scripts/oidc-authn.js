@@ -222,7 +222,7 @@ class OIDCAuthentication {
                        this.authnRequestView = new OIDCAuthnRequest(
                            template,
                            () => this.onRestart(),
-                           (pars) => this.onSendAuthnRequest(pars)
+                           (pars, method) => this.onSendAuthnRequest(pars, method)
                        );
                        if (importString) {
                            try {
@@ -272,10 +272,11 @@ class OIDCAuthentication {
     /**
      * Callback function that is invoked to generate an AuthnRequest and redirect the browser.
      * @param authnRequest the AuthnRequest parameters
+     * @param method the HTTP method to send the request with, 'GET' or 'POST'
      */
-    onSendAuthnRequest(authnRequest) {
+    onSendAuthnRequest(authnRequest, method) {
         $.ajax({
-                   url: buildUrl('/oidc/authn/generate'),
+                   url: buildUrl('/oidc/authn/generate?method=' + encodeURIComponent(method)),
                    type: 'POST',
                    contentType: 'application/json',
                    data: JSON.stringify(this.authnRequestView.getAuthnRequestParameters()),
@@ -351,6 +352,35 @@ class OIDCAuthenticationResult {
         $('html, body').animate({scrollTop: pos}, 'slow');
     }
 
+    /**
+     * Gets the authentication request as it was sent. A result saved before the method was recorded holds only the URL
+     * of a GET request.
+     * @param authorizationRequest the sent request of the result
+     * @returns {{method: string, url: string, parameters: object}|null} the sent request
+     */
+    static sentRequest(authorizationRequest) {
+        if (!authorizationRequest) {
+            return null;
+        }
+        if (typeof authorizationRequest === 'string') {
+            return { method: 'GET', url: authorizationRequest, parameters: null };
+        }
+        return authorizationRequest;
+    }
+
+    /**
+     * Gets form parameters for display - a parameter with a single value is shown as that value.
+     * @param parameters the form parameters, each name mapped to its values
+     * @returns {object} the parameters for display
+     */
+    static formParameters(parameters) {
+        const result = {};
+        for (const [name, values] of Object.entries(parameters || {})) {
+            result[name] = Array.isArray(values) && values.length === 1 ? values[0] : values;
+        }
+        return result;
+    }
+
     verifyResponse(responseData) {
 
         const verifyInput = {
@@ -387,8 +417,21 @@ class OIDCAuthenticationResult {
         const resultErrorDiv = $('#oidc-authn-result-op-error');
         resultErrorDiv.removeClass('bg-secondary bg-warning bg-danger');
 
+        const sentRequest = OIDCAuthenticationResult.sentRequest(resultData.authorizationRequest);
         $('#oidc-authn-result-view-authnrequest').click(() => {
-            codeViewer.displayURL('Authentication Request', resultData.authorizationRequest);
+            if (!sentRequest) {
+                return;
+            }
+            if (sentRequest.method === 'POST') {
+                codeViewer.displayJson('Authentication Request', {
+                    method: sentRequest.method,
+                    endpoint: sentRequest.url,
+                    parameters: OIDCAuthenticationResult.formParameters(sentRequest.parameters)
+                });
+            }
+            else {
+                codeViewer.displayURL('Authentication Request', sentRequest.url);
+            }
         });
 
         if (resultData.errors && resultData.errors.length > 0) {
@@ -431,9 +474,9 @@ class OIDCAuthenticationResult {
 
         $('#oidc-authn-result-view-authnrequest-details').click((event) => {
             $(event.target).hide();
-            if (resultData.requestParameters) {
-                this.displayAuthnRequestDetails(resultData.requestParameters);
-                $('#oidc-authn-result-authnrequest-details').show();
+            if (sentRequest || resultData.requestParameters) {
+                const parameters = sentRequest ? { Method: sentRequest.method } : {};
+                this.displayAuthnRequestDetails({ ...parameters, ...(resultData.requestParameters || {}) });
             }
         });
 
@@ -1233,8 +1276,12 @@ class OIDCAuthnRequest {
             this.restartCallback();
         });
 
-        $('#oidc-request-submit-button').click(() => {
-            this.sendAuthnRequestCallback(this.readAndGetAuthnRequestParameters());
+        // The method is chosen by the button, and is not part of the request that is built
+        $('#oidc-request-submit-get-button').off('click').click(() => {
+            this.sendAuthnRequestCallback(this.readAndGetAuthnRequestParameters(), 'GET');
+        });
+        $('#oidc-request-submit-post-button').off('click').click(() => {
+            this.sendAuthnRequestCallback(this.readAndGetAuthnRequestParameters(), 'POST');
         });
 
         $('#oidc-request-export-button').click(() => {

@@ -58,6 +58,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -772,6 +773,90 @@ class AuthorizationParameterResolverTest {
     return new String(Base64.getDecoder().decode((String) value), StandardCharsets.UTF_8);
   }
 
+  static Stream<Arguments> sendMethodScenarios() {
+    return Stream.of(
+        Arguments.of("default request", (ModelSetup) model -> {
+        }),
+        Arguments.of("request object, signed and encrypted", (ModelSetup) model -> {
+          for (final String row : List.of("redirect_uri", "prompt", "acr_values")) {
+            placeRow(model, row, false, true);
+          }
+          model.getRequestObject().setModuleEnabled(true);
+          model.getRequestObject().setSignRequest(true);
+          model.getRequestObject().setEncryptRequest(true);
+        }),
+        Arguments.of("extensions and values needing encoding", (ModelSetup) model -> {
+          placeRow(model, USER_MESSAGE, true, false);
+          placeRow(model, SIGN_REQUEST, true, false);
+          model.getUserMessage().setB64Encode(false);
+          model.getUserMessage().setMessageSwedish("Räksmörgås & a=b+c ? / % \"x\" <y>");
+          model.getAdvanced().getLoginHint().setValue("user name+tag@example.com&x=1");
+          model.getAdvanced().getLoginHint().setValuePresent(true);
+          model.setClaims(Map.of("id_token", Map.of("https://id.oidc.se/claim/personalIdentityNumber",
+              Map.of("essential", true))));
+        }),
+        Arguments.of("no parameters", (ModelSetup) model -> {
+          for (final String row : List.of("client_id", "redirect_uri", "scope", "response_type", "prompt")) {
+            placeRow(model, row, false, false);
+          }
+          for (final String row : List.of("state", "nonce", "codeChallenge", "codeChallengeMethod")) {
+            place(advanced(model, row), false, false);
+          }
+        }));
+  }
+
+  @FunctionalInterface
+  private interface ModelSetup {
+    void apply(OIDCAuthnRequestParameterModel model);
+  }
+
+  @ParameterizedTest(name = "{0}, endpoint={2}")
+  @MethodSource("sendMethodCases")
+  void postSendsExactlyTheParametersOfTheGetQueryString(
+      final String scenario, final ModelSetup setup, final String endpoint) throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    setup.apply(model);
+
+    final Result result = generate(model, new HashMap<>(), endpoint);
+
+    Assertions.assertEquals(SentAuthorizationRequest.Method.GET, result.get().method());
+    Assertions.assertNull(result.get().parameters());
+    Assertions.assertEquals(SentAuthorizationRequest.Method.POST, result.post().method());
+    Assertions.assertEquals(endpoint, result.post().url(), "Nothing but the endpoint must be in the POST URL");
+
+    final Map<String, List<String>> getQuery = queryOf(result.get().url());
+    final Map<String, List<String>> postParameters = new LinkedHashMap<>(queryOf(result.post().url()));
+    Assertions.assertTrue(postParameters.keySet().stream().noneMatch(result.post().parameters()::containsKey),
+        "A form parameter must not repeat a parameter of the endpoint's own query string");
+    postParameters.putAll(result.post().parameters());
+    Assertions.assertEquals(getQuery, postParameters);
+    Assertions.assertEquals(result.parameters(), queryOf(result.get().url()), "GET is sent as the request URL");
+  }
+
+  static Stream<Arguments> sendMethodCases() {
+    return sendMethodScenarios().flatMap(scenario -> Stream.of(AUTHORIZATION_ENDPOINT,
+            "https://op.example.com/authorize?tenant=a%26b&mode=test")
+        .map(endpoint -> Arguments.of(scenario.get()[0], scenario.get()[1], endpoint)));
+  }
+
+  @Test
+  void getUrlWithoutParametersIsTheEndpointAsConfigured() throws Exception {
+    final String endpoint = "https://op.example.com/authorize?tenant=a";
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    sendMethodScenarios().filter(a -> "no parameters".equals(a.get()[0])).findFirst()
+        .map(a -> (ModelSetup) a.get()[1]).orElseThrow().apply(model);
+
+    final Result result = generate(model, new HashMap<>(), endpoint);
+
+    // max_age=0 is always added by the request generation and has no row
+    Assertions.assertEquals(Map.of("max_age", List.of("0")), result.post().parameters());
+    Assertions.assertEquals(endpoint + "&max_age=0", result.get().url());
+  }
+
+  private static Map<String, List<String>> queryOf(final String url) {
+    return URLUtils.parseParameters(URI.create(url).getRawQuery());
+  }
+
   /**
    * The outcome of generating a request.
    *
@@ -779,9 +864,11 @@ class AuthorizationParameterResolverTest {
    * @param claims the claims of the request object, or {@code null} if there is no request object
    * @param verifier the code verifier saved for the token request, or {@code null}
    * @param session the attributes saved in the session
+   * @param get the request as sent with GET
+   * @param post the same request as sent with POST
    */
   private record Result(Map<String, List<String>> parameters, JWTClaimsSet claims, CodeVerifier verifier,
-      Map<String, Object> session) {
+      Map<String, Object> session, SentAuthorizationRequest get, SentAuthorizationRequest post) {
 
     String url(final String name) {
       return Optional.ofNullable(this.parameters.get(name)).map(List::getFirst).orElse(null);
@@ -792,17 +879,23 @@ class AuthorizationParameterResolverTest {
     return generate(model, new HashMap<>());
   }
 
-  /**
-   * Generates a request the way {@code OidcRestController.generateAuthnRequest} does.
-   */
-  @SuppressWarnings("unchecked")
   private static Result generate(final OIDCAuthnRequestParameterModel model, final Map<String, Object> session)
       throws Exception {
+    return generate(model, session, AUTHORIZATION_ENDPOINT);
+  }
+
+  /**
+   * Generates a request the way {@code OidcRestController.generateAuthnRequest} does. The request is taken as sent
+   * both with GET and with POST.
+   */
+  @SuppressWarnings("unchecked")
+  private static Result generate(final OIDCAuthnRequestParameterModel model, final Map<String, Object> session,
+      final String endpoint) throws Exception {
     session.remove("jwt_claims");
     final AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(
         new ResponseType("code"), new Scope("openid"), new ClientID(model.getClientId().getValue()),
         URI.create(model.getRedirectUri().getValue()))
-        .endpointURI(URI.create(AUTHORIZATION_ENDPOINT));
+        .endpointURI(URI.create(endpoint));
     builder.maxAge(0);
     // As OidcRestController, which fails for a key ID that does not name a key
     final Function<String, JWK> kidToJwk = kid -> Optional.ofNullable(kid).map(keys::get)
@@ -811,11 +904,17 @@ class AuthorizationParameterResolverTest {
     final AuthenticationRequest request = AuthorizationRequestCustomizer.customize(builder, kidToJwk, resolver).build();
 
     final URI uri = AuthorizationRequestCustomizer.toURI(request, resolver);
-    Assertions.assertTrue(uri.toString().startsWith(AUTHORIZATION_ENDPOINT + "?"), uri.toString());
+    if (AUTHORIZATION_ENDPOINT.equals(endpoint)) {
+      Assertions.assertTrue(uri.toString().startsWith(AUTHORIZATION_ENDPOINT + "?"), uri.toString());
+    }
+    final SentAuthorizationRequest get =
+        AuthorizationRequestCustomizer.toSentRequest(request, resolver, SentAuthorizationRequest.Method.GET);
+    final SentAuthorizationRequest post =
+        AuthorizationRequestCustomizer.toSentRequest(request, resolver, SentAuthorizationRequest.Method.POST);
     final Pair<CodeChallengeMethod, CodeVerifier> verifier =
         (Pair<CodeChallengeMethod, CodeVerifier>) session.get(AuthorizationParameterResolver.CODE_VERIFIER_ATTRIBUTE);
     return new Result(URLUtils.parseParameters(uri.getRawQuery()), (JWTClaimsSet) session.get("jwt_claims"),
-        verifier != null ? verifier.getRight() : null, session);
+        verifier != null ? verifier.getRight() : null, session, get, post);
   }
 
   private static String challengeOf(final CodeVerifier verifier) {

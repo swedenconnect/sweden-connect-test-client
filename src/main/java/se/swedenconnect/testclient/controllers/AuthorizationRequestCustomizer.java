@@ -85,31 +85,63 @@ public class AuthorizationRequestCustomizer {
   }
 
   /**
-   * Gets the URI that is sent for an authentication request.
+   * Gets the parameters that are sent for an authentication request - in the query string for GET and as a form body
+   * for POST.
    * <p>
    * The request library insists on {@code client_id}, {@code response_type}, a {@code scope} containing
-   * {@code openid} and (without a request object) {@code redirect_uri}. The URI is therefore built from the request's
+   * {@code openid} and (without a request object) {@code redirect_uri}. The parameters are therefore the request's
    * parameters with these four set exactly as the resolver places them, so that each is present only when selected
    * for the URL.
    * </p>
    *
    * @param request the authentication request built by {@link #customize}
    * @param resolver the resolver for the request URL
-   * @return the URI to send
+   * @return the parameters to send
    */
-  public static URI toURI(final AuthenticationRequest request, final AuthorizationParameterResolver resolver) {
+  public static Map<String, List<String>> toParameters(
+      final AuthenticationRequest request, final AuthorizationParameterResolver resolver) {
     final Map<String, List<String>> parameters = new LinkedHashMap<>(request.toParameters());
     setOrRemove(parameters, "client_id", resolver.getClientId().map(ClientID::getValue));
     setOrRemove(parameters, "response_type", resolver.getResponseType().map(ResponseType::toString));
     setOrRemove(parameters, "redirect_uri", resolver.getRedirectionURI().map(URI::toString));
     setOrRemove(parameters, "scope", resolver.getScope().map(Scope::toString));
+    return parameters;
+  }
 
+  /**
+   * Gets the URI that is sent for an authentication request with GET, i.e., the authorization endpoint with the
+   * parameters from {@link #toParameters} added to its query string.
+   *
+   * @param request the authentication request built by {@link #customize}
+   * @param resolver the resolver for the request URL
+   * @return the URI to send
+   */
+  public static URI toURI(final AuthenticationRequest request, final AuthorizationParameterResolver resolver) {
     final String endpoint = request.getEndpointURI().toString();
-    final String query = URLUtils.serializeParameters(parameters);
+    final String query = URLUtils.serializeParameters(toParameters(request, resolver));
     if (query.isEmpty()) {
       return URI.create(endpoint);
     }
     return URI.create(endpoint + (request.getEndpointURI().getRawQuery() != null ? "&" : "?") + query);
+  }
+
+  /**
+   * Gets the authentication request as it is sent with a given method. For GET it is the URI from {@link #toURI}, for
+   * POST the authorization endpoint as configured, including any query string of its own, along with the parameters
+   * from {@link #toParameters} as form parameters.
+   *
+   * @param request the authentication request built by {@link #customize}
+   * @param resolver the resolver for the request URL
+   * @param method the HTTP method
+   * @return the request to send
+   */
+  public static SentAuthorizationRequest toSentRequest(final AuthenticationRequest request,
+      final AuthorizationParameterResolver resolver, final SentAuthorizationRequest.Method method) {
+    return switch (method) {
+      case GET -> new SentAuthorizationRequest(method, toURI(request, resolver).toASCIIString(), null);
+      case POST -> new SentAuthorizationRequest(
+          method, request.getEndpointURI().toASCIIString(), toParameters(request, resolver));
+    };
   }
 
   private static void setOrRemove(

@@ -89,8 +89,11 @@ public class OidcController {
 
   public static final String SESSION_NAME_OIDC_RESPONSE = "sctc.oidcResponse";
 
-  /** The URI of the authentication request as it was sent - it may differ from what the request object describes. */
-  public static final String SESSION_NAME_AUTH_REQUEST_URI = "auth_request_uri";
+  /**
+   * The authentication request as it was sent - its method, URL and form parameters, see
+   * {@link SentAuthorizationRequest}. It may differ from what the request object describes.
+   */
+  public static final String SESSION_NAME_SENT_AUTH_REQUEST = "sent_auth_request";
 
   /**
    * The base path for the redirection URLs.
@@ -117,7 +120,7 @@ public class OidcController {
           OIDCResponse.builder()
               .errors(List.of("error:%s Error Description:%s".formatted(error, errorDescription)))
               .opError(true)
-              .authorizationRequest(this.sentRequestUri(authRequest))
+              .authorizationRequest(this.sentRequest(authRequest))
               .build()
       );
       return new ModelAndView("redirect:/");
@@ -244,7 +247,7 @@ public class OidcController {
           .accessTokenClaims(accessTokenClaims(accessToken))
           .scopeValidation(validateScopes(requestedScopes(authRequest), idTokenClaims, userInfo))
           .idTokenClaims(idTokenClaims)
-          .authorizationRequest(this.sentRequestUri(authRequest))
+          .authorizationRequest(this.sentRequest(authRequest))
           .userInfoClaims(userInfo)
           .idTokenProtection(idTokenResult.protection())
           .userInfoProtection(userInfoResult.protection())
@@ -392,14 +395,15 @@ public class OidcController {
   }
 
   /**
-   * Gets the URI of the authentication request as it was sent.
+   * Gets the authentication request as it was sent. If it was not recorded, it is taken to be a GET of the request.
    *
    * @param authRequest the authentication request
-   * @return the URI
+   * @return the sent request
    */
-  private String sentRequestUri(final AuthenticationRequest authRequest) {
-    return Optional.ofNullable((String) this.httpSession.getAttribute(SESSION_NAME_AUTH_REQUEST_URI))
-        .orElseGet(() -> authRequest.toHTTPRequest().getURI().toASCIIString());
+  private SentAuthorizationRequest sentRequest(final AuthenticationRequest authRequest) {
+    return Optional.ofNullable((SentAuthorizationRequest) this.httpSession.getAttribute(SESSION_NAME_SENT_AUTH_REQUEST))
+        .orElseGet(() -> new SentAuthorizationRequest(SentAuthorizationRequest.Method.GET,
+            authRequest.toHTTPRequest().getURI().toASCIIString(), null));
   }
 
   /**
