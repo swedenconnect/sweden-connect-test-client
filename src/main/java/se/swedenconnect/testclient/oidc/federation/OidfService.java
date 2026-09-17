@@ -356,19 +356,21 @@ public class OidfService {
 
     final TrustChain chain = resolved.getTrustChain();
     final String issuer = Optional.ofNullable(metadata.getAsString("issuer")).orElseGet(op::getValue);
-    final String displayName = Optional.ofNullable(metadata.getAsString("organization_name"))
+    final String displayName = Optional.ofNullable(metadata.getAsString("display_name"))
+        .or(() -> Optional.ofNullable(metadata.getAsString("organization_name")))
         .or(() -> Optional.ofNullable(resolved.getMetadata(EntityType.FEDERATION_ENTITY))
             .map(m -> m.getAsString("organization_name")))
         .or(() -> Optional.ofNullable(chain)
             .map(TrustChain::getLeafConfiguration)
             .map(leaf -> leaf.getClaimsSet().getFederationEntityMetadata())
             .map(FederationEntityMetadata::getOrganizationName))
-        .orElse(issuer);
+        .orElse(null);
+    final String description = metadata.getAsString("description");
 
     return OidcOp.builder()
         .entityId(issuer)
         .displayName(displayName)
-        .description("Resolved via OpenID Federation (trust anchor %s)".formatted(trustAnchor.getValue()))
+        .description(description)
         .authorizationEndpoint(metadata.getAsString("authorization_endpoint"))
         .tokenEndpoint(metadata.getAsString("token_endpoint"))
         .userInfoEndpoint(metadata.getAsString("userinfo_endpoint"))

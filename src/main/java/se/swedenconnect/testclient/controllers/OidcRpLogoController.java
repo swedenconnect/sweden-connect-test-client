@@ -79,7 +79,7 @@ public class OidcRpLogoController {
    * @param rpSuffix the RP path suffix
    * @return an SVG image
    */
-  @GetMapping(value = "/{rpSuffix}/logo.svg")
+  @GetMapping(value = "/{rpSuffix:(?!images|scripts|css).+}/logo.svg")
   public ResponseEntity<String> getLogo(@PathVariable("rpSuffix") @Nonnull final String rpSuffix) {
     final OidcRp rp = this.rps.stream()
         .filter(r -> rpSuffix.equals(r.getPathSuffix()))

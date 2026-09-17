@@ -294,6 +294,14 @@ main {
     font-weight: bold;
 }
 
+#oidc-op-displayname {
+    font-weight: bold;
+}
+
+#oidc-rp-description {
+    font-weight: bold;
+}
+
 .col-form-label {
     font-weight: bold;
 }

@@ -160,7 +160,7 @@ public class OidcRestController {
     final List<OpenIdProviderModel> providers = this.opRegistry.getOps().stream()
         .map(op -> new OpenIdProviderModel(
             op.getEntityId(),
-            Optional.ofNullable(op.getDisplayName()).orElseGet(op::getEntityId),
+            op.getDisplayName(),
             Optional.ofNullable(op.getDescription()).orElse(""),
             op.getMetadataEndpoint()))
         .toList();
