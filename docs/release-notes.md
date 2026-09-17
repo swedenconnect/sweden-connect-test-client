@@ -11,7 +11,7 @@
 Date: _not yet released_
 
 - Showing display_name when selecting a OP in the list. The same as in SAML
-- BUG: logo.svg is showing in the footer again.
+- A problem where the logotype was not displayed in the footer was fixed.
 
 ### Version 1.0.10
 
