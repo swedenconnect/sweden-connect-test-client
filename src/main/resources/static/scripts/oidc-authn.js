@@ -1440,15 +1440,6 @@ class OIDCAuthnRequest {
         this.initKeyOptions();
         this.initTokenRequestOptions();
         let parent = this;
-        let keyOptions = $('#oidc-advanced-keys-request-check');
-        keyOptions.click(function () {
-            if (keyOptions.prop("checked")) {
-                $('#oidc-advanced-keys-request').show();
-            }
-            else {
-                $('#oidc-advanced-keys-request').hide();
-            }
-        });
         $('#oidc-request-claims-id-remove-button')
             .off()
             .on("click", function () {
@@ -2201,7 +2192,8 @@ class OIDCAuthnRequest {
     }
 
     initRequestObjectOptions() {
-        this.initModuleCheckbox('#oidc-advanced-request-object-options', '#oidc-request-options', "requestObject");
+        this.initDisplayToggleButton('#oidc-request-object-options-button', '#oidc-request-options', 'requestObject',
+            'request object options');
         this.initServerGeneratedField(
             "#oidc-request-issuer-input",
             "#oidc-request-issuer-button",
@@ -2241,8 +2233,8 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Sets up a button that shows/hides a block of options. Unlike {@link initModuleCheckbox} this only controls
-     * what is displayed - it does not affect what is included in the request.
+     * Sets up a button that shows/hides a block of options. It only controls what is displayed - the options apply
+     * whether they are shown or not. The display state is kept as "moduleEnabled" of the module.
      *
      * @param buttonSelector the toggle button
      * @param optionsSelector the block of options to show or hide
@@ -2254,38 +2246,26 @@ class OIDCAuthnRequest {
         optionsSelector,
         moduleReference,
         label) {
-        let parent = this;
-        let button = $(buttonSelector);
-        let apply = function (visible) {
-            parent.pars[moduleReference]["moduleEnabled"] = visible;
-            visible ? $(optionsSelector).show() : $(optionsSelector).hide();
-            button.text((visible ? "Hide " : "Display ") + label);
+        // The module is looked up on each click, since applying a template replaces it
+        const apply = (visible) => {
+            this.pars[moduleReference].moduleEnabled = visible;
+            OIDCAuthnRequest.refreshDisplayToggle(buttonSelector, optionsSelector, visible, label);
         };
-        button.off("click").click(function () {
-            apply(!parent.pars[moduleReference]["moduleEnabled"]);
-        });
-        apply(parent.pars[moduleReference]["moduleEnabled"] || false);
+        $(buttonSelector).off("click").click(() => apply(!this.pars[moduleReference].moduleEnabled));
+        apply(this.pars[moduleReference].moduleEnabled || false);
     }
 
-    initModuleCheckbox(
-        checkboxSelector,
-        optionsSelector,
-        moduleReference) {
-        let parent = this;
-        let requestOptions = $(checkboxSelector);
-        requestOptions.prop("checked", parent.pars[moduleReference]["moduleEnabled"]);
-        let clickFunction = function () {
-            let checked = requestOptions.prop("checked");
-            parent.pars[moduleReference]["moduleEnabled"] = checked;
-            if (checked) {
-                $(optionsSelector).show();
-            }
-            else {
-                $(optionsSelector).hide();
-            }
-        };
-        requestOptions.click(clickFunction);
-        clickFunction();
+    /**
+     * Shows or hides a block of options and updates the text of its toggle button, see initDisplayToggleButton().
+     *
+     * @param buttonSelector the toggle button
+     * @param optionsSelector the block of options to show or hide
+     * @param visible whether the options are shown
+     * @param label what the button calls the options, e.g. "advanced options"
+     */
+    static refreshDisplayToggle(buttonSelector, optionsSelector, visible, label) {
+        visible ? $(optionsSelector).show() : $(optionsSelector).hide();
+        $(buttonSelector).text((visible ? "Hide " : "Display ") + label);
     }
 
     initServerGeneratedField(
@@ -2372,10 +2352,11 @@ class OIDCAuthnRequest {
     }
 
     initKeyOptions() {
-        this.initModuleCheckbox(
-            "#oidc-advanced-keys-request-check",
+        this.initDisplayToggleButton(
+            "#oidc-advanced-keys-request-button",
             "#oidc-advanced-keys-request",
-            "keys"
+            "keys",
+            "key options"
         );
         let signKeySelector = $("#oidc-request-advanced-signkey-select");
         signKeySelector.empty();
@@ -2448,7 +2429,8 @@ class OIDCAuthnRequest {
      */
     initTokenRequestOptions() {
         const settings = this.pars.tokenRequest;
-        this.initModuleCheckbox('#oidc-token-request-check', '#oidc-token-request', 'tokenRequest');
+        this.initDisplayToggleButton('#oidc-token-request-button', '#oidc-token-request', 'tokenRequest',
+            'token request options');
 
         const createRows = (container, rows) => {
             container.empty();
@@ -3067,9 +3049,8 @@ class OIDCAuthnRequest {
         const adv = this.pars.advanced;
 
         if (adv.moduleEnabled !== undefined) {
-            adv.moduleEnabled ? $('#oidc-advanced-authn-request').show() : $('#oidc-advanced-authn-request').hide();
-            $('#oidc-advanced-authn-options')
-                .text((adv.moduleEnabled ? 'Hide ' : 'Display ') + 'advanced options');
+            OIDCAuthnRequest.refreshDisplayToggle('#oidc-advanced-authn-options', '#oidc-advanced-authn-request',
+                adv.moduleEnabled, 'advanced options');
         }
 
         // Module selectors: responseType, prompt, codeChallengeMethod
@@ -3116,8 +3097,8 @@ class OIDCAuthnRequest {
         const ro = this.pars.requestObject;
 
         if (ro.moduleEnabled !== undefined) {
-            $('#oidc-advanced-request-object-options').prop('checked', ro.moduleEnabled);
-            ro.moduleEnabled ? $('#oidc-request-options').show() : $('#oidc-request-options').hide();
+            OIDCAuthnRequest.refreshDisplayToggle('#oidc-request-object-options-button', '#oidc-request-options',
+                ro.moduleEnabled, 'request object options');
         }
         if (ro.signRequest   !== undefined) $('#oidc-request-sign-request-body').prop('checked', ro.signRequest);
         if (ro.encryptRequest !== undefined) $('#oidc-request-encrypt-request-body').prop('checked', ro.encryptRequest);
@@ -3142,8 +3123,8 @@ class OIDCAuthnRequest {
     refreshKeys() {
         const keys = this.pars.keys;
         if (keys.moduleEnabled !== undefined) {
-            $('#oidc-advanced-keys-request-check').prop('checked', keys.moduleEnabled);
-            keys.moduleEnabled ? $('#oidc-advanced-keys-request').show() : $('#oidc-advanced-keys-request').hide();
+            OIDCAuthnRequest.refreshDisplayToggle('#oidc-advanced-keys-request-button', '#oidc-advanced-keys-request',
+                keys.moduleEnabled, 'key options');
         }
         if (keys.signKey !== undefined) $('#oidc-request-advanced-signkey-select').val(keys.signKey);
         if (keys.encKey  !== undefined) $('#oidc-request-advanced-enckey-select').val(keys.encKey);

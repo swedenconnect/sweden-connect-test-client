@@ -1365,17 +1365,15 @@
                     <div class="row mt-4" id="oidc-request-options-button-div">
                         <label class="col-sm-6 col-form-label">
                                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                        data-bs-original-title="Request Options allow you to configure specific parameters or behaviors for the authentication request.">
+                                        data-bs-original-title="Request Options allow you to configure specific parameters or behaviors for the authentication request. The settings apply whether the options are displayed or not.">
                                     Request object options
                                   </span>
                         </label>
                         <div class="col-sm-6">
                             <div class="d-flex justify-content-end">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-advanced-request-object-options">
-                                <label for="oidc-advanced-request-object-options">
-                                    Enable
-                                </label>
+                                <button id="oidc-request-object-options-button" type="button"
+                                        class="btn btn-outline-primary btn-sm">Display request object options
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1692,17 +1690,15 @@
                     <div class="row mt-4" id="oidc-advanced-keys-request-button-div">
                         <label class="col-sm-6 col-form-label">
                                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                        data-bs-original-title="Options for testing with different keys for signing and encryption.">
+                                        data-bs-original-title="Options for testing with different keys for signing and encryption. The settings apply whether the options are displayed or not.">
                                     Key options
                                   </span>
                         </label>
                         <div class="col-sm-6">
                             <div class="d-flex justify-content-end">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-advanced-keys-request-check">
-                                <label for="oidc-advanced-keys-request-check">
-                                    Enable
-                                </label>
+                                <button id="oidc-advanced-keys-request-button" type="button"
+                                        class="btn btn-outline-primary btn-sm">Display key options
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1980,16 +1976,15 @@
                     <div class="row mt-4" id="oidc-token-request-button-div">
                         <label class="col-sm-6 col-form-label">
                                   <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                        data-bs-original-title="Options for the token request that is sent when the OP redirects back with an authorization code - the client authentication method, the parameters sent and the claims of the client assertion. The settings apply whether this section is open or not.">
+                                        data-bs-original-title="Options for the token request that is sent when the OP redirects back with an authorization code - the client authentication method, the parameters sent and the claims of the client assertion. The settings apply whether the options are displayed or not.">
                                     Token request options
                                   </span>
                         </label>
                         <div class="col-sm-6">
                             <div class="d-flex justify-content-end">
-                                <input type="checkbox" class="form-check-input" id="oidc-token-request-check">
-                                <label for="oidc-token-request-check">
-                                    Enable
-                                </label>
+                                <button id="oidc-token-request-button" type="button"
+                                        class="btn btn-outline-primary btn-sm">Display token request options
+                                </button>
                             </div>
                         </div>
                     </div>
