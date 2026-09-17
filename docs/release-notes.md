@@ -20,6 +20,8 @@ Date: _not yet released_
 - Configurations exported before this version are not guaranteed to import correctly.
 - The OIDC authentication request can be sent with GET or POST, using the new "Send AuthnRequest - GET/POST" buttons.
 - "View AuthnRequest" shows the header and claims of a signed or unsigned request object.
+- New setting `testclient.oidc.rps[].create-entity-configuration` (default `true`) lets an RP stay outside the
+  federation. The "View EC" button is renamed "View Entity Configuration".
 
 
 ### Version 1.0.10

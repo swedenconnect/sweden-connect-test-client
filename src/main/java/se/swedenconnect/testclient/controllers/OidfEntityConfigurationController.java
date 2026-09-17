@@ -38,7 +38,8 @@ import java.util.Map;
  * Publishes the OpenID Federation entity configurations for the test client's Relying Parties.
  * <p>
  * An RP has the entity identifier {@code <base-url>/<path-suffix>}, meaning that its entity configuration is published
- * at {@code <base-url>/<path-suffix>/.well-known/openid-federation}.
+ * at {@code <base-url>/<path-suffix>/.well-known/openid-federation}. An RP that has no entity configuration is
+ * answered with 404, just like an unknown RP.
  * </p>
  *
  * @author Felix Hellman
@@ -86,6 +87,7 @@ public class OidfEntityConfigurationController {
       @RequestParam(value = "plain", required = false, defaultValue = "false") final boolean plain) {
     final OidcRp rp = this.rps.stream()
         .filter(r -> rpSuffix.equals(r.getPathSuffix()))
+        .filter(OidcRp::hasEntityConfiguration)
         .findFirst()
         .orElseThrow(() -> new NotFoundException("No OIDC RP with path suffix '%s'".formatted(rpSuffix)));
 

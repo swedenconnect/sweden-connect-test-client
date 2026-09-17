@@ -102,13 +102,26 @@ final class TestFederation {
    * @return an {@link OidcRp}
    */
   static OidcRp createRp(final String entityId, final String metadata) {
+    return createRp(entityId, metadata, true);
+  }
+
+  /**
+   * Creates an {@link OidcRp} with a freshly generated credential, the supplied metadata and telling whether the RP
+   * has an entity configuration.
+   *
+   * @param entityId the RP entity identifier
+   * @param metadata the RP metadata (JSON)
+   * @param entityConfiguration whether an entity configuration is set up for the RP
+   * @return an {@link OidcRp}
+   */
+  static OidcRp createRp(final String entityId, final String metadata, final boolean entityConfiguration) {
     try {
       final RSAKey key = generateKey();
       final PkiCredential credential = new BasicCredential(key.toPublicKey(), key.toPrivateKey());
       final ClientCredentials credentials =
           new ClientCredentials(credential, null, credential, null, credential, credential, credential);
       return new OidcRp(entityId, "Test RP", "testrp1", credentials, metadata, entityId + "/redirect",
-          false, entityId + "/jwks");
+          false, entityId + "/jwks", entityConfiguration);
     }
     catch (final Exception e) {
       throw new IllegalArgumentException("Failed to create test RP", e);

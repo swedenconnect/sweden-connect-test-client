@@ -63,6 +63,9 @@ public class OidcRp {
   @Getter
   private final String jwksUri;
 
+  /** Whether an OpenID Federation entity configuration is set up (and published) for the RP. */
+  private final boolean entityConfiguration;
+
   /** The RP:s public key set. */
   @Getter
   private final JWKSet jwkSet;
@@ -72,7 +75,7 @@ public class OidcRp {
   public OidcRp(@Nonnull final String entityId, @Nonnull final String description,
       @Nonnull final String pathSuffix, @Nonnull final ClientCredentials clientCredentials,
       @Nonnull final String metadataJson, @Nonnull final String redirectUri,
-      final boolean useJwksUrl, @Nonnull final String jwksUri)
+      final boolean useJwksUrl, @Nonnull final String jwksUri, final boolean entityConfiguration)
       throws ParseException, com.nimbusds.oauth2.sdk.ParseException {
     this.entityId = entityId;
     this.description = description;
@@ -80,6 +83,7 @@ public class OidcRp {
     this.credentials = clientCredentials;
     this.useJwksUrl = useJwksUrl;
     this.jwksUri = jwksUri;
+    this.entityConfiguration = entityConfiguration;
 
     final String resolvedMetadataJson =
         metadataJson.replace(OidcRpLogoController.LOGO_PLACEHOLDER, entityId + "/logo.svg");
@@ -113,5 +117,15 @@ public class OidcRp {
   @Nonnull
   public OIDCClientMetadata getMetadata() {
     return this.metadata;
+  }
+
+  /**
+   * Tells whether an OpenID Federation entity configuration is set up for the RP. This is never the case when OpenID
+   * Federation support is disabled.
+   *
+   * @return {@code true} if the RP has an entity configuration, and {@code false} otherwise
+   */
+  public boolean hasEntityConfiguration() {
+    return this.entityConfiguration;
   }
 }

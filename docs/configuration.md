@@ -291,6 +291,7 @@ federation, the federation version is used.
 | `credentials` | The credentials of the RP, see [Credentials](#credentials). | Credentials | `testclient.default-credential` |
 | `metadata` | The `openid_relying_party` metadata of the RP, given as a JSON string. **Required.** | String | - |
 | `use-jwks-url` | Whether the RP:s keys are published via `jwks_uri` instead of being embedded directly (`jwks`) in the RP:s metadata. See below. | Boolean | `false` |
+| `create-entity-configuration` | Whether an OpenID Federation entity configuration is set up for the RP. Ignored when OpenID Federation is disabled, in which case no RP has one. See [Entity configurations](#entity-configurations). | Boolean | `true` |
 | `trust-marks[]` | The trust marks that this RP publishes in its entity configuration. If assigned, the trust marks under `testclient.oidc.federation.trust-marks` are not used for this RP. See [Trust marks](#trust-marks). | List | the federation trust marks |
 
 The `metadata` setting is parsed as OpenID Connect client metadata. Two of its members are always set by the
@@ -379,10 +380,15 @@ All settings live under `testclient.oidc.federation` and are only used when
 
 ### Entity configurations
 
-Each configured RP publishes a signed entity configuration (`application/entity-statement+jwt`) at
-`<base-url>/{path-suffix}/.well-known/openid-federation`. The statement contains the `openid_relying_party` metadata of
-the RP, including `client_registration_types`, the `federation_entity` metadata, the federation keys of the RP, the
-configured `authority_hints` and the trust marks. It is signed with the metadata credential of the RP.
+Each configured RP that has `create-entity-configuration` set to `true` (the default) publishes a signed entity
+configuration (`application/entity-statement+jwt`) at `<base-url>/{path-suffix}/.well-known/openid-federation`. The
+statement contains the `openid_relying_party` metadata of the RP, including `client_registration_types`, the
+`federation_entity` metadata, the federation keys of the RP, the configured `authority_hints` and the trust marks. It
+is signed with the metadata credential of the RP.
+
+An RP with `create-entity-configuration: false` is not part of the federation. It publishes no entity configuration
+(the URL answers 404), it is not listed among our entities, no trust marks are fetched for it, and the user interface
+shows no "View Entity Configuration" button or "Entity Statement" link for it.
 
 | Property | Description | Type | Default value |
 | :--- | :--- | :--- | :--- |

@@ -64,7 +64,7 @@ class OidcRelyingParties {
                     class: 'bi bi-box-arrow-up-right',
                     style: 'margin-left: 0.25rem;'
                   }))));
-      if (TestClient.isOidfEnabled()) {
+      if (rp.entity_configuration_url) {
         tbody.append($('<tr>')
             .append($('<th>', {
               scope: 'row',
@@ -72,8 +72,8 @@ class OidcRelyingParties {
             }))
             .append($('<td>')
                 .append($('<a>', {
-                  href: rp['entity-id'] + '/.well-known/openid-federation?plain=true',
-                  text: rp['entity-id'] + '/.well-known/openid-federation',
+                  href: rp.entity_configuration_url + '?plain=true',
+                  text: rp.entity_configuration_url,
                   target: '_blank',
                   rel: 'noopener'
                 }))
