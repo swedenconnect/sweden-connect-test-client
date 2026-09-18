@@ -1269,14 +1269,16 @@
                         <div class="row mt-4" id="oidc-claims-row">
                             <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                  data-bs-html="true"
-                                 data-bs-original-title="Claim preview area. Add/Remove claims below to update.">
+                                 data-bs-original-title="Claim preview area, shown when the claims parameter is sent, i.e., when &quot;In Request&quot; or &quot;In Request Body&quot; is checked. Add/Remove claims below to update.">
                                 <label class="col-form-label text-sm-right"
                                        for="oidc-request-claims-textarea">Claims</label>
                             </div>
-                            <div class="col-sm-6">
+                            <div class="col-sm-6" id="oidc-claims-textarea-column">
                             <textarea class="form-control user-message" id="oidc-request-claims-textarea" rows="15"
                                       placeholder="No claims will be sent"></textarea>
                             </div>
+                            <!-- Keeps the boxes in place while the preview is hidden -->
+                            <div class="col-sm-6" id="oidc-claims-textarea-spacer" style="display: none;"></div>
                             <div class="col-sm-2">
                                 <input type="checkbox" class="form-check-input" id="oidc-request-claims-request-body">
                                 <label for="oidc-request-claims-request-body">
@@ -1299,20 +1301,14 @@
                         </div>
                         <div class="row mt-4" id="oidc-id-claims-row">
                             <div class="row mt-4" id="oidc-request-claims-id-button-div">
-                                <div class="col-sm-8"></div>
-                                <div class="col-sm-2">
+                                <div class="col-sm-8">
+                                    <label class="col-form-label">Claims requested in the ID Token</label>
+                                </div>
+                                <div class="col-sm-4">
                                     <div class="d-flex justify-content-end">
                                         <button id="oidc-request-claims-id-add-button" type="button"
                                                 class="btn btn-light btn-sm">
-                                            Add claim
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-sm-2">
-                                    <div class="d-flex justify-content-end">
-                                        <button id="oidc-request-claims-id-remove-button" type="button"
-                                                class="btn btn-light btn-sm">
-                                            Remove claim
+                                            Add claim - ID Token
                                         </button>
                                     </div>
                                 </div>
@@ -1326,9 +1322,11 @@
                                         Claim
                                     </label>
                                 </div>
-                                <div class="col-sm-4" id="id-claims-template-value-column">
+                                <div class="col-sm-6" id="id-claims-template-value-column">
                                     <input type="text" class="form-control" id="id-claims-template-value">
-                                    <label for="id-claims-template-value" id="id-claims-template-value-label">
+                                    <label for="id-claims-template-value" id="id-claims-template-value-label"
+                                           data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                           data-bs-original-title="The expected value(s) of the claim. To specify multiple values separate them with a (',') character (CSV). Leave empty to request the claim without a value.">
                                         Value
                                     </label>
                                 </div>
@@ -1339,25 +1337,59 @@
                                     </label>
                                 </div>
                                 <div class="col-sm-1">
-                                    <input type="checkbox" class="form-check-input"
-                                           id="id-claims-template-with-value">
-                                    <label for="id-claims-template-with-value" data-bs-toggle="tooltip"
-                                           data-bs-placement="bottom"
-                                           data-bs-original-title="Toggles to specify expected value(s). To specify multiple values separate them with a (',') character (CSV)">
-                                        With value
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn-close mt-2"
+                                                id="id-claims-template-remove" aria-label="Remove this claim"
+                                                data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                                data-bs-original-title="Remove this claim"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4" id="oidc-userinfo-claims-row">
+                            <div class="row mt-4" id="oidc-request-claims-userinfo-button-div">
+                                <div class="col-sm-8">
+                                    <label class="col-form-label">Claims requested from UserInfo</label>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="d-flex justify-content-end">
+                                        <button id="oidc-request-claims-userinfo-add-button" type="button"
+                                                class="btn btn-light btn-sm">
+                                            Add claim - UserInfo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="oidc-userinfo-claims-table">
+                            <div class="row mt-4 claim-row template" id="userinfo-claims-row-template" hidden="hidden">
+                                <div class="col-sm-4" id="userinfo-claims-template-key-column">
+                                    <input type="text" class="form-control" id="userinfo-claims-template-key">
+                                    <label for="userinfo-claims-template-key">
+                                        Claim
+                                    </label>
+                                </div>
+                                <div class="col-sm-6" id="userinfo-claims-template-value-column">
+                                    <input type="text" class="form-control" id="userinfo-claims-template-value">
+                                    <label for="userinfo-claims-template-value" id="userinfo-claims-template-value-label"
+                                           data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                           data-bs-original-title="The expected value(s) of the claim. To specify multiple values separate them with a (',') character (CSV). Leave empty to request the claim without a value.">
+                                        Value
                                     </label>
                                 </div>
                                 <div class="col-sm-1">
-                                    <input type="checkbox" class="form-check-input" id="id-claims-template-id-token">
-                                    <label for="id-claims-template-id-token">
-                                        Id Token
+                                    <input type="checkbox" class="form-check-input" id="userinfo-claims-template-essential">
+                                    <label for="userinfo-claims-template-essential">
+                                        Essential
                                     </label>
                                 </div>
                                 <div class="col-sm-1">
-                                    <input type="checkbox" class="form-check-input" id="id-claims-template-userinfo">
-                                    <label for="id-claims-template-userinfo">
-                                        Userinfo
-                                    </label>
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn-close mt-2"
+                                                id="userinfo-claims-template-remove" aria-label="Remove this claim"
+                                                data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                                data-bs-original-title="Remove this claim"></button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
