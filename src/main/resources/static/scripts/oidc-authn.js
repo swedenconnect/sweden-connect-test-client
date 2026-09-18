@@ -1437,6 +1437,9 @@ class OIDCAuthnRequest {
      */
     constructor(template, onRestartCallback, onSendAuthnRequestCallback) {
         this.pars = template;
+        // The number of the next claim row. The hidden template row is the first child of the claims table, so the
+        // rows are numbered from 1, and a number is never reused - see addClaimRow()
+        this.nextClaimIndex = 1;
         this.restartCallback = onRestartCallback;
         this.sendAuthnRequestCallback = onSendAuthnRequestCallback;
     }
@@ -1470,15 +1473,6 @@ class OIDCAuthnRequest {
         this.initKeyOptions();
         this.initTokenRequestOptions();
         let parent = this;
-        $('#oidc-request-claims-id-remove-button')
-            .off()
-            .on("click", function () {
-                let lastElement = $('#oidc-id-claims-table').children().last()[0];
-                if (!lastElement.id.includes('template')) {
-                    lastElement.remove();
-                    parent.computeClaims();
-                }
-            });
         $('#oidc-request-claims-present').click(function () {
             parent.computeClaims();
         });
@@ -1489,76 +1483,28 @@ class OIDCAuthnRequest {
             "id": {
                 "table": "oidc-id-claims-table",
                 "row": "id-claims-row-template",
-                "value-checkbox": "id-claims-template-with-value",
                 "essential-checkbox": "id-claims-template-essential",
+                "remove-button": "id-claims-template-remove",
                 "value-input": "id-claims-template-value",
-                "key-input": "id-claims-template-key",
-                "value-column": "id-claims-template-value-column",
-                "id-token-checkbox": "id-claims-template-id-token",
-                "userinfo-checkbox": "id-claims-template-userinfo"
+                "key-input": "id-claims-template-key"
+            },
+            "userinfo": {
+                "table": "oidc-userinfo-claims-table",
+                "row": "userinfo-claims-row-template",
+                "essential-checkbox": "userinfo-claims-template-essential",
+                "remove-button": "userinfo-claims-template-remove",
+                "value-input": "userinfo-claims-template-value",
+                "key-input": "userinfo-claims-template-key"
             }
         }
-        let addClaimFunction = function (type, currentIndex) {
-            let rowTemplate = parent.getClaimElement('template', parent.claimIdentifiers["id"]["row"]);
-            let clone = rowTemplate.clone(true, true);
-            // Find all elements with IDs in the clone
-            clone.attr('id', parent.claimIdentifiers["id"]["row"].replace("template", currentIndex));
-            clone.find('[id]').each(function () {
-                let oldId = $(this).attr('id');
-                let newId = oldId.replace('template', currentIndex);
-                $(this).attr('id', newId);
-            });
-            clone.removeAttr("hidden");
-            clone.removeClass("template");
-
-            $("#oidc-id-claims-table > div:last").after(clone);
-
-            let valueCheckbox = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["value-checkbox"]);
-            let keyInput = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["key-input"]);
-            let valueInput = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["value-input"]);
-            let essentialCheckBox = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["essential-checkbox"]);
-            let idTokenCheckbox = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["id-token-checkbox"]);
-            let userinfoCheckbox = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["userinfo-checkbox"]);
-            idTokenCheckbox.click(function () {
-                parent.computeClaims();
-            })
-            userinfoCheckbox.click(function () {
-                parent.computeClaims();
-            })
-            let checkboxFunction = function () {
-                let isChecked = valueCheckbox.prop("checked");
-                let valueColumn = parent.getClaimElement(currentIndex, parent.claimIdentifiers[type]["value-column"]);
-                valueColumn.prop('disabled', !isChecked);
-                if (isChecked) {
-                    essentialCheckBox.prop("checked", false);
-                }
-                else {
-                    valueColumn.prop("value", '');
-                }
-                parent.computeClaims();
-            };
-            valueCheckbox.click(checkboxFunction);
-            checkboxFunction();
-            parent.computeClaims();
-            essentialCheckBox.click(function () {
-                valueCheckbox.prop("checked", false);
-                checkboxFunction();
-                parent.computeClaims();
-            })
-            keyInput.change(function () {
-                parent.computeClaims();
-            });
-            valueInput.change(function () {
-                parent.computeClaims();
-            });
-        };
-
-        $('#oidc-request-claims-id-add-button')
-            .off('click')
-            .on('click', function () {
-                parent.switchOnClaims();
-                addClaimFunction('id', $('#oidc-id-claims-table').children().length);
-            });
+        for (const type of ['id', 'userinfo']) {
+            $('#oidc-request-claims-' + type + '-add-button')
+                .off('click')
+                .on('click', function () {
+                    parent.switchOnClaims();
+                    parent.addClaimRow(type);
+                });
+        }
 
         this.initScopeValues();
 
@@ -1998,79 +1944,111 @@ class OIDCAuthnRequest {
         return $('#' + templateIdentifier.replace("template", currentIndex));
     }
 
-    computeClaims() {
-        let outerClaims = {};
-        let parent = this;
+    /**
+     * Adds a claim row to the claims table of a location and wires it up. Each row is removed with its own button, so
+     * the rows are numbered with a counter of their own - an index is never reused, which would give two rows the
+     * same element IDs.
+     * @param type the location of the claim, 'id' for the ID Token or 'userinfo' for UserInfo
+     * @returns {number} the index of the added row
+     */
+    addClaimRow(type) {
+        const parent = this;
+        const currentIndex = this.nextClaimIndex++;
 
-        function computeChild(child, claims) {
-            if (child.attr("class").includes('claim-row') && !child.attr("class").includes('template')) {
-                let split = child.attr("id").split("-");
-                let index = parseInt(split[3], 10);
-                let keyInput = parent.getClaimElement(index, parent.claimIdentifiers["id"]["key-input"]);
-                let isEssential = parent.getClaimElement(index, parent.claimIdentifiers["id"]["essential-checkbox"]).prop("checked");
-                let isValue = parent.getClaimElement(index, parent.claimIdentifiers["id"]["value-checkbox"]).prop("checked");
-                let isIdTokenClaim = parent.getClaimElement(index, parent.claimIdentifiers["id"]["id-token-checkbox"]).prop("checked");
-                let isUserInfoClaim = parent.getClaimElement(index, parent.claimIdentifiers["id"]["userinfo-checkbox"]).prop("checked");
-                if (isIdTokenClaim) {
-                    if (!claims["id_token"]) {
-                        claims["id_token"] = {};
-                    }
-                    claims["id_token"][keyInput.val()] = {};
-                    if (isEssential) {
-                        claims["id_token"][keyInput.val()] = {"essential": true};
-                    }
-                    else if (isValue) {
-                        let valueInput = parent.getClaimElement(index, parent.claimIdentifiers["id"]["value-input"]);
-                        let value = valueInput.prop("value");
-                        if (value.includes(",")) {
-                            let values = value.split(",");
-                            claims["id_token"][keyInput.val()] = {"values": values};
-                        }
-                        else {
-                            claims["id_token"][keyInput.val()] = {"value": value};
-                        }
-                    }
-                    else {
-                        claims["id_token"][keyInput.val()] = null;
-                    }
-                }
-                if (isUserInfoClaim) {
-                    if (!claims["userinfo"]) {
-                        claims["userinfo"] = {};
-                    }
-                    claims["userinfo"][keyInput.val()] = {};
-                    if (isEssential) {
-                        claims["userinfo"][keyInput.val()] = {"essential": true};
-                    }
-                    else if (isValue) {
-                        let valueInput = parent.getClaimElement(index, parent.claimIdentifiers["id"]["value-input"]);
-                        let value = valueInput.prop("value");
-                        if (value.includes(",")) {
-                            let values = value.split(",");
-                            claims["userinfo"][keyInput.val()] = {"values": values};
-                        }
-                        else {
-                            claims["userinfo"][keyInput.val()] = {"value": value};
-                        }
-                    }
-                    else {
-                        claims["userinfo"][keyInput.val()] = null;
-                    }
-                }
+        const rowTemplate = this.getClaimElement('template', this.claimIdentifiers[type]["row"]);
+        const clone = rowTemplate.clone(true, true);
+        // Find all elements with IDs in the clone
+        clone.attr('id', this.claimIdentifiers[type]["row"].replace("template", currentIndex));
+        clone.find('[id]').each(function () {
+            let oldId = $(this).attr('id');
+            let newId = oldId.replace('template', currentIndex);
+            $(this).attr('id', newId);
+        });
+        clone.removeAttr("hidden");
+        clone.removeClass("template");
+
+        $("#" + this.claimIdentifiers[type]["table"] + " > div:last").after(clone);
+
+        const keyInput = this.getClaimElement(currentIndex, this.claimIdentifiers[type]["key-input"]);
+        const valueInput = this.getClaimElement(currentIndex, this.claimIdentifiers[type]["value-input"]);
+        const essentialCheckBox = this.getClaimElement(currentIndex, this.claimIdentifiers[type]["essential-checkbox"]);
+        const removeButton = this.getClaimElement(currentIndex, this.claimIdentifiers[type]["remove-button"]);
+        this.computeClaims();
+        // "Essential" and the value are independent - a claim may be requested as essential with a value
+        // (OpenID Connect Core 1.0, section 5.5.1)
+        essentialCheckBox.click(function () {
+            parent.computeClaims();
+        })
+        keyInput.on('input change', function () {
+            parent.computeClaims();
+        });
+        valueInput.on('input change', function () {
+            parent.computeClaims();
+        });
+        removeButton.off('click').click(function () {
+            clone.remove();
+            parent.computeClaims();
+        });
+        return currentIndex;
+    }
+
+    /**
+     * Gets what is requested for a claim (OpenID Connect Core 1.0, section 5.5.1) - "essential" when the box is
+     * checked, and the value of the value field when it holds one. A value holding a comma is requested as "values".
+     * @param isEssential whether the "Essential" box is checked
+     * @param value the contents of the value field
+     * @returns {object|null} what is requested for the claim, or null if nothing is
+     */
+    static claimRequest(isEssential, value) {
+        const claimRequest = {};
+        if (isEssential) {
+            claimRequest["essential"] = true;
+        }
+        if (value && value.trim() !== "") {
+            if (value.includes(",")) {
+                claimRequest["values"] = value.split(",");
+            }
+            else {
+                claimRequest["value"] = value;
             }
         }
+        return Object.keys(claimRequest).length > 0 ? claimRequest : null;
+    }
 
-        $("#oidc-id-claims-table").children().each(function () {
-            let child = $(this);
-            computeChild(child, outerClaims);
-        });
+    computeClaims() {
+        const outerClaims = {};
+        const parent = this;
+
+        // The rows of each table are the claims requested in that location
+        for (const [type, location] of [['id', 'id_token'], ['userinfo', 'userinfo']]) {
+            $("#" + this.claimIdentifiers[type]["table"]).children().each(function () {
+                const child = $(this);
+                if (!child.attr("class").includes('claim-row') || child.attr("class").includes('template')) {
+                    return;
+                }
+                const index = parseInt(child.attr("id").split("-")[3], 10);
+                const keyInput = parent.getClaimElement(index, parent.claimIdentifiers[type]["key-input"]);
+                const isEssential =
+                    parent.getClaimElement(index, parent.claimIdentifiers[type]["essential-checkbox"]).prop("checked");
+                const valueInput = parent.getClaimElement(index, parent.claimIdentifiers[type]["value-input"]);
+                if (!outerClaims[location]) {
+                    outerClaims[location] = {};
+                }
+                outerClaims[location][keyInput.val()] =
+                    OIDCAuthnRequest.claimRequest(isEssential, valueInput.prop("value"));
+            });
+        }
+
         let claimsTextArea = $("#oidc-request-claims-textarea");
         let json = JSON.stringify(outerClaims, null, 2);
 
         let inRequest = $("#oidc-request-claims-present").prop("checked");
         let inRequestBody = $("#oidc-request-claims-request-body").prop("checked");
 
+        // The preview is only shown when the claims parameter is sent
         let disabled = !(inRequest || inRequestBody);
+        $("#oidc-claims-textarea-column").toggle(!disabled);
+        $("#oidc-claims-textarea-spacer").toggle(disabled);
         if (!disabled) {
             claimsTextArea.prop("value", json);
             claimsTextArea.prop("placeholder", json);
@@ -3160,57 +3138,41 @@ class OIDCAuthnRequest {
      * Clears and rebuilds claim rows, then calls computeClaims() to sync the textarea.
      */
     refreshClaims() {
-        // Clear existing claim rows, keeping the hidden template row
+        // Clear existing claim rows, keeping the hidden template rows
         $('#oidc-id-claims-table').children().not('[id*="template"]').remove();
+        $('#oidc-userinfo-claims-table').children().not('[id*="template"]').remove();
 
         const claims = this.pars.claims || {};
 
-        // Merge id_token and userinfo entries into a single map keyed by claim name
-        const claimMap = {};
-        for (const location of ['id_token', 'userinfo']) {
-            for (const [name, spec] of Object.entries(claims[location] || {})) {
-                if (!claimMap[name]) {
-                    claimMap[name] = { id_token: false, userinfo: false, essential: false, withValue: false, value: '' };
-                }
-                claimMap[name][location] = true;
+        for (const [type, location] of [['id', 'id_token'], ['userinfo', 'userinfo']]) {
+            for (const [claimName, spec] of Object.entries(claims[location] || {})) {
+                const index = this.addClaimRow(type);
+
+                // Set claim name and trigger change so computeClaims picks it up
+                this.getClaimElement(index, this.claimIdentifiers[type]["key-input"]).val(claimName)
+                    .trigger('change');
+
+                // "essential" and a value may be requested together, and are then both loaded
                 if (spec && spec.essential) {
-                    claimMap[name].essential = true;
-                } else if (spec && spec.value !== undefined) {
-                    claimMap[name].withValue = true;
-                    claimMap[name].value = String(spec.value);
-                } else if (spec && spec.values !== undefined) {
-                    claimMap[name].withValue = true;
-                    claimMap[name].value = spec.values.join(',');
+                    this.getClaimElement(index, this.claimIdentifiers[type]["essential-checkbox"])
+                        .prop('checked', true);
                 }
-            }
-        }
-
-        for (const [claimName, s] of Object.entries(claimMap)) {
-            // Trigger add button to create a properly wired row
-            $('#oidc-request-claims-id-add-button').trigger('click');
-            const index = $('#oidc-id-claims-table').children().length - 1;
-
-            // Set claim name and trigger change so computeClaims picks it up
-            this.getClaimElement(index, this.claimIdentifiers["id"]["key-input"]).val(claimName).trigger('change');
-
-            // Set location checkboxes (prop only; computeClaims called at the end)
-            this.getClaimElement(index, this.claimIdentifiers["id"]["id-token-checkbox"]).prop('checked', s.id_token);
-            this.getClaimElement(index, this.claimIdentifiers["id"]["userinfo-checkbox"]).prop('checked', s.userinfo);
-
-            if (s.essential) {
-                this.getClaimElement(index, this.claimIdentifiers["id"]["essential-checkbox"]).prop('checked', true);
-            } else if (s.withValue) {
-                const valueCheckbox = this.getClaimElement(index, this.claimIdentifiers["id"]["value-checkbox"]);
-                const valueColumn   = this.getClaimElement(index, this.claimIdentifiers["id"]["value-column"]);
-                const valueInput    = this.getClaimElement(index, this.claimIdentifiers["id"]["value-input"]);
-                valueCheckbox.prop('checked', true);
-                valueColumn.prop('disabled', false);
-                valueInput.val(s.value).trigger('change');
+                let value = '';
+                if (spec && spec.value !== undefined) {
+                    value = String(spec.value);
+                }
+                else if (spec && spec.values !== undefined) {
+                    value = spec.values.join(',');
+                }
+                if (value !== '') {
+                    this.getClaimElement(index, this.claimIdentifiers[type]["value-input"]).val(value)
+                        .trigger('change');
+                }
             }
         }
 
         // Ensure claims are flagged as present so computeClaims writes them
-        if (Object.keys(claimMap).length > 0) {
+        if (Object.keys(claims).length > 0) {
             this.switchOnClaims();
         }
 

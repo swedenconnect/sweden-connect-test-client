@@ -338,6 +338,55 @@ class AuthorizationParameterResolverTest {
     Assertions.assertEquals("login consent", inBodyOnly.claims().getClaim("prompt"));
   }
 
+  // The claims parameter, where a claim may be requested as essential with a value (OpenID Connect Core 1.0,
+  // section 5.5.1)
+
+  @Test
+  void aClaimIsRequestedAsEssentialWithItsValue() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    final Map<String, Object> idTokenClaims = new HashMap<>();
+    idTokenClaims.put("essentialWithValue", Map.of("essential", true, "value", "a"));
+    idTokenClaims.put("essentialWithValues", Map.of("essential", true, "values", List.of("a", "b")));
+    idTokenClaims.put("essentialOnly", Map.of("essential", true));
+    idTokenClaims.put("valueOnly", Map.of("value", "a"));
+    // A claim requested without "essential" and without a value
+    idTokenClaims.put("nothing", null);
+    model.setClaims(Map.of("id_token", idTokenClaims,
+        "userinfo", Map.of("essentialWithValue", Map.of("essential", true, "value", "a"))));
+
+    final Result result = generate(model);
+
+    final JsonNode idToken = JsonMapper.builder().build().readTree(result.url("claims")).get("id_token");
+    Assertions.assertTrue(idToken.get("essentialWithValue").get("essential").asBoolean());
+    Assertions.assertEquals("a", idToken.get("essentialWithValue").get("value").asString());
+    Assertions.assertTrue(idToken.get("essentialWithValues").get("essential").asBoolean());
+    Assertions.assertEquals(List.of("a", "b"),
+        idToken.get("essentialWithValues").get("values").valueStream().map(JsonNode::asString).toList());
+    Assertions.assertEquals(Set.of("essential"), Set.copyOf(idToken.get("essentialOnly").propertyNames()));
+    Assertions.assertEquals(Set.of("value"), Set.copyOf(idToken.get("valueOnly").propertyNames()));
+    Assertions.assertTrue(idToken.get("nothing").isNull());
+
+    final JsonNode userInfo = JsonMapper.builder().build().readTree(result.url("claims")).get("userinfo");
+    Assertions.assertTrue(userInfo.get("essentialWithValue").get("essential").asBoolean());
+    Assertions.assertEquals("a", userInfo.get("essentialWithValue").get("value").asString());
+  }
+
+  @Test
+  void anEssentialClaimWithAValueIsAlsoKeptInTheRequestObject() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.setClaimInRequestBody(true);
+    model.setClaims(Map.of("id_token", Map.of("birthdate", Map.of("essential", true, "value", "1969-11-29"))));
+
+    final Result result = generate(model);
+
+    Assertions.assertNull(result.url("claims"), "In URL");
+    final Map<String, Object> claims = (Map<String, Object>) result.claims().getClaim("claims");
+    final Map<String, Object> birthdate =
+        (Map<String, Object>) ((Map<String, Object>) claims.get("id_token")).get("birthdate");
+    Assertions.assertEquals(true, birthdate.get("essential"));
+    Assertions.assertEquals("1969-11-29", birthdate.get("value"));
+  }
+
   static Stream<Arguments> rowPlacements() {
     return Stream.of("client_id", "redirect_uri", "scope", "response_type", "acr_values", "prompt", "login_hint",
             USER_MESSAGE, SIGN_REQUEST)
