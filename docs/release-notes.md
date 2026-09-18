@@ -6,9 +6,15 @@
 
 ---
 
-### Version 1.0.12
+### Version 1.0.13
 
 Date: _not yet released_
+
+- 
+
+### Version 1.0.12
+
+Date: 2026-09-18
 
 - The OIDC Authentication Result also shows `exp`, `iat`, `nbf`, `auth_time` and `updated_at` as a time in UTC.
 - New "Token request options" set the client authentication method, parameters and client assertion claims of the
