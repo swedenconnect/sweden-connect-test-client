@@ -50,6 +50,9 @@ public class UserInfoEvaluation {
   /** The UserInfo claims ({@code null} unless they were received). */
   private Map<String, Object> userInfoClaims;
 
+  /** The times, in UTC, of the time claims of the UserInfo claims ({@code null} unless the claims were received). */
+  private Map<String, String> userInfoClaimTimes;
+
   /** How the UserInfo response was protected ({@code null} unless the claims were received). */
   private ProtectionInfo userInfoProtection;
 
@@ -89,6 +92,7 @@ public class UserInfoEvaluation {
     final UserInfoEvaluation.UserInfoEvaluationBuilder builder = UserInfoEvaluation.builder()
         .userInfoResult(UserInfoResult.received(manual))
         .userInfoClaims(userInfo)
+        .userInfoClaimTimes(ClaimTimes.of(userInfo))
         .userInfoProtection(exchange.getProtection())
         .scopeValidation(ScopeValidator.validate(scopes, idTokenClaims, userInfo, null));
 

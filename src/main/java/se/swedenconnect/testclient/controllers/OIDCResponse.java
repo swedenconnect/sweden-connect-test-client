@@ -40,12 +40,18 @@ import java.util.Map;
 @NoArgsConstructor
 public class OIDCResponse {
   private Map<String, Object> accessTokenClaims;
+  /** The times, in UTC, of the time claims of the access token - see {@link ClaimTimes}. */
+  private Map<String, String> accessTokenClaimTimes;
   /** The raw access token - it is not necessarily a JWT. */
   private String accessToken;
   private Map<String, Object> idTokenClaims;
+  /** The times, in UTC, of the time claims of the ID token - see {@link ClaimTimes}. */
+  private Map<String, String> idTokenClaimTimes;
   /** The outcome of the UserInfo call - whether UserInfo was called, and if the call failed. */
   private UserInfoResult userInfoResult;
   private Map<String, Object> userInfoClaims;
+  /** The times, in UTC, of the time claims of the UserInfo claims - see {@link ClaimTimes}. */
+  private Map<String, String> userInfoClaimTimes;
   private Map<String, Object> responseParameters;
   private Map<String, Object> requestParameters;
   private ProtectionInfo responseProtection;

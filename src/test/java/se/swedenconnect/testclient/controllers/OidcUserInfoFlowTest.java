@@ -15,6 +15,14 @@
  */
 package se.swedenconnect.testclient.controllers;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.PlainJWT;
+import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -36,6 +44,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,6 +79,8 @@ class OidcUserInfoFlowTest {
 
   private static final String WWW_AUTHENTICATE = "Bearer error=\"invalid_token\"";
   private static final String USERINFO = "{\"sub\":\"user\",\"given_name\":\"Frida\"}";
+  private static final String USERINFO_WITH_TIMES = """
+      { "sub": "user", "updated_at": 0, "iat": 1789650256.0, "exp": "1789650256", "address": { "exp": 1789650256 } }""";
 
   private MockHttpSession session;
   private MockRestServiceServer server;
@@ -252,6 +263,76 @@ class OidcUserInfoFlowTest {
     assertFalse(claim.has("notChecked"));
   }
 
+  // Times of the time claims
+
+  @Test
+  void theTimeClaimsOfTheTokensAndUserInfoAreGivenTimes() throws Exception {
+    this.expectTokenRequest(tokenResponseWithTimes());
+    this.server.expect(requestTo(USERINFO_ENDPOINT))
+        .andRespond(withSuccess(USERINFO_WITH_TIMES, MediaType.APPLICATION_JSON));
+
+    final OIDCResponse response = this.redirect();
+
+    this.server.verify();
+    assertEquals(Map.of("iat", "2026-09-17 13:04:16 UTC", "exp", "2026-09-17 14:04:16 UTC",
+        "auth_time", "2026-09-17 13:03:16 UTC"), response.getIdTokenClaimTimes());
+    assertEquals(Map.of("exp", "2026-09-17 13:09:16 UTC"), response.getAccessTokenClaimTimes());
+    assertEquals(Map.of("updated_at", "1970-01-01 00:00:00 UTC"), response.getUserInfoClaimTimes());
+
+    // The claims stay as received
+    assertEquals(1789650256L, response.getIdTokenClaims().get("iat"));
+    assertEquals("1789650256", response.getIdTokenClaims().get("updated_at"));
+    assertEquals(3600, response.getResponse().get("expires_in"));
+    assertEquals(0, response.getUserInfoClaims().get("updated_at"));
+    assertEquals(1789650256.0, response.getUserInfoClaims().get("iat"));
+    assertEquals(Map.of("exp", 1789650256), response.getUserInfoClaims().get("address"));
+  }
+
+  @Test
+  void theTimesReachThePage() throws Exception {
+    this.expectTokenRequest(tokenResponseWithTimes());
+    this.server.expect(requestTo(USERINFO_ENDPOINT))
+        .andRespond(withSuccess(USERINFO_WITH_TIMES, MediaType.APPLICATION_JSON));
+    final OIDCResponse response = this.redirect();
+
+    final StringWriter written = new StringWriter();
+    new StandardJavaScriptSerializer(true).serializeValue(response, written);
+    final JsonNode page = JsonMapper.builder().build().readTree(written.toString());
+
+    assertEquals("2026-09-17 13:04:16 UTC", page.get("idTokenClaimTimes").get("iat").asString());
+    assertEquals("2026-09-17 13:09:16 UTC", page.get("accessTokenClaimTimes").get("exp").asString());
+    assertEquals("1970-01-01 00:00:00 UTC", page.get("userInfoClaimTimes").get("updated_at").asString());
+    assertEquals(1789650256L, page.get("idTokenClaims").get("iat").asLong());
+  }
+
+  @Test
+  void anOpaqueAccessTokenAndAFailedUserInfoCallGiveNoTimes() throws Exception {
+    this.expectTokenRequest();
+    this.server.expect(requestTo(USERINFO_ENDPOINT)).andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+
+    final OIDCResponse response = this.redirect();
+
+    assertEquals(Map.of(), response.getAccessTokenClaimTimes());
+    assertEquals(Map.of(), response.getIdTokenClaimTimes());
+    assertNull(response.getUserInfoClaimTimes());
+  }
+
+  @Test
+  void aManualCallGivesTheTimesOfTheUserInfoClaims() {
+    this.session.setAttribute(OidcController.SESSION_NAME_ID_TOKEN_CLAIMS, UserInfoTestSupport.idTokenClaims());
+    this.server.expect(requestTo(USERINFO_ENDPOINT))
+        .andRespond(withSuccess(USERINFO_WITH_TIMES, MediaType.APPLICATION_JSON));
+
+    final JsonNode json = JsonMapper.builder().build().valueToTree(
+        this.restController.sendUserInfoRequest(new OidcRestController.UserInfoRequestModel(ACCESS_TOKEN, "GET")));
+
+    final JsonNode evaluation = json.get("evaluation");
+    assertEquals(1, evaluation.get("userInfoClaimTimes").size());
+    assertEquals("1970-01-01 00:00:00 UTC", evaluation.get("userInfoClaimTimes").get("updated_at").asString());
+    // The claims of the JSON viewer stay as received
+    assertEquals(0, json.get("exchange").get("claims").get("updated_at").asInt());
+  }
+
   // Manual call
 
   @Test
@@ -379,9 +460,39 @@ class OidcUserInfoFlowTest {
   }
 
   private void expectTokenRequest() {
+    this.expectTokenRequest(UserInfoTestSupport.tokenResponse());
+  }
+
+  private void expectTokenRequest(final String tokenResponse) {
     this.server.expect(requestTo(TOKEN_ENDPOINT))
         .andExpect(method(HttpMethod.POST))
-        .andRespond(withSuccess(UserInfoTestSupport.tokenResponse(), MediaType.APPLICATION_JSON));
+        .andRespond(withSuccess(tokenResponse, MediaType.APPLICATION_JSON));
+  }
+
+  /**
+   * A token response with an ID token and a signed access token holding time claims - valid ones, and an
+   * {@code updated_at} that is a string.
+   */
+  private static String tokenResponseWithTimes() throws Exception {
+    final String idToken = new PlainJWT(new JWTClaimsSet.Builder()
+        .issuer(UserInfoTestSupport.OP)
+        .subject("user")
+        .audience(UserInfoTestSupport.RP)
+        .issueTime(new Date(1789650256000L))
+        .expirationTime(new Date(1789653856000L))
+        .claim("auth_time", 1789650196L)
+        .claim("updated_at", "1789650256")
+        .claim(PERSONAL_IDENTITY_NUMBER, "196911292032")
+        .build()).serialize();
+    final SignedJWT accessToken = new SignedJWT(new JWSHeader(JWSAlgorithm.ES256), new JWTClaimsSet.Builder()
+        .subject("user")
+        .expirationTime(new Date(1789650556000L))
+        .claim("iat", -1)
+        .build());
+    accessToken.sign(new ECDSASigner(new ECKeyGenerator(Curve.P_256).generate()));
+    return """
+        { "access_token": "%s", "token_type": "Bearer", "expires_in": 3600, "id_token": "%s" }"""
+        .formatted(accessToken.serialize(), idToken);
   }
 
   private OIDCResponse redirect() throws Exception {

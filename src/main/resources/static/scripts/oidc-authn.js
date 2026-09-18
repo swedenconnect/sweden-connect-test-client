@@ -448,6 +448,19 @@ class OIDCAuthenticationResult {
         return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
     }
 
+    /**
+     * Gets a received claim value for display in a result table - followed by its time in UTC if the server computed
+     * one for the claim, e.g. "1789650256 (2026-09-17 13:04:16 UTC)". Other values are returned as they are.
+     * @param value the claim value, as received
+     * @param times the times of the claims, each claim name mapped to its time in UTC (may be missing)
+     * @param claim the claim name
+     * @returns {*} the value to display
+     */
+    static withTime(value, times, claim) {
+        const time = times && Object.prototype.hasOwnProperty.call(times, claim) ? times[claim] : null;
+        return typeof time === 'string' ? value + ' (' + time + ')' : value;
+    }
+
     verifyResponse(responseData) {
 
         const verifyInput = {
@@ -602,7 +615,8 @@ class OIDCAuthenticationResult {
                     if (Object.keys(claims).length > 0) {
                         for (const prop in claims) {
                             if (Object.prototype.hasOwnProperty.call(claims, prop)) {
-                                accessTokenTableDiv.append(this.createRow(prop, claims[prop]));
+                                accessTokenTableDiv.append(this.createRow(prop, OIDCAuthenticationResult.withTime(
+                                    claims[prop], resultData.accessTokenClaimTimes, prop)));
                             }
                         }
                     }
@@ -621,7 +635,8 @@ class OIDCAuthenticationResult {
             this.appendProtectionRows(idTokenTableDiv, resultData.idTokenProtection);
             for (var prop in resultData.idTokenClaims) {
                 if (Object.prototype.hasOwnProperty.call(resultData.idTokenClaims, prop)) {
-                    idTokenTableDiv.append(this.createRow(prop, resultData.idTokenClaims[prop]));
+                    idTokenTableDiv.append(this.createRow(prop, OIDCAuthenticationResult.withTime(
+                        resultData.idTokenClaims[prop], resultData.idTokenClaimTimes, prop)));
                 }
             }
             for (var prop in resultData.missingIdTokenClaims) {
@@ -763,7 +778,8 @@ class OIDCAuthenticationResult {
         this.appendProtectionRows(tbody, resultData.userInfoProtection);
         for (const prop in resultData.userInfoClaims) {
             if (Object.prototype.hasOwnProperty.call(resultData.userInfoClaims, prop)) {
-                tbody.append(this.createRow(prop, resultData.userInfoClaims[prop]));
+                tbody.append(this.createRow(prop, OIDCAuthenticationResult.withTime(
+                    resultData.userInfoClaims[prop], resultData.userInfoClaimTimes, prop)));
             }
         }
         for (const prop in resultData.missingUserInfoClaims) {
@@ -850,6 +866,7 @@ class OIDCAuthenticationResult {
                        if (evaluation) {
                            resultData.userInfoResult = evaluation.userInfoResult || null;
                            resultData.userInfoClaims = evaluation.userInfoClaims || null;
+                           resultData.userInfoClaimTimes = evaluation.userInfoClaimTimes || null;
                            resultData.userInfoProtection = evaluation.userInfoProtection || null;
                            resultData.missingUserInfoClaims = evaluation.missingUserInfoClaims || null;
                            resultData.scopeValidation = evaluation.scopeValidation || null;
