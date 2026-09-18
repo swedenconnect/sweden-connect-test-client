@@ -170,7 +170,7 @@ public class RequestObjectFactory {
     resolver.getRedirectionURI().ifPresent(uri -> builder.claim("redirect_uri", uri.toASCIIString()));
     resolver.getAcrValues().ifPresent(acr -> builder.claim("acr_values",
         acr.stream().map(Identifier::getValue).collect(Collectors.joining(" "))));
-    resolver.getPrompt().ifPresent(prompt -> builder.claim("prompt", String.join(" ", prompt.toStringList())));
+    resolver.getPrompt().ifPresent(prompt -> builder.claim("prompt", prompt));
     resolver.getScope().ifPresent(scope -> builder.claim("scope", String.join(" ", scope.toStringList())));
     resolver.getResponseType().ifPresent(responseType -> builder.claim("response_type", responseType.toString()));
     resolver.getLoginHint().ifPresent(loginHint -> builder.claim("login_hint", loginHint));

@@ -72,7 +72,7 @@ public class AuthorizationRequestCustomizer {
     resolver.getRedirectionURI().ifPresent(builder::redirectionURI);
     resolver.requestBody(jwkFunction).ifPresent(builder::requestObject);
     resolver.getAcrValues().ifPresent(builder::acrValues);
-    resolver.getPrompt().ifPresent(builder::prompt);
+    // prompt is not set here - it is placed by toParameters, which sends the value as it was built
     // The request library requires openid in the scope. What the URL actually carries is decided by toURI.
     resolver.getScope().map(AuthorizationRequestCustomizer::withOpenid).ifPresent(builder::scope);
     resolver.getResponseType().ifPresent(builder::responseType);
@@ -105,6 +105,7 @@ public class AuthorizationRequestCustomizer {
     setOrRemove(parameters, "response_type", resolver.getResponseType().map(ResponseType::toString));
     setOrRemove(parameters, "redirect_uri", resolver.getRedirectionURI().map(URI::toString));
     setOrRemove(parameters, "scope", resolver.getScope().map(Scope::toString));
+    setOrRemove(parameters, "prompt", resolver.getPrompt());
     return parameters;
   }
 

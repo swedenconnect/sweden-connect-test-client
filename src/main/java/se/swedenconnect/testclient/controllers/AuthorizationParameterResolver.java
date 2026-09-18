@@ -32,7 +32,6 @@ import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCClaimsRequest;
-import com.nimbusds.openid.connect.sdk.Prompt;
 import com.nimbusds.openid.connect.sdk.claims.ACR;
 import net.minidev.json.JSONObject;
 import se.swedenconnect.testclient.oidc.RequestObjectFactory;
@@ -209,8 +208,17 @@ public class AuthorizationParameterResolver {
     return this.getValue(this.model.getAcrValues(), value -> Arrays.stream(value.split("\\s+")).map(ACR::new).toList());
   }
 
-  public Optional<Prompt> getPrompt() {
-    return this.getValue(this.model.getAdvanced().getPrompt(), Prompt::new);
+  /**
+   * Gets the {@code prompt} value for this location - a space-separated list of prompt values (OpenID Connect Core
+   * 1.0, section 3.1.2.1). The value is sent exactly as it was built: it is not parsed into the request library's
+   * {@link com.nimbusds.openid.connect.sdk.Prompt}, which rejects unknown values and would drop duplicates, so that
+   * the test client can send combinations that break the specification.
+   *
+   * @return the prompt value, or an empty optional if no prompt is placed here or its value is blank
+   */
+  public Optional<String> getPrompt() {
+    return this.getValue(this.model.getAdvanced().getPrompt(), value -> value)
+        .filter(value -> !value.isBlank());
   }
 
   public Optional<String> getLoginHint() {

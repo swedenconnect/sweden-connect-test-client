@@ -1378,7 +1378,20 @@ class OIDCAuthnRequest {
         "http://eidas.europa.eu/LoA/test"
     ];
 
-    static addSelectedAcrValue(list, uri) {
+    /** The prompt values of OpenID Connect Core 1.0, section 3.1.2.1, shown and sent as defined there. */
+    static PROMPT_VALUES = [
+        "none",
+        "login",
+        "consent",
+        "select_account"
+    ];
+
+    /**
+     * Adds a value to the list of a value list row, removing the "nothing assigned" placeholder.
+     * @param list the list
+     * @param value the value to add
+     */
+    static addListValue(list, value) {
         if (list.children("li").length === 1) {
             let firstChild = list.find('li:first');
             if (firstChild.text().trim().startsWith('--')) {
@@ -1387,7 +1400,7 @@ class OIDCAuthnRequest {
         }
         let liElm = $('<li>')
             .addClass('list-group-item d-flex justify-content-between align-items-center')
-            .append($('<span>').text(uri))
+            .append($('<span>').text(value))
             .append($('<button>').attr('type', 'button').addClass('btn-close'));
         list.append(liElm);
     }
@@ -1563,7 +1576,7 @@ class OIDCAuthnRequest {
             "clientId"
         );
 
-        this.initAcrValues(this.pars.acrValues);
+        this.initValueList(this.valueListRows().acr);
 
         $("#oidc-request-claims-textarea").prop('disabled', true);
 
@@ -1876,7 +1889,7 @@ class OIDCAuthnRequest {
         this.refreshField('#oidc-request-redirect-present', '#oidc-request-redirect-request-body',
             '#oidc-request-redirect-input', 'redirectUri');
         this.refreshScopeValues();
-        this.refreshAcrValues();
+        this.refreshValueList(this.valueListRows().acr);
         this.refreshAdvanced();
         this.refreshRequestObject();
         $('#oidc-request-um-present').prop('checked', this.pars.userMessage.valuePresent || false);
@@ -2335,12 +2348,7 @@ class OIDCAuthnRequest {
             "#oidc-request-nonce-present",
             ["advanced", "nonce"]
         );
-        this.initModuleSelector(
-            "#oidc-request-prompt-select",
-            "#oidc-request-prompt-request-body",
-            "#oidc-request-prompt-present",
-            ["advanced", "prompt"]
-        );
+        this.initValueList(this.valueListRows().prompt);
         this.initServerGeneratedField(
             "#oidc-request-code_challenge-input",
             "#oidc-request-code_challenge-button",
@@ -2535,129 +2543,162 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Initializes the ACR values element.
-     * @param acr the ACR object
+     * The rows that hold a list of values - the ACR values row and the Prompt row. Each has a list of the values that
+     * have been added, an "Add" menu with the known values, and an input for any other value. The values are kept in
+     * the row's parameter as a space-separated string, in the order they were added.
+     * @returns {object} the rows, by name
      */
-    initAcrValues(acr) {
-        let oidcRequestAcrCheckbox = $('#oidc-request-acr-present');
-        let oidcRequestAcrRequestBodyCheckbox = $('#oidc-request-acr-request-body');
+    valueListRows() {
+        return {
+            acr: {
+                prefix: '#oidc-request-acr',
+                par: () => this.pars.acrValues,
+                knownValues: OIDCAuthnRequest.AUTHN_CONTEXT_CLASS_REF_URIS,
+                emptyText: '-- No URIs assigned --',
+                otherText: 'Enter other URI ...'
+            },
+            prompt: {
+                prefix: '#oidc-request-prompt',
+                par: () => this.pars.advanced.prompt,
+                knownValues: OIDCAuthnRequest.PROMPT_VALUES,
+                emptyText: '-- No values assigned --',
+                otherText: 'Enter other value ...'
+            }
+        };
+    }
 
-        let oidcRequestAcrList = $('#oidc-request-acr-list');
-        let oidcRequestAcrAddDiv = $('#oidc-request-acr-drop-div');
-        let oidcRequestAcrCustomDiv = $('#oidc-request-acr-custom-div');
+    /**
+     * Gets the values of a value list row.
+     * @param row the row, see valueListRows()
+     * @returns {string[]} the values, in the order they were added
+     */
+    static valueListValues(row) {
+        const par = row.par();
+        return par && par.value ? par.value.split(' ').filter(value => value.trim() !== '') : [];
+    }
 
-        let parent = this;
+    /**
+     * Initializes a value list row - its list, its "Add" menu and its custom value input, see valueListRows().
+     * @param row the row
+     */
+    initValueList(row) {
+        const list = $(row.prefix + '-list');
+        const addDiv = $(row.prefix + '-drop-div');
+        const customDiv = $(row.prefix + '-custom-div');
+        const presentCheckbox = $(row.prefix + '-present');
+        const requestBodyCheckbox = $(row.prefix + '-request-body');
 
-        // Helper function to update pars.acrValues.value from the list
-        let updateAcrValue = function() {
-            let uris = [];
-            $('#oidc-request-acr-list li span').each(function() {
-                uris.push($(this).text());
+        // Reads the list back into the row's parameter, switching the row on or off with the boxes of the active mode
+        const updateValue = () => {
+            const values = [];
+            list.find('li span').each(function () {
+                values.push($(this).text());
             });
-            parent.pars.acrValues.value = uris.join(' ');
-            parent.switchRow(parent.pars.acrValues, uris.length > 0);
-            oidcRequestAcrCheckbox.prop('checked', parent.pars.acrValues.valuePresent || false);
-            oidcRequestAcrRequestBodyCheckbox.prop('checked', parent.pars.acrValues.requestBody || false);
+            row.par().value = values.join(' ');
+            this.switchRow(row.par(), values.length > 0);
+            presentCheckbox.prop('checked', row.par().valuePresent || false);
+            requestBodyCheckbox.prop('checked', row.par().requestBody || false);
         };
 
-        let assignedUris = [];
-
-        if (acr && acr.value) {
-            assignedUris = acr.value.split(' ').filter(uri => uri.trim() !== '');
-        }
-
-        oidcRequestAcrList.empty();
-        for (let uri of assignedUris) {
-            OIDCAuthnRequest.addSelectedAcrValue(oidcRequestAcrList, uri);
-        }
-        if (assignedUris.length === 0) {
-            oidcRequestAcrList.append($('<li>')
-                .text("-- No URIs assigned --")
-                .addClass('list-group-item d-flex justify-content-between align-items-center'));
-        }
-
-        oidcRequestAcrAddDiv.empty();
-        for (let uri of OIDCAuthnRequest.AUTHN_CONTEXT_CLASS_REF_URIS) {
-            let option = $('<a>', {
+        addDiv.empty();
+        for (const value of row.knownValues) {
+            addDiv.append($('<a>', {
                 href: 'javascript:void(0)',
                 class: 'dropdown-item',
-                'data-acr-attr': uri,
-                text: uri,
-                click: function(event) {
+                'data-list-value': value,
+                text: value,
+                click: function (event) {
                     event.preventDefault();
 
                     if ($(this).hasClass('disabled')) {
                         return;
                     }
 
-                    oidcRequestAcrCustomDiv.hide();
-                    OIDCAuthnRequest.addSelectedAcrValue(oidcRequestAcrList, uri);
+                    customDiv.hide();
+                    OIDCAuthnRequest.addListValue(list, value);
                     $(this).addClass('disabled');
-                    updateAcrValue();
+                    updateValue();
                 }
-            });
-
-            if (assignedUris.includes(uri)) {
-                option.addClass('disabled');
-            }
-            oidcRequestAcrAddDiv.append(option);
+            }));
         }
-        oidcRequestAcrAddDiv.append($('<a>', {
+        addDiv.append($('<a>', {
             href: 'javascript:void(0)',
             class: 'dropdown-item',
-            'data-acr-attr': 'other',
-            text: "Enter other URI ...",
-            click: function(event) {
+            'data-list-value': 'other',
+            text: row.otherText,
+            click: function (event) {
                 event.preventDefault();
-                oidcRequestAcrCustomDiv.show();
+                customDiv.show();
             }
         }));
 
-        if (acr) {
-            oidcRequestAcrCheckbox.prop('checked', acr.valuePresent || false);
-            oidcRequestAcrRequestBodyCheckbox.prop('checked', acr.requestBody || false);
-        }
-        else {
-            oidcRequestAcrCheckbox.prop('checked', false);
-            oidcRequestAcrRequestBodyCheckbox.prop('checked', false);
-        }
+        this.refreshValueList(row);
 
-        oidcRequestAcrCheckbox.change(function() {
-            parent.pars.acrValues.valuePresent = oidcRequestAcrCheckbox.prop('checked');
+        presentCheckbox.off('change').change(function () {
+            row.par().valuePresent = presentCheckbox.prop('checked');
+        });
+        requestBodyCheckbox.off('change').change(function () {
+            row.par().requestBody = requestBodyCheckbox.prop('checked');
         });
 
-        oidcRequestAcrRequestBodyCheckbox.change(function() {
-            parent.pars.acrValues.requestBody = oidcRequestAcrRequestBodyCheckbox.prop('checked');
-        });
-
-        oidcRequestAcrList.on('click', 'button.btn-close', function() {
-            let ul = $(this).closest('ul');
-            let uri = $(this).closest('li').find('span').text();
+        list.off('click').on('click', 'button.btn-close', function () {
+            const ul = $(this).closest('ul');
+            const value = $(this).closest('li').find('span').text();
             $(this).closest('li').remove();
 
-            let link = oidcRequestAcrAddDiv.find('a[data-acr-attr="' + uri + '"]');
+            const link = addDiv.find('a[data-list-value="' + value + '"]');
             if (link.length > 0) {
                 link.removeClass('disabled');
             }
 
             if (ul.children('li').length === 0) {
                 ul.append($('<li>')
-                    .text("-- No URIs assigned --")
+                    .text(row.emptyText)
                     .addClass('list-group-item d-flex justify-content-between align-items-center'));
             }
-            updateAcrValue();
+            updateValue();
         });
 
-        $('#oidc-request-acr-custom-button').click(function() {
-            let oidcRequestAcrCustom = $('#oidc-request-acr-custom');
-            let uri = oidcRequestAcrCustom.val().trim();
-            if (uri !== '') {
-                OIDCAuthnRequest.addSelectedAcrValue(oidcRequestAcrList, uri);
-                oidcRequestAcrCustom.val('');
-                oidcRequestAcrCustomDiv.hide();
-                updateAcrValue();
+        $(row.prefix + '-custom-button').off('click').click(function () {
+            const custom = $(row.prefix + '-custom');
+            const value = custom.val().trim();
+            if (value !== '') {
+                OIDCAuthnRequest.addListValue(list, value);
+                custom.val('');
+                customDiv.hide();
+                updateValue();
             }
         });
+    }
+
+    /**
+     * Rebuilds the list of a value list row and updates its checkboxes from this.pars, without rebinding the existing
+     * event handlers.
+     * @param row the row, see valueListRows()
+     */
+    refreshValueList(row) {
+        const par = row.par();
+        const list = $(row.prefix + '-list');
+        const addDiv = $(row.prefix + '-drop-div');
+        const values = OIDCAuthnRequest.valueListValues(row);
+
+        list.empty();
+        for (const value of values) {
+            OIDCAuthnRequest.addListValue(list, value);
+        }
+        if (values.length === 0) {
+            list.append($('<li>')
+                .text(row.emptyText)
+                .addClass('list-group-item d-flex justify-content-between align-items-center'));
+        }
+
+        addDiv.find('a[data-list-value]').removeClass('disabled');
+        for (const value of values) {
+            addDiv.find('a[data-list-value="' + value + '"]').addClass('disabled');
+        }
+
+        $(row.prefix + '-present').prop('checked', par ? (par.valuePresent || false) : false);
+        $(row.prefix + '-request-body').prop('checked', par ? (par.requestBody || false) : false);
     }
 
     /**
@@ -2922,7 +2963,7 @@ class OIDCAuthnRequest {
         }
         if (template.acrValues !== undefined) {
             this.pars.acrValues = { ...this.pars.acrValues, ...template.acrValues };
-            this.refreshAcrValues();
+            this.refreshValueList(this.valueListRows().acr);
         }
         if (template.signMessage !== undefined) {
             this.pars.signMessage = this.mergeDeep(this.pars.signMessage, template.signMessage);
@@ -2989,40 +3030,6 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Rebuilds the ACR values list UI and updates checkbox states from this.pars.acrValues
-     * without rebinding the existing event handlers.
-     */
-    refreshAcrValues() {
-        const acr = this.pars.acrValues;
-        const oidcRequestAcrList = $('#oidc-request-acr-list');
-        const oidcRequestAcrAddDiv = $('#oidc-request-acr-drop-div');
-        const oidcRequestAcrCheckbox = $('#oidc-request-acr-present');
-        const oidcRequestAcrRequestBodyCheckbox = $('#oidc-request-acr-request-body');
-
-        const assignedUris = acr && acr.value
-            ? acr.value.split(' ').filter(u => u.trim() !== '')
-            : [];
-
-        oidcRequestAcrList.empty();
-        for (const uri of assignedUris) {
-            OIDCAuthnRequest.addSelectedAcrValue(oidcRequestAcrList, uri);
-        }
-        if (assignedUris.length === 0) {
-            oidcRequestAcrList.append($('<li>')
-                .text("-- No URIs assigned --")
-                .addClass('list-group-item d-flex justify-content-between align-items-center'));
-        }
-
-        oidcRequestAcrAddDiv.find('a[data-acr-attr]').removeClass('disabled');
-        for (const uri of assignedUris) {
-            oidcRequestAcrAddDiv.find('a[data-acr-attr="' + uri + '"]').addClass('disabled');
-        }
-
-        oidcRequestAcrCheckbox.prop('checked', acr ? (acr.valuePresent || false) : false);
-        oidcRequestAcrRequestBodyCheckbox.prop('checked', acr ? (acr.requestBody || false) : false);
-    }
-
-    /**
      * Helper: rebuild language message rows in a messages div without rebinding handlers.
      * Removes existing rows (identified by label[data-langcode]), then adds new ones.
      * @param messagesDiv the jQuery div to populate
@@ -3070,10 +3077,11 @@ class OIDCAuthnRequest {
                 adv.moduleEnabled, 'advanced options');
         }
 
-        // Module selectors: responseType, prompt, codeChallengeMethod
+        this.refreshValueList(this.valueListRows().prompt);
+
+        // Module selectors: responseType, codeChallengeMethod
         for (const [field, sel, rbSel, presentSel] of [
             ['responseType',        '#oidc-request-responsetype-select',           '#oidc-request-responsetype-request-body',        '#oidc-request-responsetype-present'],
-            ['prompt',              '#oidc-request-prompt-select',                 '#oidc-request-prompt-request-body',              '#oidc-request-prompt-present'],
             ['codeChallengeMethod', '#oidc-request-code_challenge_method-select',  '#oidc-request-code_challenge_method-request-body','#oidc-request-code_challenge_method-present'],
         ]) {
             if (adv[field] !== undefined) {
