@@ -303,8 +303,11 @@ publishes a `jwks_uri` instead (`<base-url>/{path-suffix}/jwks`), pointing at a 
 keys - useful for testing an OP that expects key rotation via a URL rather than a static, embedded key set. This
 endpoint is available for every RP regardless of `use-jwks-url`.
 
-Note that the back-channel exchange that the test client performs authenticates using `private_key_jwt`, so the
-metadata should declare `"token_endpoint_auth_method": "private_key_jwt"`.
+Note that the back-channel exchange that the test client performs authenticates using `private_key_jwt` by default,
+so the metadata should declare `"token_endpoint_auth_method": "private_key_jwt"`. The method, as well as the
+parameters of the token request and the claims of the client assertion, can be changed per request under "Token
+request options" on the Build Authentication Request page. The RP:s have no client secret in their configuration - the
+`client_secret_*` methods use the secret typed in the request builder.
 
 If an RP declares `"logo_uri": "<logo>"` in its metadata, the placeholder `<logo>` is replaced with
 `<base-url>/{path-suffix}/logo.svg` - a simple logotype, generated on the fly, showing the RP:s path suffix next to

@@ -62,6 +62,10 @@ public class OIDCResponse {
   private List<ScopeValidationResult> scopeValidation;
   /** The authentication request as it was sent. */
   private SentAuthorizationRequest authorizationRequest;
+  /** The token request as it was sent, or {@code null} if no token request was sent. */
+  private SentTokenRequest tokenRequest;
+  /** Why no tokens were received from the token endpoint, or {@code null} if they were (or were never requested). */
+  private TokenEndpointError tokenError;
   private Map<String, Object> response;
   private List<String> errors;
   @JsonProperty("op_error")
