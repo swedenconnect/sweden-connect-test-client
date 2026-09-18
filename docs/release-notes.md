@@ -10,7 +10,10 @@
 
 Date: _not yet released_
 
--
+- New "Token request options" set the client authentication method, parameters and client assertion claims of the
+  token request, and "Display Token Request" shows the token request as it was sent.
+- A failed token request (any error status, a network error or an unreadable response) is now shown as a token
+  endpoint error instead of "error:null Error Description:null".
 
 ### Version 1.0.11
 

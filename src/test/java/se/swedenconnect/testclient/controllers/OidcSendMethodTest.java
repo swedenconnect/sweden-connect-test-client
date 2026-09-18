@@ -16,6 +16,8 @@
 package se.swedenconnect.testclient.controllers;
 
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.oauth2.sdk.util.URLUtils;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import org.junit.jupiter.api.Assertions;
@@ -28,6 +30,10 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.web.client.RestClient;
 import org.thymeleaf.standard.serializer.StandardJavaScriptSerializer;
+import se.swedenconnect.security.credential.BasicCredential;
+import se.swedenconnect.security.credential.PkiCredential;
+import se.swedenconnect.security.credential.bundle.CredentialBundles;
+import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
 import se.swedenconnect.testclient.oidc.OIDCOPMetadataFetcher;
 import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcOpRegistry;
@@ -39,6 +45,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Tests for sending the OIDC authentication request with GET or POST - what {@link OidcRestController} returns to the
@@ -54,12 +61,16 @@ class OidcSendMethodTest {
 
   private MockHttpSession session;
   private OidcRestController restController;
+  private OidcRp rp;
+  private OidcOpRegistry registry;
+  private OIDCOPMetadataFetcher fetcher;
 
   @BeforeEach
   void setUp() {
     this.session = new MockHttpSession();
 
     final OidcRp rp = Mockito.mock(OidcRp.class);
+    this.rp = rp;
     Mockito.when(rp.getEntityId()).thenReturn(RP);
     final OidcOp op = OidcOp.builder()
         .entityId(OP)
@@ -67,8 +78,10 @@ class OidcSendMethodTest {
         .tokenEndpoint(OP + "/token")
         .build();
     final OidcOpRegistry registry = Mockito.mock(OidcOpRegistry.class);
+    this.registry = registry;
     Mockito.when(registry.get(OP)).thenReturn(op);
     final OIDCOPMetadataFetcher fetcher = Mockito.mock(OIDCOPMetadataFetcher.class);
+    this.fetcher = fetcher;
     Mockito.when(fetcher.getOPJWKS(op)).thenReturn(new JWKSet());
 
     this.restController = new OidcRestController(
@@ -149,6 +162,53 @@ class OidcSendMethodTest {
     model.setCallUserInfo(null);
     this.restController.generateAuthnRequest(model, SentAuthorizationRequest.Method.POST);
     Assertions.assertEquals(true, this.session.getAttribute(OidcController.SESSION_NAME_CALL_USERINFO));
+  }
+
+  @Test
+  void theTokenRequestSettingsAreRecordedForEachRequest() throws Exception {
+    final OIDCAuthnRequestParameterModel model = model();
+    final TokenRequestParameterModel settings = TokenRequestParameterModel.defaults(RP, RP + "/redirect", OP + "/token");
+    settings.setAuthMethod(TokenRequestParameterModel.NONE);
+
+    model.setTokenRequest(settings);
+    this.restController.generateAuthnRequest(model, SentAuthorizationRequest.Method.GET);
+    Assertions.assertSame(settings, this.tokenRequestSettings().settings());
+    // No key is selected under Key options - the RP's registered key is used
+    Assertions.assertNull(this.tokenRequestSettings().keyOptionsSignKey());
+
+    // A later request is governed by its own settings - a request exported before the settings existed has none
+    model.setTokenRequest(null);
+    this.restController.generateAuthnRequest(model, SentAuthorizationRequest.Method.POST);
+    Assertions.assertNull(this.tokenRequestSettings().settings());
+  }
+
+  @Test
+  void theKeyOptionsSigningKeyIsRecordedForTheTokenRequest() throws Exception {
+    final RSAKey key = new RSAKeyGenerator(2048).keyID(UUID.randomUUID().toString()).generate();
+    final PkiCredential credential = new BasicCredential(key.toPublicKey(), key.toPrivateKey());
+    final String kid = new JwkTransformerFunction().serializable().apply(credential).getKeyID();
+    final CredentialBundles bundles = Mockito.mock(CredentialBundles.class);
+    Mockito.when(bundles.getRegisteredCredentials()).thenReturn(List.of("other"));
+    Mockito.when(bundles.getCredential("other")).thenReturn(credential);
+    final OidcRestController controller = new OidcRestController(
+        List.of(this.rp), this.registry, this.session, this.fetcher, bundles, null, Mockito.mock(RestClient.class));
+    final OIDCAuthnRequestParameterModel model = model();
+
+    model.getKeys().setSignKey(kid);
+    controller.generateAuthnRequest(model, SentAuthorizationRequest.Method.GET);
+    Assertions.assertEquals(kid, this.tokenRequestSettings().keyOptionsSignKey().getLeft());
+    Assertions.assertSame(credential, this.tokenRequestSettings().keyOptionsSignKey().getRight());
+    Assertions.assertSame(credential, this.tokenRequestSettings().signingCredential(this.rp));
+
+    model.getKeys().setSignKey("unknown");
+    controller.generateAuthnRequest(model, SentAuthorizationRequest.Method.GET);
+    Assertions.assertEquals("unknown", this.tokenRequestSettings().keyOptionsSignKey().getLeft());
+    Assertions.assertNull(this.tokenRequestSettings().signingCredential(this.rp));
+  }
+
+  private OidcController.TokenRequestSettings tokenRequestSettings() {
+    return (OidcController.TokenRequestSettings) this.session.getAttribute(
+        OidcController.SESSION_NAME_TOKEN_REQUEST_SETTINGS);
   }
 
   @Test

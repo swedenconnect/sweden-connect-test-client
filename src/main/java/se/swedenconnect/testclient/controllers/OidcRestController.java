@@ -21,6 +21,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jose.jwk.KeyUse;
+import com.nimbusds.jose.util.Pair;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.ResponseType;
@@ -55,6 +56,7 @@ import org.springframework.web.client.RestClient;
 import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.bundle.CredentialBundles;
 import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
+import se.swedenconnect.testclient.credentials.ClientCredentials;
 import se.swedenconnect.testclient.oidc.OIDCOPMetadataFetcher;
 import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcOpRegistry;
@@ -307,6 +309,8 @@ public class OidcRestController {
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false).build())
+        .tokenRequest(TokenRequestParameterModel.defaults(selectedRp.getEntityId(),
+            selectedRp.getMetadata().getRedirectionURI().toASCIIString(), selectedOp.getTokenEndpoint()))
         .build();
   }
 
@@ -422,6 +426,8 @@ public class OidcRestController {
       httpSession.setAttribute(OidcController.SESSION_NAME_CALL_USERINFO,
           !Boolean.FALSE.equals(model.getCallUserInfo()));
       httpSession.removeAttribute(OidcController.SESSION_NAME_ID_TOKEN_CLAIMS);
+      httpSession.setAttribute(OidcController.SESSION_NAME_TOKEN_REQUEST_SETTINGS,
+          new OidcController.TokenRequestSettings(model.getTokenRequest(), this.keyOptionsSignKey(model, selectedRp)));
 
       log.info("{} {}", sentRequest.method(), sentRequest.url());
       return OIDCAuthnRequestModel.builder()
@@ -434,6 +440,36 @@ public class OidcRestController {
       httpSession.invalidate();
       throw e;
     }
+  }
+
+  /**
+   * Gets the signing key selected under "Key options" - the key that signs a {@code private_key_jwt} client assertion.
+   *
+   * @param model the request parameter model
+   * @param rp the RP
+   * @return the key ID of the selected key and the credential for it ({@code null} if no registered credential has
+   *     that key ID), or {@code null} if no key is selected, which means the RP's registered signing key
+   */
+  @Nullable
+  private Pair<String, PkiCredential> keyOptionsSignKey(@Nonnull final OIDCAuthnRequestParameterModel model,
+      @Nonnull final OidcRp rp) {
+    final String kid = Optional.ofNullable(model.getKeys()).map(KeyOptionsParameterModel::getSignKey).orElse(null);
+    if (kid == null) {
+      return null;
+    }
+    final Function<PkiCredential, String> keyId =
+        credential -> new JwkTransformerFunction().serializable().apply(credential).getKeyID();
+    final PkiCredential rpCredential =
+        Optional.ofNullable(rp.getCredentials()).map(ClientCredentials::getCredentialForSigning).orElse(null);
+    if (rpCredential != null && kid.equals(keyId.apply(rpCredential))) {
+      return Pair.of(kid, rpCredential);
+    }
+    final PkiCredential registered = Optional.ofNullable(this.credentialBundles).stream()
+        .flatMap(bundles -> bundles.getRegisteredCredentials().stream().map(bundles::getCredential))
+        .filter(credential -> kid.equals(keyId.apply(credential)))
+        .findFirst()
+        .orElse(null);
+    return Pair.of(kid, registered);
   }
 
   private Function<String, JWK> kidtoJwkFunction(final JWKSet opJWKS) {

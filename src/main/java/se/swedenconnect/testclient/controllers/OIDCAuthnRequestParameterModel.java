@@ -65,4 +65,9 @@ public class OIDCAuthnRequestParameterModel {
    * exported before the setting existed, means that it is called.
    */
   private Boolean callUserInfo;
+  /**
+   * The settings of the token request that is sent when the OP redirects back. {@code null}, as in requests exported
+   * before the settings existed, means the defaults.
+   */
+  private TokenRequestParameterModel tokenRequest;
 }

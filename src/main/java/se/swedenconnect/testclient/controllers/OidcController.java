@@ -15,29 +15,23 @@
  */
 package se.swedenconnect.testclient.controllers;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.util.Pair;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.OIDCClaimsRequest;
 import com.nimbusds.openid.connect.sdk.claims.ClaimsSetRequest;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -45,22 +39,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.servlet.ModelAndView;
 import se.swedenconnect.security.credential.PkiCredential;
-import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
+import se.swedenconnect.testclient.credentials.ClientCredentials;
 import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcRp;
-import se.swedenconnect.testclient.utils.JoseUtils;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.net.URI;
 import java.text.ParseException;
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * @author Martin Lindström
@@ -71,8 +63,8 @@ import java.util.UUID;
 public class OidcController {
 
   private final HttpSession httpSession;
-  private final RestClient client;
   private final UserInfoCaller userInfoCaller;
+  private final TokenRequestSender tokenRequestSender;
 
   public static final String SESSION_NAME_OIDC_RESPONSE = "sctc.oidcResponse";
 
@@ -96,6 +88,12 @@ public class OidcController {
   public static final String SESSION_NAME_SENT_AUTH_REQUEST = "sent_auth_request";
 
   /**
+   * The token request settings of the latest authentication request ({@link TokenRequestSettings}). They are set for
+   * each authentication request that is sent - if missing, the token request is sent with the defaults.
+   */
+  public static final String SESSION_NAME_TOKEN_REQUEST_SETTINGS = "sctc.oidcTokenRequestSettings";
+
+  /**
    * The base path for the redirection URLs.
    */
   public static final String REDIRECTION_URL_BASE = "/oidc/redirect";
@@ -111,8 +109,8 @@ public class OidcController {
    */
   public OidcController(@Nonnull final HttpSession httpSession, @Nonnull final RestClient client) {
     this.httpSession = httpSession;
-    this.client = client;
     this.userInfoCaller = new UserInfoCaller(client);
+    this.tokenRequestSender = new TokenRequestSender(client);
   }
 
   @RequestMapping(path = REDIRECTION_URL_BASE + "/{rpSuffix}", method = {RequestMethod.GET, RequestMethod.POST})
@@ -122,7 +120,7 @@ public class OidcController {
       @RequestParam(value = "error_description", required = false) final String errorDescription,
       @RequestParam(value = "state", required = false) final String state,
       @RequestParam(value = "iss", required = false) final String iss,
-      @RequestParam(value = "code", required = false) final String code) throws JOSEException, ParseException {
+      @RequestParam(value = "code", required = false) final String code) {
     final AuthenticationRequest authRequest = (AuthenticationRequest) httpSession.getAttribute("auth_request");
     final OidcOp selectedOp = (OidcOp) httpSession.getAttribute("selected_op");
     final OidcRp selectedRp = (OidcRp) httpSession.getAttribute("selected_rp");
@@ -143,62 +141,42 @@ public class OidcController {
             AuthorizationParameterResolver.CODE_VERIFIER_ATTRIBUTE)
     );
 
-    final PkiCredential credentialForSigning = selectedRp.getCredentials()
-        .getCredentialForSigning();
+    final TokenRequestSettings tokenRequestSettings = Optional.ofNullable(
+            (TokenRequestSettings) httpSession.getAttribute(SESSION_NAME_TOKEN_REQUEST_SETTINGS))
+        .orElseGet(() -> new TokenRequestSettings(null, null));
+    final TokenRequestParameterModel settings = TokenRequestParameterModel.withDefaults(
+        tokenRequestSettings.settings(),
+        TokenRequestParameterModel.defaults(selectedRp.getEntityId(),
+            Optional.ofNullable(selectedRp.getMetadata().getRedirectionURI()).map(URI::toASCIIString).orElse(null),
+            selectedOp.getTokenEndpoint()));
 
-    final JWK jwk = new JwkTransformerFunction().serializable()
-        .apply(credentialForSigning);
-
-    final JWSHeader header = new JWSHeader.Builder(JoseUtils.signingAlgorithm(jwk))
-        .jwk(jwk.toPublicJWK())
-        .keyID(jwk.getKeyID())
-        .build();
-
-    final JWTClaimsSet.Builder clientAssertion = new JWTClaimsSet.Builder();
-
-    clientAssertion
-        .issuer(selectedRp.getEntityId())
-        .subject(selectedRp.getEntityId())
-        .audience(selectedOp.getTokenEndpoint())
-        .jwtID(UUID.randomUUID().toString())
-        .issueTime(Date.from(Instant.now()))
-        .expirationTime(Date.from(Instant.now().plusSeconds(300)));
-
-    final SignedJWT assertion = new SignedJWT(header, clientAssertion.build());
-    assertion.sign(JoseUtils.signer(credentialForSigning));
-
-    final State sentState = authRequest.getState();
-
-    final MultiValueMap<String, String> tokenBody = new LinkedMultiValueMap<>();
-    tokenBody.add("grant_type", "authorization_code");
-    tokenBody.add("code", code);
-    tokenBody.add("redirect_uri", selectedRp.getMetadata().getRedirectionURI().toASCIIString());
-    tokenBody.add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
-    tokenBody.add("client_assertion", assertion.serialize());
-    codeVerifier.ifPresent(verifier -> tokenBody.add("code_verifier", verifier.getRight().getValue()));
-    final Map<String, String> errorBody = new HashMap<>();
-    final RestClient.ResponseSpec.ErrorHandler errorHandler = (a, b) -> {
-      final Map<String, String> errorMap =
-          (Map<String, String>) objectMapper.readerFor(Map.class).readValue(b.getBody().readAllBytes());
-      errorBody.putAll(errorMap);
-      throw new RuntimeException("Token exchange error");
-    };
+    final SentTokenRequest tokenRequest;
     try {
-      final Map<String, Object> tokenResponse = this.client.post().uri(selectedOp.getTokenEndpoint())
-          .body(tokenBody)
-          .header("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
-          .retrieve()
-          .onStatus(s -> s.value() == 400, errorHandler)
-          .toEntity(new ParameterizedTypeReference<Map<String, Object>>() {
-          })
-          .getBody();
+      tokenRequest = TokenRequestFactory.create(settings, selectedOp.getTokenEndpoint(), code,
+          codeVerifier.map(v -> v.getRight().getValue()).orElse(null),
+          tokenRequestSettings.signingCredential(selectedRp), Instant.now());
+    }
+    catch (final TokenRequestException e) {
+      log.info("Token request for '{}' not sent: {}", selectedRp.getEntityId(), e.getMessage());
+      return this.tokenEndpointError(authRequest, null, TokenEndpointError.builder()
+          .message("The token request was not sent to the token endpoint %s. %s."
+              .formatted(selectedOp.getTokenEndpoint(), e.getMessage()))
+          .build());
+    }
 
-      final String accessToken = (String) tokenResponse.get("access_token");
+    final TokenRequestSender.Result tokenResult = this.tokenRequestSender.send(tokenRequest);
+    if (tokenResult.error() != null) {
+      return this.tokenEndpointError(authRequest, tokenRequest, tokenResult.error());
+    }
+    final Map<String, Object> tokenResponse = Objects.requireNonNull(tokenResult.tokenResponse());
+
+    try {
+      final String accessToken = tokenResponse.get("access_token") instanceof final String s ? s : null;
       final JWTClaimsSet jwtClaims = (JWTClaimsSet) httpSession.getAttribute("jwt_claims");
       final Optional<OIDCClaimsRequest> authClaims = UserInfoEvaluation.requestedClaims(authRequest, jwtClaims);
 
-      final OidcJwtParser.ProtectedJwt idTokenResult =
-          OidcJwtParser.parseProtectedJwt((String) tokenResponse.get("id_token"), selectedRp);
+      final OidcJwtParser.ProtectedJwt idTokenResult = OidcJwtParser.parseProtectedJwt(
+          tokenResponse.get("id_token") instanceof final String s ? s : null, selectedRp);
       final Map<String, Object> idTokenClaims = idTokenResult.claims();
       // Kept for "Send UserInfo Request", which is made after the response has been removed from the session
       httpSession.setAttribute(SESSION_NAME_ID_TOKEN_CLAIMS, idTokenClaims);
@@ -239,12 +217,14 @@ public class OidcController {
       Optional.ofNullable(iss).ifPresent(s -> responseParameters.put("iss", s));
       Optional.ofNullable(code).ifPresent(s -> responseParameters.put("code", s));
 
+      final Map<String, Object> accessTokenClaims = accessTokenClaims(accessToken);
       final OIDCResponse.OIDCResponseBuilder responseBuilder = OIDCResponse.builder()
           .accessToken(accessToken)
-          .accessTokenClaims(accessTokenClaims(accessToken))
+          .accessTokenClaims(accessTokenClaims)
           .scopeValidation(userInfo.getScopeValidation())
           .idTokenClaims(idTokenClaims)
           .authorizationRequest(this.sentRequest(authRequest))
+          .tokenRequest(tokenRequest)
           .userInfoResult(userInfo.getUserInfoResult())
           .userInfoClaims(userInfo.getUserInfoClaims())
           .missingUserInfoClaims(userInfo.getMissingUserInfoClaims())
@@ -275,8 +255,62 @@ public class OidcController {
       return new ModelAndView("redirect:/");
     }
     catch (final RuntimeException e) {
-      return new ModelAndView("redirect:/oidc/redirect/%s?error=%s&error_description=%s"
-          .formatted(rp, errorBody.get("error"), errorBody.get("error_description")));
+      log.info("Failed to process the token response from {}: {}", selectedOp.getTokenEndpoint(), e.getMessage());
+      httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE, OIDCResponse.builder()
+          .errors(List.of("The token response from %s could not be processed: %s".formatted(
+              selectedOp.getTokenEndpoint(),
+              Optional.ofNullable(e.getMessage()).orElseGet(() -> e.getClass().getSimpleName()))))
+          .authorizationRequest(this.sentRequest(authRequest))
+          .tokenRequest(tokenRequest)
+          .response(tokenResponse)
+          .build());
+      return new ModelAndView("redirect:/");
+    }
+  }
+
+  /**
+   * Stores the result of a token request that did not give a token response, and redirects to the result page.
+   *
+   * @param authRequest the authentication request
+   * @param tokenRequest the token request as it was sent, or {@code null} if it could not be sent
+   * @param error why no token response was received
+   * @return the redirect to the result page
+   */
+  @Nonnull
+  private ModelAndView tokenEndpointError(@Nonnull final AuthenticationRequest authRequest,
+      @Nullable final SentTokenRequest tokenRequest, @Nonnull final TokenEndpointError error) {
+    httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE, OIDCResponse.builder()
+        .errors(error.toMessages())
+        .tokenError(error)
+        .authorizationRequest(this.sentRequest(authRequest))
+        .tokenRequest(tokenRequest)
+        .build());
+    return new ModelAndView("redirect:/");
+  }
+
+  /**
+   * The token request settings of an authentication request, recorded when the request is generated.
+   *
+   * @param settings the token request settings ({@code null} for the defaults)
+   * @param keyOptionsSignKey the signing key selected under "Key options" - the key that signs a
+   *     {@code private_key_jwt} client assertion, as a key ID and the credential for it ({@code null} for the RP's
+   *     registered signing key)
+   */
+  public record TokenRequestSettings(@Nullable TokenRequestParameterModel settings,
+      @Nullable Pair<String, PkiCredential> keyOptionsSignKey) {
+
+    /**
+     * Gets the credential that signs a {@code private_key_jwt} client assertion.
+     *
+     * @param rp the RP
+     * @return the credential, or {@code null} if the key selected under "Key options" is not available
+     */
+    @Nullable
+    public PkiCredential signingCredential(@Nonnull final OidcRp rp) {
+      if (this.keyOptionsSignKey == null) {
+        return Optional.ofNullable(rp.getCredentials()).map(ClientCredentials::getCredentialForSigning).orElse(null);
+      }
+      return this.keyOptionsSignKey.getRight();
     }
   }
 

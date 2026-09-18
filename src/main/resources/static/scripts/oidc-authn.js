@@ -512,9 +512,24 @@ class OIDCAuthenticationResult {
             }
         });
 
+        const tokenRequestButton = $('#oidc-authn-result-view-token-request');
+        if (resultData.tokenRequest) {
+            tokenRequestButton.show().off('click').click(() => {
+                codeViewer.displayParts('Token Request',
+                                        OIDCAuthenticationResult.tokenRequestParts(resultData.tokenRequest));
+            });
+        }
+        else {
+            tokenRequestButton.hide();
+        }
+
         if (resultData.errors && resultData.errors.length > 0) {
             const heading = resultErrorDiv.find('.card-header');
-            if (resultData.op_error) {
+            if (resultData.tokenError) {
+                heading.text("Token Endpoint Error");
+                resultErrorDiv.addClass('bg-danger');
+            }
+            else if (resultData.op_error) {
                 heading.text("OP Error Status");
                 if (resultData.cancelled) {
                     resultErrorDiv.addClass('bg-secondary');
@@ -761,12 +776,47 @@ class OIDCAuthenticationResult {
     }
 
     /**
-     * Sets up the "Send UserInfo Request" frame. It is shown on every result except an OP error.
+     * Gets the parts that a token request is shown with in the JSON viewer - the request as sent and, if a client
+     * assertion was sent, its decoded header and claims, or its raw value if it could not be decoded.
+     * @param tokenRequest the token request as it was sent, as reported by the server
+     * @returns {object[]} the parts, see CodeViewer.displayParts()
+     */
+    static tokenRequestParts(tokenRequest) {
+        const parameters = tokenRequest.parameters || {};
+        const parts = [{
+            label: 'Request',
+            json: {
+                method: tokenRequest.method,
+                url: tokenRequest.url,
+                headers: tokenRequest.headers || {},
+                parameters: parameters
+            }
+        }];
+        const assertion = tokenRequest.client_assertion;
+        if (assertion) {
+            if (assertion.error) {
+                parts.push({
+                    label: 'Client Assertion',
+                    text: parameters.client_assertion + '\n\nNote: the client assertion could not be decoded - '
+                        + assertion.error
+                });
+            }
+            else {
+                parts.push({ label: 'Client Assertion - Header', json: assertion.header });
+                parts.push({ label: 'Client Assertion - Claims', json: assertion.claims });
+            }
+        }
+        return parts;
+    }
+
+    /**
+     * Sets up the "Send UserInfo Request" frame. It is shown on every result except an OP error and a failed token
+     * request.
      * @param resultData the authentication result
      */
     initUserInfoRequest(resultData) {
         const frame = $('#oidc-authn-result-userinfo-request');
-        if (resultData.op_error) {
+        if (resultData.op_error || resultData.tokenError) {
             frame.hide();
             return;
         }
@@ -1366,7 +1416,17 @@ class OIDCAuthnRequest {
     }
 
     import(base64String) {
-        this.pars = JSON.parse(atob(base64String));
+        const imported = JSON.parse(atob(base64String));
+        // A configuration exported before the token request settings existed gets the defaults of the template, as
+        // does any setting that the imported configuration does not hold
+        const tokenRequest = { ...(this.pars.tokenRequest || {}) };
+        for (const [key, value] of Object.entries(imported.tokenRequest || {})) {
+            if (value !== null && value !== undefined) {
+                tokenRequest[key] = value;
+            }
+        }
+        imported.tokenRequest = tokenRequest;
+        this.pars = imported;
     }
 
     /**
@@ -1378,16 +1438,8 @@ class OIDCAuthnRequest {
         this.initRequestObjectOptions();
         this.initAdvancedOptions();
         this.initKeyOptions();
+        this.initTokenRequestOptions();
         let parent = this;
-        let keyOptions = $('#oidc-advanced-keys-request-check');
-        keyOptions.click(function () {
-            if (keyOptions.prop("checked")) {
-                $('#oidc-advanced-keys-request').show();
-            }
-            else {
-                $('#oidc-advanced-keys-request').hide();
-            }
-        });
         $('#oidc-request-claims-id-remove-button')
             .off()
             .on("click", function () {
@@ -2140,7 +2192,8 @@ class OIDCAuthnRequest {
     }
 
     initRequestObjectOptions() {
-        this.initModuleCheckbox('#oidc-advanced-request-object-options', '#oidc-request-options', "requestObject");
+        this.initDisplayToggleButton('#oidc-request-object-options-button', '#oidc-request-options', 'requestObject',
+            'request object options');
         this.initServerGeneratedField(
             "#oidc-request-issuer-input",
             "#oidc-request-issuer-button",
@@ -2180,8 +2233,8 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Sets up a button that shows/hides a block of options. Unlike {@link initModuleCheckbox} this only controls
-     * what is displayed - it does not affect what is included in the request.
+     * Sets up a button that shows/hides a block of options. It only controls what is displayed - the options apply
+     * whether they are shown or not. The display state is kept as "moduleEnabled" of the module.
      *
      * @param buttonSelector the toggle button
      * @param optionsSelector the block of options to show or hide
@@ -2193,38 +2246,26 @@ class OIDCAuthnRequest {
         optionsSelector,
         moduleReference,
         label) {
-        let parent = this;
-        let button = $(buttonSelector);
-        let apply = function (visible) {
-            parent.pars[moduleReference]["moduleEnabled"] = visible;
-            visible ? $(optionsSelector).show() : $(optionsSelector).hide();
-            button.text((visible ? "Hide " : "Display ") + label);
+        // The module is looked up on each click, since applying a template replaces it
+        const apply = (visible) => {
+            this.pars[moduleReference].moduleEnabled = visible;
+            OIDCAuthnRequest.refreshDisplayToggle(buttonSelector, optionsSelector, visible, label);
         };
-        button.off("click").click(function () {
-            apply(!parent.pars[moduleReference]["moduleEnabled"]);
-        });
-        apply(parent.pars[moduleReference]["moduleEnabled"] || false);
+        $(buttonSelector).off("click").click(() => apply(!this.pars[moduleReference].moduleEnabled));
+        apply(this.pars[moduleReference].moduleEnabled || false);
     }
 
-    initModuleCheckbox(
-        checkboxSelector,
-        optionsSelector,
-        moduleReference) {
-        let parent = this;
-        let requestOptions = $(checkboxSelector);
-        requestOptions.prop("checked", parent.pars[moduleReference]["moduleEnabled"]);
-        let clickFunction = function () {
-            let checked = requestOptions.prop("checked");
-            parent.pars[moduleReference]["moduleEnabled"] = checked;
-            if (checked) {
-                $(optionsSelector).show();
-            }
-            else {
-                $(optionsSelector).hide();
-            }
-        };
-        requestOptions.click(clickFunction);
-        clickFunction();
+    /**
+     * Shows or hides a block of options and updates the text of its toggle button, see initDisplayToggleButton().
+     *
+     * @param buttonSelector the toggle button
+     * @param optionsSelector the block of options to show or hide
+     * @param visible whether the options are shown
+     * @param label what the button calls the options, e.g. "advanced options"
+     */
+    static refreshDisplayToggle(buttonSelector, optionsSelector, visible, label) {
+        visible ? $(optionsSelector).show() : $(optionsSelector).hide();
+        $(buttonSelector).text((visible ? "Hide " : "Display ") + label);
     }
 
     initServerGeneratedField(
@@ -2311,10 +2352,11 @@ class OIDCAuthnRequest {
     }
 
     initKeyOptions() {
-        this.initModuleCheckbox(
-            "#oidc-advanced-keys-request-check",
+        this.initDisplayToggleButton(
+            "#oidc-advanced-keys-request-button",
             "#oidc-advanced-keys-request",
-            "keys"
+            "keys",
+            "key options"
         );
         let signKeySelector = $("#oidc-request-advanced-signkey-select");
         signKeySelector.empty();
@@ -2342,6 +2384,113 @@ class OIDCAuthnRequest {
         encryptionKeySelector.change(() => {
             this.pars["keys"]["encKey"] = encryptionKeySelector.val();
         });
+    }
+
+    /**
+     * The parameter rows of the token request options, in the order they are sent. A row with a placeholder is filled
+     * in by the test client when the request is sent, if left empty.
+     */
+    static TOKEN_REQUEST_PARAMETERS = [
+        { key: 'grantType', name: 'grant_type' },
+        { key: 'code', name: 'code', filledIn: true },
+        { key: 'redirectUri', name: 'redirect_uri' },
+        { key: 'codeVerifier', name: 'code_verifier', filledIn: true },
+        { key: 'clientId', name: 'client_id' },
+        { key: 'clientSecret', name: 'client_secret' },
+        { key: 'clientAssertionType', name: 'client_assertion_type' },
+        { key: 'clientAssertion', name: 'client_assertion', filledIn: true }
+    ];
+
+    /** The claim rows of the client assertion. */
+    static TOKEN_REQUEST_ASSERTION_CLAIMS = [
+        { key: 'assertionIss', name: 'iss' },
+        { key: 'assertionSub', name: 'sub' },
+        { key: 'assertionAud', name: 'aud' },
+        { key: 'assertionIat', name: 'iat', filledIn: true },
+        { key: 'assertionJti', name: 'jti', filledIn: true },
+        { key: 'assertionExp', name: 'exp', filledIn: true }
+    ];
+
+    /** Per client authentication method, the client parameter rows that the method normally sends. */
+    static TOKEN_REQUEST_METHOD_ROWS = {
+        private_key_jwt: ['clientAssertionType', 'clientAssertion'],
+        client_secret_jwt: ['clientAssertionType', 'clientAssertion'],
+        client_secret_post: ['clientId', 'clientSecret'],
+        client_secret_basic: [],
+        none: ['clientId']
+    };
+
+    /** The client parameter rows that are checked or unchecked when the client authentication method is changed. */
+    static TOKEN_REQUEST_CLIENT_ROWS = ['clientId', 'clientSecret', 'clientAssertionType', 'clientAssertion'];
+
+    /**
+     * Initializes the "Token request options" section from this.pars.tokenRequest. The rows are created here, and
+     * their values and include checkboxes are kept in this.pars.tokenRequest.
+     */
+    initTokenRequestOptions() {
+        const settings = this.pars.tokenRequest;
+        this.initDisplayToggleButton('#oidc-token-request-button', '#oidc-token-request', 'tokenRequest',
+            'token request options');
+
+        const createRows = (container, rows) => {
+            container.empty();
+            for (const row of rows) {
+                if (!settings[row.key]) {
+                    settings[row.key] = { value: '', valuePresent: false, requestBody: false };
+                }
+                const id = 'oidc-token-request-' + row.key;
+                const input = $('<input>', { type: 'text', class: 'form-control', id: id + '-input' });
+                if (row.filledIn) {
+                    input.attr('placeholder', 'Filled in at time of sending');
+                }
+                input.on('input change', () => {
+                    settings[row.key].value = input.val();
+                });
+                const include = $('<input>', { type: 'checkbox', class: 'form-check-input', id: id + '-include' });
+                include.on('change', () => {
+                    settings[row.key].valuePresent = include.prop('checked');
+                });
+                container.append($('<div>', { class: 'row mt-4' })
+                    .append($('<div>', { class: 'col-sm-2' })
+                        .append($('<label>', { class: 'col-form-label text-sm-right', for: id + '-input', text: row.name })))
+                    .append($('<div>', { class: 'col-sm-8' }).append(input))
+                    .append($('<div>', { class: 'col-sm-2' })
+                        .append(include)
+                        .append(' ')
+                        .append($('<label>', { for: id + '-include', text: 'Include' }))));
+            }
+        };
+        createRows($('#oidc-token-request-parameters'), OIDCAuthnRequest.TOKEN_REQUEST_PARAMETERS);
+        createRows($('#oidc-token-request-assertion-claim-rows'), OIDCAuthnRequest.TOKEN_REQUEST_ASSERTION_CLAIMS);
+
+        $('#oidc-token-request-auth-method-select').off('change').on('change', (event) => {
+            const method = $(event.target).val();
+            settings.authMethod = method;
+            // The values typed in the rows are kept
+            const checked = OIDCAuthnRequest.TOKEN_REQUEST_METHOD_ROWS[method] || [];
+            for (const key of OIDCAuthnRequest.TOKEN_REQUEST_CLIENT_ROWS) {
+                settings[key].valuePresent = checked.includes(key);
+            }
+            this.refreshTokenRequest();
+        });
+        this.refreshTokenRequest();
+    }
+
+    /**
+     * Refreshes the "Token request options" section from this.pars.tokenRequest without rebinding event handlers.
+     */
+    refreshTokenRequest() {
+        const settings = this.pars.tokenRequest;
+        const method = settings.authMethod || 'private_key_jwt';
+        $('#oidc-token-request-auth-method-select').val(method);
+        for (const row of OIDCAuthnRequest.TOKEN_REQUEST_PARAMETERS.concat(OIDCAuthnRequest.TOKEN_REQUEST_ASSERTION_CLAIMS)) {
+            const id = '#oidc-token-request-' + row.key;
+            const par = settings[row.key] || {};
+            $(id + '-input').val(par.value || '');
+            $(id + '-include').prop('checked', par.valuePresent === true);
+        }
+        $('#oidc-token-request-assertion-claims')
+            .toggle(method === 'private_key_jwt' || method === 'client_secret_jwt');
     }
 
     initModuleSelector(
@@ -2900,9 +3049,8 @@ class OIDCAuthnRequest {
         const adv = this.pars.advanced;
 
         if (adv.moduleEnabled !== undefined) {
-            adv.moduleEnabled ? $('#oidc-advanced-authn-request').show() : $('#oidc-advanced-authn-request').hide();
-            $('#oidc-advanced-authn-options')
-                .text((adv.moduleEnabled ? 'Hide ' : 'Display ') + 'advanced options');
+            OIDCAuthnRequest.refreshDisplayToggle('#oidc-advanced-authn-options', '#oidc-advanced-authn-request',
+                adv.moduleEnabled, 'advanced options');
         }
 
         // Module selectors: responseType, prompt, codeChallengeMethod
@@ -2949,8 +3097,8 @@ class OIDCAuthnRequest {
         const ro = this.pars.requestObject;
 
         if (ro.moduleEnabled !== undefined) {
-            $('#oidc-advanced-request-object-options').prop('checked', ro.moduleEnabled);
-            ro.moduleEnabled ? $('#oidc-request-options').show() : $('#oidc-request-options').hide();
+            OIDCAuthnRequest.refreshDisplayToggle('#oidc-request-object-options-button', '#oidc-request-options',
+                ro.moduleEnabled, 'request object options');
         }
         if (ro.signRequest   !== undefined) $('#oidc-request-sign-request-body').prop('checked', ro.signRequest);
         if (ro.encryptRequest !== undefined) $('#oidc-request-encrypt-request-body').prop('checked', ro.encryptRequest);
@@ -2975,8 +3123,8 @@ class OIDCAuthnRequest {
     refreshKeys() {
         const keys = this.pars.keys;
         if (keys.moduleEnabled !== undefined) {
-            $('#oidc-advanced-keys-request-check').prop('checked', keys.moduleEnabled);
-            keys.moduleEnabled ? $('#oidc-advanced-keys-request').show() : $('#oidc-advanced-keys-request').hide();
+            OIDCAuthnRequest.refreshDisplayToggle('#oidc-advanced-keys-request-button', '#oidc-advanced-keys-request',
+                keys.moduleEnabled, 'key options');
         }
         if (keys.signKey !== undefined) $('#oidc-request-advanced-signkey-select').val(keys.signKey);
         if (keys.encKey  !== undefined) $('#oidc-request-advanced-enckey-select').val(keys.encKey);
