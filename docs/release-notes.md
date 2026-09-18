@@ -15,6 +15,8 @@ Date: _not yet released_
   token request, and "Display Token Request" shows the token request as it was sent.
 - A failed token request (any error status, a network error or an unreadable response) is now shown as a token
   endpoint error instead of "error:null Error Description:null".
+- The feature for adding values for the Claims-parameter has been re-designed, and a bug making it impossible to set
+  both a value and mark the claim as essential has been fixed.
 
 ### Version 1.0.11
 
