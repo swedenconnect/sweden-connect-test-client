@@ -17,6 +17,7 @@ Date: _not yet released_
   endpoint error instead of "error:null Error Description:null".
 - The feature for adding values for the Claims-parameter has been re-designed, and a bug making it impossible to set
   both a value and mark the claim as essential has been fixed.
+- The row for the Prompt-parameter now takes several values.
 
 ### Version 1.0.11
 

@@ -1231,19 +1231,12 @@
                     </div>
                     <div class="row mt-4" id="oidc-prompt-row">
                         <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
-                             data-bs-original-title="The prompt parameter specifies whether the Authorization Server should prompt the user for reauthentication or consent.">
-                            <label class="col-form-label text-sm-right"
-                                   for="oidc-request-prompt-select">Prompt</label>
+                             data-bs-original-title="The prompt parameter specifies whether the Authorization Server should prompt the user for reauthentication or consent. Several values may be added - they are sent as a space-separated list, in the order they were added.">
+                            <label class="col-form-label text-sm-right">Prompt</label>
                         </div>
                         <div class="col-sm-6">
-                            <div class="input-group">
-                                <select class="form-select" id="oidc-request-prompt-select">
-                                    <option value="none">None</option>
-                                    <option value="login">Login</option>
-                                    <option value="consent">Consent</option>
-                                    <option value="select_account">Select Account</option>
-                                </select>
-                            </div>
+                            <ul class="list-group" id="oidc-request-prompt-list">
+                            </ul>
                         </div>
                         <div class="col-sm-2">
                             <input type="checkbox" class="form-check-input" id="oidc-request-prompt-request-body">
@@ -1262,6 +1255,33 @@
                                                                                                                   data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
                                 In Request
                             </label>
+                        </div>
+                    </div>
+                    <div class="row mt-4" id="oidc-request-prompt-controls">
+                        <div class="col-sm-2"></div>
+                        <div class="col-sm-10">
+                            <div class="btn-group" role="group">
+                                <button id="oidc-request-prompt-drop" type="button"
+                                        class="btn btn-sm btn-primary dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add value
+                                </button>
+                                <div id="oidc-request-prompt-drop-div" class="dropdown-menu"
+                                     aria-labelledby="oidc-request-prompt-drop">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-4" id="oidc-request-prompt-custom-div" style="display: none;">
+                        <label class="col-sm-2" for="oidc-request-prompt-custom">Custom Value</label>
+                        <div class="col-sm-10">
+                            <div class="input-group">
+                                <input type="text" class="form-control"
+                                       aria-describedby="oidc-request-prompt-custom-button"
+                                       id="oidc-request-prompt-custom">
+                                <button class="btn btn-outline-secondary" type="button"
+                                        id="oidc-request-prompt-custom-button">Add
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <hr class="mt-4"/>

@@ -54,6 +54,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -264,6 +265,77 @@ class AuthorizationParameterResolverTest {
 
     Assertions.assertEquals("S256", result.url("code_challenge_method"));
     Assertions.assertEquals(challengeOf(result.verifier()), result.url("code_challenge"));
+  }
+
+  // The prompt parameter, which may hold several values (OpenID Connect Core 1.0, section 3.1.2.1)
+
+  @Test
+  void theDefaultPromptIsSentInTheUrl() throws Exception {
+    final Result result = generate(defaultModel());
+
+    Assertions.assertEquals("login", result.url("prompt"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "login",
+      // Several values, sent in the order they were added
+      "login consent",
+      "consent login",
+      "none login consent select_account",
+      // Values that break the specification are sent as they are
+      "none login",
+      "login login",
+      "unknown",
+      "login urn:example:prompt",
+      "consent NONE" })
+  void thePromptValueIsSentAsItWasBuilt(final String value) throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    placeRow(model, "prompt", true, true);
+    model.getAdvanced().getPrompt().setValue(value);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(value, result.url("prompt"), "In URL");
+    Assertions.assertEquals(value, result.claims().getClaim("prompt"), "In request object");
+    // The value is sent the same way with GET and with POST
+    Assertions.assertEquals(List.of(value), result.post().parameters().get("prompt"));
+    Assertions.assertTrue(result.get().url().contains("prompt=" + URLEncoder.encode(value, StandardCharsets.UTF_8)),
+        result.get().url());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = { "", " ", "   " })
+  void aPromptWithoutValuesIsNotSent(final String value) throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    placeRow(model, "prompt", true, true);
+    model.getAdvanced().getPrompt().setValue(value);
+    // Make sure there is a request object even though the prompt is not placed in it
+    model.getAdvanced().getState().setRequestBody(true);
+
+    final Result result = generate(model);
+
+    Assertions.assertFalse(result.parameters().containsKey("prompt"), "In URL");
+    Assertions.assertNull(result.claims().getClaim("prompt"), "In request object");
+  }
+
+  @Test
+  void thePromptOfTheUrlAndOfTheRequestObjectAreTheSameValue() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    placeRow(model, "prompt", true, false);
+    model.getAdvanced().getPrompt().setValue("login consent");
+    model.getAdvanced().getState().setRequestBody(true);
+
+    final Result inUrlOnly = generate(model);
+
+    Assertions.assertEquals("login consent", inUrlOnly.url("prompt"));
+    Assertions.assertNull(inUrlOnly.claims().getClaim("prompt"));
+
+    placeRow(model, "prompt", false, true);
+    final Result inBodyOnly = generate(model);
+
+    Assertions.assertFalse(inBodyOnly.parameters().containsKey("prompt"));
+    Assertions.assertEquals("login consent", inBodyOnly.claims().getClaim("prompt"));
   }
 
   // The claims parameter, where a claim may be requested as essential with a value (OpenID Connect Core 1.0,
@@ -1034,7 +1106,10 @@ class AuthorizationParameterResolverTest {
       case "redirect_uri" -> place(model.getRedirectUri(), inRequest, inRequestBody);
       case "scope" -> place(model.getScope(), inRequest, inRequestBody);
       case "response_type" -> place(advanced.getResponseType(), inRequest, inRequestBody);
-      case "prompt" -> place(advanced.getPrompt(), inRequest, inRequestBody);
+      case "prompt" -> {
+        advanced.getPrompt().setValue("login consent");
+        place(advanced.getPrompt(), inRequest, inRequestBody);
+      }
       case "acr_values" -> {
         model.getAcrValues().setValue("http://id.elegnamnden.se/loa/1.0/loa3");
         place(model.getAcrValues(), inRequest, inRequestBody);
