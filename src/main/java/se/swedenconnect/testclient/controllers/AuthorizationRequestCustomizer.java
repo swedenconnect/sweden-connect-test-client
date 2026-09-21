@@ -77,6 +77,7 @@ public class AuthorizationRequestCustomizer {
     resolver.getScope().map(AuthorizationRequestCustomizer::withOpenid).ifPresent(builder::scope);
     resolver.getResponseType().ifPresent(builder::responseType);
     resolver.getLoginHint().ifPresent(builder::loginHint);
+    resolver.getMaxAge().ifPresent(builder::maxAge);
     resolver.getCodeChallenge().ifPresent(cc -> {
       builder.codeChallenge(cc.getRight(), cc.getLeft());
     });

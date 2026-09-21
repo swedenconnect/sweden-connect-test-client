@@ -10,7 +10,7 @@
 
 Date: _not yet released_
 
-- 
+- `max_age` is no longer sent on every request. It is now a row under "Advanced request options", off by default.
 
 ### Version 1.0.12
 

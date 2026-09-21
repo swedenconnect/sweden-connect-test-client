@@ -503,6 +503,92 @@ class AuthorizationParameterResolverTest {
   }
 
   @Test
+  void maxAgeIsNotSentByDefault() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    Assertions.assertEquals("0", model.getAdvanced().getMaxAge().getValue(), "The row is pre-filled with 0");
+
+    final Result result = generate(model);
+
+    Assertions.assertNull(result.url("max_age"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = { "0", "1", "300", "2147483647" })
+  void maxAgeIsSentInUrl(final String value) throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    model.getAdvanced().getMaxAge().setValue(value);
+    placeRow(model, "max_age", true, false);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(value, result.url("max_age"));
+    Assertions.assertNull(result.claims(), "No request object expected");
+  }
+
+  @Test
+  void maxAgeIsSentAsANumberInRequestObject() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getAdvanced().getMaxAge().setValue("300");
+    placeRow(model, "max_age", false, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertNull(result.url("max_age"));
+    Assertions.assertEquals(300L, requestObjectClaims(result).getClaim("max_age"));
+    Assertions.assertTrue(requestObjectClaims(result).toString().contains("\"max_age\":300"),
+        "max_age must be a JSON number, not a string");
+  }
+
+  @Test
+  void maxAgeIsSentInBothLocations() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getAdvanced().getMaxAge().setValue("60");
+    placeRow(model, "max_age", true, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals("60", result.url("max_age"));
+    Assertions.assertEquals(60, result.claims().getClaim("max_age"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = { "", "   ", "-1", "1.5", "abc", "1e3", "+1", "99999999999999999999" })
+  void maxAgeThatIsNotAWholeNumberIsNotSent(final String value) throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getAdvanced().getMaxAge().setValue(value);
+    placeRow(model, "max_age", true, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertNull(result.url("max_age"));
+    Assertions.assertNull(result.claims(), "The request object holds nothing but the issuer and audience");
+    Assertions.assertEquals(RP, result.url("client_id"), "The rest of the request is sent as normal");
+  }
+
+  @Test
+  void maxAgeIsTrimmedAndLeadingZeroesAreKept() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    model.getAdvanced().getMaxAge().setValue("  007  ");
+    placeRow(model, "max_age", true, false);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals("7", result.url("max_age"));
+  }
+
+  @Test
+  void requestBodyModeMovesMaxAgeToTheRequestObject() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    // The "In Request Body-mode" button moves an enabled row to the request object
+    placeRow(model, "max_age", false, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertNull(result.url("max_age"));
+    Assertions.assertEquals(0, result.claims().getClaim("max_age"));
+  }
+
+  @Test
   void requestBodyModeLeavesOnlyRequiredParametersAndRequestObjectInUrl() throws Exception {
     final OIDCAuthnRequestParameterModel model = defaultModel();
     // What the "In Request Body-mode" button does to the enabled rows of a new request
@@ -519,8 +605,7 @@ class AuthorizationParameterResolverTest {
 
     final Result result = generate(model);
 
-    // max_age=0 is always added by the request generation and has no row
-    Assertions.assertEquals(Set.of("client_id", "response_type", "scope", "request", "max_age"),
+    Assertions.assertEquals(Set.of("client_id", "response_type", "scope", "request"),
         result.parameters().keySet());
     Assertions.assertEquals(challengeOf(result.verifier()), result.claims().getClaim("code_challenge"));
   }
@@ -969,9 +1054,8 @@ class AuthorizationParameterResolverTest {
 
     final Result result = generate(model, new HashMap<>(), endpoint);
 
-    // max_age=0 is always added by the request generation and has no row
-    Assertions.assertEquals(Map.of("max_age", List.of("0")), result.post().parameters());
-    Assertions.assertEquals(endpoint + "&max_age=0", result.get().url());
+    Assertions.assertEquals(Map.of(), result.post().parameters());
+    Assertions.assertEquals(endpoint, result.get().url());
   }
 
   private static Map<String, List<String>> queryOf(final String url) {
@@ -1017,7 +1101,6 @@ class AuthorizationParameterResolverTest {
         new ResponseType("code"), new Scope("openid"), new ClientID(model.getClientId().getValue()),
         URI.create(model.getRedirectUri().getValue()))
         .endpointURI(URI.create(endpoint));
-    builder.maxAge(0);
     // As OidcRestController, which fails for a key ID that does not name a key
     final Function<String, JWK> kidToJwk = kid -> Optional.ofNullable(kid).map(keys::get)
         .orElseThrow(() -> new RuntimeException("Failed to determine key for kid %s".formatted(kid)));
@@ -1025,7 +1108,8 @@ class AuthorizationParameterResolverTest {
     final AuthenticationRequest request = AuthorizationRequestCustomizer.customize(builder, kidToJwk, resolver).build();
 
     final URI uri = AuthorizationRequestCustomizer.toURI(request, resolver);
-    if (AUTHORIZATION_ENDPOINT.equals(endpoint)) {
+    if (AUTHORIZATION_ENDPOINT.equals(endpoint)
+        && !AuthorizationRequestCustomizer.toParameters(request, resolver).isEmpty()) {
       Assertions.assertTrue(uri.toString().startsWith(AUTHORIZATION_ENDPOINT + "?"), uri.toString());
     }
     final SentAuthorizationRequest get =
@@ -1091,6 +1175,7 @@ class AuthorizationParameterResolverTest {
       case "nonce" -> model.getAdvanced().getNonce();
       case "codeChallenge" -> model.getAdvanced().getCodeChallenge();
       case "codeChallengeMethod" -> model.getAdvanced().getCodeChallengeMethod();
+      case "maxAge" -> model.getAdvanced().getMaxAge();
       default -> throw new IllegalArgumentException(row);
     };
   }
@@ -1118,6 +1203,7 @@ class AuthorizationParameterResolverTest {
         advanced.getLoginHint().setValue("hint");
         place(advanced.getLoginHint(), inRequest, inRequestBody);
       }
+      case "max_age" -> place(advanced.getMaxAge(), inRequest, inRequestBody);
       case USER_MESSAGE -> {
         model.getUserMessage().setValuePresent(inRequest);
         model.getUserMessage().setRequestBody(inRequestBody);

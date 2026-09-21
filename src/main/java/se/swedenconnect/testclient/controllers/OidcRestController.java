@@ -353,7 +353,7 @@ public class OidcRestController {
 
   /**
    * Creates the initial advanced options of the request builder. State and nonce are pre-generated, and PKCE (S256) is
-   * sent in the request URL.
+   * sent in the request URL. The {@code max_age} row is off, with its value pre-filled with {@code 0}.
    *
    * @return the default advanced options
    */
@@ -363,6 +363,7 @@ public class OidcRestController {
         .nonce(ModelParameter.builder().value(new Nonce().getValue()).valuePresent(true).requestBody(false).build())
         .prompt(ModelParameter.builder().value("login").valuePresent(true).requestBody(false).build())
         .loginHint(ModelParameter.builder().value("").valuePresent(false).requestBody(false).build())
+        .maxAge(ModelParameter.builder().value("0").valuePresent(false).requestBody(false).build())
         .responseType(ModelParameter.builder().value("code").valuePresent(true).requestBody(false).build())
         .codeChallenge(ModelParameter.builder().valuePresent(true).requestBody(false).build())
         .codeChallengeMethod(ModelParameter.builder().value("S256").valuePresent(true).requestBody(false).build())
@@ -406,8 +407,6 @@ public class OidcRestController {
           new ClientID(model.getClientId().getValue()),
           URI.create(model.getRedirectUri().getValue()))
           .endpointURI(URI.create(selectedOp.getAuthorizationEndpoint()));
-
-      builder.maxAge(0);
 
       // A verifier left over from an earlier request must not reach the token request of this one
       httpSession.removeAttribute(AuthorizationParameterResolver.CODE_VERIFIER_ATTRIBUTE);

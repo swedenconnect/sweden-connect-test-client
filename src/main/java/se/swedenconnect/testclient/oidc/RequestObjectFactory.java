@@ -174,6 +174,8 @@ public class RequestObjectFactory {
     resolver.getScope().ifPresent(scope -> builder.claim("scope", String.join(" ", scope.toStringList())));
     resolver.getResponseType().ifPresent(responseType -> builder.claim("response_type", responseType.toString()));
     resolver.getLoginHint().ifPresent(loginHint -> builder.claim("login_hint", loginHint));
+    // max_age is a JSON number, not a string
+    resolver.getMaxAge().ifPresent(maxAge -> builder.claim("max_age", maxAge));
     resolver.getCodeChallenge().ifPresent(codeChallenge -> {
       builder.claim("code_challenge",
           CodeChallenge.compute(codeChallenge.getLeft(), codeChallenge.getRight()).getValue());

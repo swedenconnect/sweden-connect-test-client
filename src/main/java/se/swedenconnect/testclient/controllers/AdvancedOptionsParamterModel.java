@@ -39,6 +39,7 @@ public class AdvancedOptionsParamterModel {
   private ModelParameter nonce;
   private ModelParameter prompt;
   private ModelParameter loginHint;
+  private ModelParameter maxAge;
   private ModelParameter codeChallengeMethod;
   private ModelParameter codeChallenge;
   private Boolean moduleEnabled;
