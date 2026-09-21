@@ -1004,7 +1004,7 @@
                                     class="btn btn-sm btn-outline-primary" aria-pressed="true"
                                     data-bs-toggle="tooltip" data-bs-placement="bottom"
                                     data-bs-original-title="Place every enabled parameter in the request URL only.">
-                                In Request-mode
+                                In Request URL-mode
                             </button>
                             <button id="oidc-request-mode-request-body" type="button"
                                     class="btn btn-sm btn-outline-primary" aria-pressed="false"
@@ -1022,9 +1022,21 @@
                              data-bs-original-title="The client_id identifies the client making the authentication request.">
                             <label class="col-form-label text-sm-right"
                                    for="oidc-request-client_id-input">Client ID</label>
+                            <div class="form-text" id="oidc-request-client_id-url-label" style="display: none;">
+                                In Request URL
+                            </div>
                         </div>
                         <div class="col-sm-6">
                             <input type="text" class="form-control" id="oidc-request-client_id-input">
+                        </div>
+                        <div class="col-sm-2">
+                            <input type="checkbox" class="form-check-input" id="oidc-request-client_id-present">
+                            <label for="oidc-request-client_id-present">
+                                                                                                            <span data-bs-toggle="tooltip"
+                                                                                                                  data-bs-placement="bottom"
+                                                                                                                  data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                            </label>
                         </div>
                         <div class="col-sm-2">
                             <input type="checkbox" class="form-check-input" id="oidc-request-client_id-request-body">
@@ -1035,14 +1047,17 @@
                                 </span>
                             </label>
                         </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-client_id-present">
-                            <label for="oidc-request-client_id-present">
-                                                                                                            <span data-bs-toggle="tooltip"
-                                                                                                                  data-bs-placement="bottom"
-                                                                                                                  data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
-                            </label>
+                    </div>
+                    <!-- Client ID of the request object, shown while the row sends different values -->
+                    <div class="row mt-4" id="oidc-request-client_id-body-div" style="display: none;">
+                        <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                             data-bs-original-title="The client_id sent in the request object.">
+                            <label class="col-form-label text-sm-right"
+                                   for="oidc-request-client_id-body-input">Client ID</label>
+                            <div class="form-text">In Request Body</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="oidc-request-client_id-body-input">
                         </div>
                     </div>
                     <div class="row mt-4" id="oidc-redirect-row">
@@ -1055,6 +1070,15 @@
                             <input type="text" class="form-control" id="oidc-request-redirect-input">
                         </div>
                         <div class="col-sm-2">
+                            <input type="checkbox" class="form-check-input" id="oidc-request-redirect-present">
+                            <label for="oidc-request-redirect-present">
+                                                                                                            <span data-bs-toggle="tooltip"
+                                                                                                                  data-bs-placement="bottom"
+                                                                                                                  data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                            </label>
+                        </div>
+                        <div class="col-sm-2">
                             <input type="checkbox" class="form-check-input" id="oidc-request-redirect-request-body">
                             <label for="oidc-request-redirect-request-body">
                                 <span data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -1063,22 +1087,13 @@
                                 </span>
                             </label>
                         </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-redirect-present">
-                            <label for="oidc-request-redirect-present">
-                                                                                                            <span data-bs-toggle="tooltip"
-                                                                                                                  data-bs-placement="bottom"
-                                                                                                                  data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
-                            </label>
-                        </div>
                     </div>
                     <div class="row mt-4" id="oidc-scope-row">
                         <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                              data-bs-original-title="Scopes to be sent to OpenId Provider, must contain openid">
                             <label class="col-form-label text-sm-right">Scope</label>
                             <div class="form-text" id="oidc-request-scope-url-label" style="display: none;">
-                                In Request
+                                In Request URL
                             </div>
                         </div>
                         <div class="col-sm-6">
@@ -1086,20 +1101,20 @@
                             </ul>
                         </div>
                         <div class="col-sm-2">
+                            <input type="checkbox" class="form-check-input" id="oidc-request-scope-present">
+                            <label for="oidc-request-scope-present">
+                                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                </span>
+                            </label>
+                        </div>
+                        <div class="col-sm-2">
                             <input type="checkbox" class="form-check-input" id="oidc-request-scope-request-body">
                             <label for="oidc-request-scope-request-body">
                                 <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                                       data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                     In Request Body
-                                </span>
-                            </label>
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-scope-present">
-                            <label for="oidc-request-scope-present">
-                                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
                                 </span>
                             </label>
                         </div>
@@ -1178,10 +1193,22 @@
                         <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                              data-bs-original-title="Requested Authentication Context Class Reference (acr_values)">
                             <label class="col-form-label text-sm-right">ACR values</label>
+                            <div class="form-text" id="oidc-request-acr-url-label" style="display: none;">
+                                In Request URL
+                            </div>
                         </div>
                         <div class="col-sm-6">
                             <ul class="list-group" id="oidc-request-acr-list">
                             </ul>
+                        </div>
+                        <div class="col-sm-2">
+                            <input type="checkbox" class="form-check-input" id="oidc-request-acr-present">
+                            <label for="oidc-request-acr-present">
+                                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                </span>
+                            </label>
                         </div>
                         <div class="col-sm-2">
                             <input type="checkbox" class="form-check-input" id="oidc-request-acr-request-body">
@@ -1189,15 +1216,6 @@
                                 <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                                       data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                     In Request Body
-                                </span>
-                            </label>
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-acr-present">
-                            <label for="oidc-request-acr-present">
-                                <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
                                 </span>
                             </label>
                         </div>
@@ -1229,14 +1247,68 @@
                             </div>
                         </div>
                     </div>
+                    <!-- ACR values of the request object, shown while the row sends different values -->
+                    <div id="oidc-request-acr-body-div" style="display: none;">
+                        <div class="row mt-4" id="oidc-acr-body-row">
+                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 data-bs-original-title="The acr_values sent in the request object.">
+                                <label class="col-form-label text-sm-right">ACR values</label>
+                                <div class="form-text">In Request Body</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <ul class="list-group" id="oidc-request-acr-body-list">
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row mt-4" id="oidc-request-acr-body-controls">
+                            <div class="col-sm-2"></div>
+                            <div class="col-sm-10">
+                                <div class="btn-group" role="group">
+                                    <button id="oidc-request-acr-body-drop" type="button"
+                                            class="btn btn-sm btn-primary dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-haspopup="true"
+                                            aria-expanded="false">Add URI
+                                    </button>
+                                    <div id="oidc-request-acr-body-drop-div" class="dropdown-menu"
+                                         aria-labelledby="oidc-request-acr-body-drop">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4" id="oidc-request-acr-body-custom-div" style="display: none;">
+                            <label class="col-sm-2" for="oidc-request-acr-body-custom">Custom Value</label>
+                            <div class="col-sm-10">
+                                <div class="input-group">
+                                    <input type="text" class="form-control"
+                                           aria-describedby="oidc-request-acr-body-custom-button"
+                                           id="oidc-request-acr-body-custom">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            id="oidc-request-acr-body-custom-button">Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row mt-4" id="oidc-prompt-row">
                         <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                              data-bs-original-title="The prompt parameter specifies whether the Authorization Server should prompt the user for reauthentication or consent. Several values may be added - they are sent as a space-separated list, in the order they were added.">
                             <label class="col-form-label text-sm-right">Prompt</label>
+                            <div class="form-text" id="oidc-request-prompt-url-label" style="display: none;">
+                                In Request URL
+                            </div>
                         </div>
                         <div class="col-sm-6">
                             <ul class="list-group" id="oidc-request-prompt-list">
                             </ul>
+                        </div>
+                        <div class="col-sm-2">
+                            <input type="checkbox" class="form-check-input" id="oidc-request-prompt-present">
+                            <label for="oidc-request-prompt-present">
+                                                                                                            <span data-bs-toggle="tooltip"
+                                                                                                                  data-bs-placement="bottom"
+                                                                                                                  data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                In Request URL
+                            </label>
                         </div>
                         <div class="col-sm-2">
                             <input type="checkbox" class="form-check-input" id="oidc-request-prompt-request-body">
@@ -1245,15 +1317,6 @@
                                       data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                 In Request Body
                             </span>
-                            </label>
-                        </div>
-                        <div class="col-sm-2">
-                            <input type="checkbox" class="form-check-input" id="oidc-request-prompt-present">
-                            <label for="oidc-request-prompt-present">
-                                                                                                            <span data-bs-toggle="tooltip"
-                                                                                                                  data-bs-placement="bottom"
-                                                                                                                  data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                In Request
                             </label>
                         </div>
                     </div>
@@ -1284,6 +1347,48 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Prompt of the request object, shown while the row sends different values -->
+                    <div id="oidc-request-prompt-body-div" style="display: none;">
+                        <div class="row mt-4" id="oidc-prompt-body-row">
+                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 data-bs-original-title="The prompt sent in the request object.">
+                                <label class="col-form-label text-sm-right">Prompt</label>
+                                <div class="form-text">In Request Body</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <ul class="list-group" id="oidc-request-prompt-body-list">
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row mt-4" id="oidc-request-prompt-body-controls">
+                            <div class="col-sm-2"></div>
+                            <div class="col-sm-10">
+                                <div class="btn-group" role="group">
+                                    <button id="oidc-request-prompt-body-drop" type="button"
+                                            class="btn btn-sm btn-primary dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-haspopup="true"
+                                            aria-expanded="false">Add value
+                                    </button>
+                                    <div id="oidc-request-prompt-body-drop-div" class="dropdown-menu"
+                                         aria-labelledby="oidc-request-prompt-body-drop">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4" id="oidc-request-prompt-body-custom-div" style="display: none;">
+                            <label class="col-sm-2" for="oidc-request-prompt-body-custom">Custom Value</label>
+                            <div class="col-sm-10">
+                                <div class="input-group">
+                                    <input type="text" class="form-control"
+                                           aria-describedby="oidc-request-prompt-body-custom-button"
+                                           id="oidc-request-prompt-body-custom">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            id="oidc-request-prompt-body-custom-button">Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <hr class="mt-4"/>
                     <div id="oidc-claims-table">
                         <div class="row mt-4" id="oidc-claims-row">
@@ -1300,22 +1405,22 @@
                             <!-- Keeps the boxes in place while the preview is hidden -->
                             <div class="col-sm-6" id="oidc-claims-textarea-spacer" style="display: none;"></div>
                             <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input" id="oidc-request-claims-present">
+                                <label for="oidc-request-claims-present">
+                                                                                                                <span data-bs-toggle="tooltip"
+                                                                                                                      data-bs-placement="bottom"
+                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                                                                                                </span>
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
                                 <input type="checkbox" class="form-check-input" id="oidc-request-claims-request-body">
                                 <label for="oidc-request-claims-request-body">
                                     <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                                           data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                     In Request Body
                                 </span>
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-claims-present">
-                                <label for="oidc-request-claims-present">
-                                                                                                                <span data-bs-toggle="tooltip"
-                                                                                                                      data-bs-placement="bottom"
-                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
-                                                                                                                </span>
                                 </label>
                             </div>
                         </div>
@@ -1461,6 +1566,15 @@
                                     </div>
                                 </div>
                                 <div class="col-sm-2">
+                                    <input type="checkbox" class="form-check-input" id="oidc-request-issuer-present">
+                                    <label for="oidc-request-issuer-present">
+                                                                                                                    <span data-bs-toggle="tooltip"
+                                                                                                                          data-bs-placement="bottom"
+                                                                                                                          data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                    </label>
+                                </div>
+                                <div class="col-sm-2">
                                     <input type="checkbox" class="form-check-input"
                                            id="oidc-request-issuer-request-body">
                                     <label for="oidc-request-issuer-request-body">
@@ -1468,15 +1582,6 @@
                                               data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                     In Request Body
                                 </span>
-                                    </label>
-                                </div>
-                                <div class="col-sm-2">
-                                    <input type="checkbox" class="form-check-input" id="oidc-request-issuer-present">
-                                    <label for="oidc-request-issuer-present">
-                                                                                                                    <span data-bs-toggle="tooltip"
-                                                                                                                          data-bs-placement="bottom"
-                                                                                                                          data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
                                     </label>
                                 </div>
                             </div>
@@ -1495,21 +1600,21 @@
                                     </div>
                                 </div>
                                 <div class="col-sm-2">
+                                    <input type="checkbox" class="form-check-input" id="oidc-request-aud-present">
+                                    <label for="oidc-request-aud-present">
+                                                                                                                    <span data-bs-toggle="tooltip"
+                                                                                                                          data-bs-placement="bottom"
+                                                                                                                          data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                    </label>
+                                </div>
+                                <div class="col-sm-2">
                                     <input type="checkbox" class="form-check-input" id="oidc-request-aud-request-body">
                                     <label for="oidc-request-aud-request-body">
                                         <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                                               data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                     In Request Body
                                 </span>
-                                    </label>
-                                </div>
-                                <div class="col-sm-2">
-                                    <input type="checkbox" class="form-check-input" id="oidc-request-aud-present">
-                                    <label for="oidc-request-aud-present">
-                                                                                                                    <span data-bs-toggle="tooltip"
-                                                                                                                          data-bs-placement="bottom"
-                                                                                                                          data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
                                     </label>
                                 </div>
                             </div>
@@ -1535,12 +1640,29 @@
                         </div>
                     </div>
                     <div class="form-group hide" id="oidc-advanced-authn-request">
+                        <div class="row mt-4" id="oidc-different-values-row">
+                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 data-bs-original-title="For error testing. OpenID Connect Core 1.0, Section 6.1 and 6.3, expects a parameter that is sent both as a request parameter and in the request object to have the same value, and requires it for client_id and response_type. With this setting on, a row that is sent in both places gets a second line, so that another value can be sent in the request object.">
+                                <label class="col-form-label text-sm-right">Different values</label>
+                            </div>
+                            <div class="col-sm-10">
+                                <input type="checkbox" class="form-check-input"
+                                       id="oidc-request-different-values">
+                                <label for="oidc-request-different-values">
+                                    Allow different values for In URL vs Request Objects
+                                </label>
+                            </div>
+                        </div>
                         <div class="row mt-4" id="oidc-responsetype-row">
                             <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                  data-bs-original-title="The response type.">
                                 <label class="col-form-label text-sm-right"
                                        for="oidc-request-responsetype-select">Response
                                     Type</label>
+                                <div class="form-text" id="oidc-request-responsetype-url-label"
+                                     style="display: none;">
+                                    In Request URL
+                                </div>
                             </div>
                             <div class="col-sm-6">
                                 <select class="form-select" id="oidc-request-responsetype-select">
@@ -1553,6 +1675,15 @@
                                 </select>
                             </div>
                             <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input" id="oidc-request-responsetype-present">
+                                <label for="oidc-request-responsetype-present">
+                                                                                                                <span data-bs-toggle="tooltip"
+                                                                                                                      data-bs-placement="bottom"
+                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
                                 <input type="checkbox" class="form-check-input"
                                        id="oidc-request-responsetype-request-body">
                                 <label for="oidc-request-responsetype-request-body">
@@ -1562,20 +1693,33 @@
                                 </span>
                                 </label>
                             </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-responsetype-present">
-                                <label for="oidc-request-responsetype-present">
-                                                                                                                <span data-bs-toggle="tooltip"
-                                                                                                                      data-bs-placement="bottom"
-                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
-                                </label>
+                        </div>
+                        <!-- Response Type of the request object, shown while the row sends different values -->
+                        <div class="row mt-4" id="oidc-request-responsetype-body-div" style="display: none;">
+                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 data-bs-original-title="The response_type sent in the request object.">
+                                <label class="col-form-label text-sm-right"
+                                       for="oidc-request-responsetype-body-select">Response Type</label>
+                                <div class="form-text">In Request Body</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <select class="form-select" id="oidc-request-responsetype-body-select">
+                                    <option value="code">Code</option>
+                                    <option value="id_token">ID Token</option>
+                                    <option value="id_token token">ID Token + Token</option>
+                                    <option value="code id_token">Code + ID Token</option>
+                                    <option value="code token">Code + Token</option>
+                                    <option value="code id_token token">Code + ID Token + Token</option>
+                                </select>
                             </div>
                         </div>
                         <div class="row mt-4" id="oidc-state-row">
                             <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                  data-bs-original-title="The state parameter is used to maintain state between the request and callback.">
                                 <label class="col-form-label text-sm-right" for="oidc-request-state-input">State</label>
+                                <div class="form-text" id="oidc-request-state-url-label" style="display: none;">
+                                    In Request URL
+                                </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="input-group">
@@ -1586,6 +1730,15 @@
                                 </div>
                             </div>
                             <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input" id="oidc-request-state-present">
+                                <label for="oidc-request-state-present">
+                                                                                                                <span data-bs-toggle="tooltip"
+                                                                                                                      data-bs-placement="bottom"
+                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
                                 <input type="checkbox" class="form-check-input" id="oidc-request-state-request-body">
                                 <label for="oidc-request-state-request-body">
                                     <span data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -1594,20 +1747,31 @@
                                 </span>
                                 </label>
                             </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-state-present">
-                                <label for="oidc-request-state-present">
-                                                                                                                <span data-bs-toggle="tooltip"
-                                                                                                                      data-bs-placement="bottom"
-                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
-                                </label>
+                        </div>
+                        <!-- State of the request object, shown while the row sends different values -->
+                        <div class="row mt-4" id="oidc-request-state-body-div" style="display: none;">
+                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 data-bs-original-title="The state sent in the request object. Left empty, it is the value generated by the test client.">
+                                <label class="col-form-label text-sm-right"
+                                       for="oidc-request-state-body-input">State</label>
+                                <div class="form-text">In Request Body</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="oidc-request-state-body-input">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            id="oidc-request-state-body-button">Modify
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="row mt-4" id="oidc-nonce-row">
                             <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                  data-bs-original-title="The nonce parameter is used to associate a client session with an ID Token.">
                                 <label class="col-form-label text-sm-right" for="oidc-request-nonce-input">Nonce</label>
+                                <div class="form-text" id="oidc-request-nonce-url-label" style="display: none;">
+                                    In Request URL
+                                </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="input-group">
@@ -1618,6 +1782,15 @@
                                 </div>
                             </div>
                             <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input" id="oidc-request-nonce-present">
+                                <label for="oidc-request-nonce-present">
+                                                                                                                <span data-bs-toggle="tooltip"
+                                                                                                                      data-bs-placement="bottom"
+                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
                                 <input type="checkbox" class="form-check-input" id="oidc-request-nonce-request-body">
                                 <label for="oidc-request-nonce-request-body">
                                     <span data-bs-toggle="tooltip" data-bs-placement="bottom"
@@ -1626,14 +1799,22 @@
                                 </span>
                                 </label>
                             </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-nonce-present">
-                                <label for="oidc-request-nonce-present">
-                                                                                                                <span data-bs-toggle="tooltip"
-                                                                                                                      data-bs-placement="bottom"
-                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
-                                </label>
+                        </div>
+                        <!-- Nonce of the request object, shown while the row sends different values -->
+                        <div class="row mt-4" id="oidc-request-nonce-body-div" style="display: none;">
+                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 data-bs-original-title="The nonce sent in the request object. Left empty, it is the value generated by the test client.">
+                                <label class="col-form-label text-sm-right"
+                                       for="oidc-request-nonce-body-input">Nonce</label>
+                                <div class="form-text">In Request Body</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="oidc-request-nonce-body-input">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            id="oidc-request-nonce-body-button">Modify
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="row mt-4" id="oidc-login_hint-row">
@@ -1647,6 +1828,15 @@
                                 <input type="text" class="form-control" id="oidc-request-login_hint-input">
                             </div>
                             <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input" id="oidc-request-login_hint-present">
+                                <label for="oidc-request-login_hint-present">
+                                                                                                                <span data-bs-toggle="tooltip"
+                                                                                                                      data-bs-placement="bottom"
+                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
                                 <input type="checkbox" class="form-check-input"
                                        id="oidc-request-login_hint-request-body">
                                 <label for="oidc-request-login_hint-request-body">
@@ -1654,15 +1844,6 @@
                                           data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                     In Request Body
                                 </span>
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-login_hint-present">
-                                <label for="oidc-request-login_hint-present">
-                                                                                                                <span data-bs-toggle="tooltip"
-                                                                                                                      data-bs-placement="bottom"
-                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
                                 </label>
                             </div>
                         </div>
@@ -1678,6 +1859,15 @@
                                        id="oidc-request-max_age-input">
                             </div>
                             <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input" id="oidc-request-max_age-present">
+                                <label for="oidc-request-max_age-present">
+                                                                                                                <span data-bs-toggle="tooltip"
+                                                                                                                      data-bs-placement="bottom"
+                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
                                 <input type="checkbox" class="form-check-input"
                                        id="oidc-request-max_age-request-body">
                                 <label for="oidc-request-max_age-request-body">
@@ -1685,15 +1875,6 @@
                                           data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                     In Request Body
                                 </span>
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input" id="oidc-request-max_age-present">
-                                <label for="oidc-request-max_age-present">
-                                                                                                                <span data-bs-toggle="tooltip"
-                                                                                                                      data-bs-placement="bottom"
-                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
                                 </label>
                             </div>
                         </div>
@@ -1711,22 +1892,22 @@
                             </div>
                             <div class="col-sm-2">
                                 <input type="checkbox" class="form-check-input"
+                                       id="oidc-request-code_challenge_method-present">
+                                <label for="oidc-request-code_challenge_method-present">
+                                                                                                                <span data-bs-toggle="tooltip"
+                                                                                                                      data-bs-placement="bottom"
+                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input"
                                        id="oidc-request-code_challenge_method-request-body">
                                 <label for="oidc-request-code_challenge_method-request-body">
                                     <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                                           data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                     In Request Body
                                 </span>
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-request-code_challenge_method-present">
-                                <label for="oidc-request-code_challenge_method-present">
-                                                                                                                <span data-bs-toggle="tooltip"
-                                                                                                                      data-bs-placement="bottom"
-                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
                                 </label>
                             </div>
                         </div>
@@ -1747,22 +1928,22 @@
                             </div>
                             <div class="col-sm-2">
                                 <input type="checkbox" class="form-check-input"
+                                       id="oidc-request-code_challenge-present">
+                                <label for="oidc-request-code_challenge-present">
+                                                                                                                <span data-bs-toggle="tooltip"
+                                                                                                                      data-bs-placement="bottom"
+                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input"
                                        id="oidc-request-code_challenge-request-body">
                                 <label for="oidc-request-code_challenge-request-body">
                                     <span data-bs-toggle="tooltip" data-bs-placement="bottom"
                                           data-bs-original-title="Check this box if you want this parameter to be present in request body.">
                                     In Request Body
                                 </span>
-                                </label>
-                            </div>
-                            <div class="col-sm-2">
-                                <input type="checkbox" class="form-check-input"
-                                       id="oidc-request-code_challenge-present">
-                                <label for="oidc-request-code_challenge-present">
-                                                                                                                <span data-bs-toggle="tooltip"
-                                                                                                                      data-bs-placement="bottom"
-                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                    In Request
                                 </label>
                             </div>
                         </div>
@@ -1826,6 +2007,20 @@
                             </label>
                             <div class="col-sm-2">
                                 <div class="form-check d-flex justify-content-end">
+                                    <input class="form-check-input" type="checkbox" name="oidc-request-um-present"
+                                           id="oidc-request-um-present">
+                                    <label class="form-check-label ps-3" for="oidc-request-um-present">
+                                  <span data-bs-toggle="tooltip"
+                                    data-bs-placement="bottom"
+                                    data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                      In Request URL
+
+                                  </span>
+                                </label>
+                                </div>
+                            </div>
+                            <div class="col-sm-2">
+                                <div class="form-check d-flex justify-content-end">
                                     <input class="form-check-input" type="checkbox" name="oidc-request-um-request-body"
                                            id="oidc-request-um-request-body">
                                     <label class="form-check-label ps-3" for="oidc-request-um-request-body">
@@ -1834,20 +2029,6 @@
                                     In Request Body
                                 </span>
                                     </label>
-                                </div>
-                            </div>
-                            <div class="col-sm-2">
-                                <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="oidc-request-um-present"
-                                           id="oidc-request-um-present">
-                                    <label class="form-check-label ps-3" for="oidc-request-um-present">
-                                  <span data-bs-toggle="tooltip"
-                                    data-bs-placement="bottom"
-                                    data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
-                                      In Request
-
-                                  </span>
-                                </label>
                                 </div>
                             </div>
                         </div>
@@ -1913,24 +2094,24 @@
                             </label>
                             <div class="col-sm-2">
                                 <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="oidc-request-sig-request-body"
-                                           id="oidc-request-sig-request-body">
-                                    <label class="form-check-label ps-3" for="oidc-request-sig-request-body">
+                                    <input class="form-check-input" type="checkbox" name="oidc-request-sig-present"
+                                           id="oidc-request-sig-present">
+                                    <label class="form-check-label ps-3" for="oidc-request-sig-present">
                                         <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                              data-bs-original-title="Check this box if you want this parameter to be present in request body.">
-                                    In Request Body
+                                              data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter. It is then sent as a JWT.">
+                                    In Request URL
                                 </span>
                                     </label>
                                 </div>
                             </div>
                             <div class="col-sm-2">
                                 <div class="form-check d-flex justify-content-end">
-                                    <input class="form-check-input" type="checkbox" name="oidc-request-sig-present"
-                                           id="oidc-request-sig-present">
-                                    <label class="form-check-label ps-3" for="oidc-request-sig-present">
+                                    <input class="form-check-input" type="checkbox" name="oidc-request-sig-request-body"
+                                           id="oidc-request-sig-request-body">
+                                    <label class="form-check-label ps-3" for="oidc-request-sig-request-body">
                                         <span data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                              data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter. It is then sent as a JWT.">
-                                    In Request
+                                              data-bs-original-title="Check this box if you want this parameter to be present in request body.">
+                                    In Request Body
                                 </span>
                                     </label>
                                 </div>

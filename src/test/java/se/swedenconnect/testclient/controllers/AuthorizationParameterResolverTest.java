@@ -46,6 +46,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.JsonNode;
@@ -84,6 +85,10 @@ class AuthorizationParameterResolverTest {
   private static final String USER_MESSAGE = "https://id.oidc.se/param/userMessage";
   private static final String SIGN_REQUEST = "https://id.oidc.se/param/signRequest";
   private static final String SCOPE_SIGN_APPROVAL = "https://id.oidc.se/scope/signApproval";
+
+  private static final String LOA3 = "http://id.elegnamnden.se/loa/1.0/loa3";
+  private static final String LOA2 = "http://id.elegnamnden.se/loa/1.0/loa2";
+  private static final String OTHER_CLIENT = "https://other.example.com";
 
   private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
@@ -353,6 +358,7 @@ class AuthorizationParameterResolverTest {
     idTokenClaims.put("nothing", null);
     model.setClaims(Map.of("id_token", idTokenClaims,
         "userinfo", Map.of("essentialWithValue", Map.of("essential", true, "value", "a"))));
+    model.setClaimInRequest(true);
 
     final Result result = generate(model);
 
@@ -500,6 +506,202 @@ class AuthorizationParameterResolverTest {
 
     Assertions.assertNull(result.url("scope"));
     Assertions.assertEquals("openid", result.claims().getClaim("scope"));
+  }
+
+  // Different values in the request URL and in the request object (OpenID Connect Core 1.0, sections 6.1 and 6.3)
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("splitRows")
+  void eachLocationGetsItsOwnValue(final String row, final String urlValue, final String bodyValue)
+      throws Exception {
+    final OIDCAuthnRequestParameterModel model = splitModel(row, urlValue, bodyValue, true);
+    place(splitParameter(model, row), true, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(urlValue, result.url(row));
+    Assertions.assertEquals(bodyValue, result.claims().getClaim(row));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("splitRows")
+  void theRequestObjectValueIsNotSentWhenTheSettingIsOff(final String row, final String urlValue,
+      final String bodyValue) throws Exception {
+    final OIDCAuthnRequestParameterModel model = splitModel(row, urlValue, bodyValue, false);
+    place(splitParameter(model, row), true, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(urlValue, result.url(row));
+    Assertions.assertEquals(urlValue, result.claims().getClaim(row));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("splitRows")
+  void anOlderExportSendsOneValue(final String row, final String urlValue, final String bodyValue) throws Exception {
+    // A request exported before the setting existed holds no setting at all
+    final OIDCAuthnRequestParameterModel model = splitModel(row, urlValue, bodyValue, true);
+    model.getAdvanced().setAllowDifferentValues(null);
+    place(splitParameter(model, row), true, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(urlValue, result.url(row));
+    Assertions.assertEquals(urlValue, result.claims().getClaim(row));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("splitRows")
+  void theRequestObjectValueIsNotSentWhenTheRowIsInOneLocationOnly(final String row, final String urlValue,
+      final String bodyValue) throws Exception {
+    final OIDCAuthnRequestParameterModel model = splitModel(row, urlValue, bodyValue, true);
+    place(splitParameter(model, row), false, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertNull(result.url(row));
+    Assertions.assertEquals(urlValue, result.claims().getClaim(row), "The row has one line, and it is sent");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("splitRows")
+  void aRowInTheUrlOnlyIsNotPutInTheRequestObject(final String row, final String urlValue, final String bodyValue)
+      throws Exception {
+    final OIDCAuthnRequestParameterModel model = splitModel(row, urlValue, bodyValue, true);
+    place(splitParameter(model, row), true, false);
+    // Something else must be in the request object for it to be created
+    model.getAdvanced().getLoginHint().setValue("hint");
+    place(model.getAdvanced().getLoginHint(), false, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(urlValue, result.url(row));
+    Assertions.assertNull(result.claims().getClaim(row));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = { "state", "nonce" })
+  void aGeneratedValueIsTheSameInBothLocations(final String row) throws Exception {
+    final OIDCAuthnRequestParameterModel model = splitModel(row, "", "", true);
+    place(splitParameter(model, row), true, true);
+
+    final Result result = generate(model);
+
+    final String value = result.url(row);
+    Assertions.assertNotNull(value);
+    Assertions.assertFalse(value.isBlank());
+    Assertions.assertEquals(value, result.claims().getClaim(row));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = { "state", "nonce" })
+  void aValueTypedInTheUrlLineLeavesTheGeneratedValueInTheRequestObject(final String row) throws Exception {
+    final OIDCAuthnRequestParameterModel model = splitModel(row, "typed", "", true);
+    place(splitParameter(model, row), true, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals("typed", result.url(row));
+    final String generated = (String) result.claims().getClaim(row);
+    Assertions.assertNotNull(generated);
+    Assertions.assertNotEquals("typed", generated);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = { "state", "nonce" })
+  void aValueTypedInTheRequestObjectLineLeavesTheGeneratedValueInTheUrl(final String row) throws Exception {
+    final OIDCAuthnRequestParameterModel model = splitModel(row, "", "typed", true);
+    place(splitParameter(model, row), true, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals("typed", result.claims().getClaim(row));
+    final String generated = result.url(row);
+    Assertions.assertNotNull(generated);
+    Assertions.assertNotEquals("typed", generated);
+  }
+
+  @Test
+  void differingClientIdAndResponseTypeAreSentAsBuilt() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getAdvanced().setAllowDifferentValues(true);
+    model.getClientId().setRequestBodyValue(OTHER_CLIENT);
+    place(model.getClientId(), true, true);
+    model.getAdvanced().getResponseType().setRequestBodyValue("id_token");
+    place(model.getAdvanced().getResponseType(), true, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(RP, result.url("client_id"));
+    Assertions.assertEquals("code", result.url("response_type"));
+    Assertions.assertEquals(OTHER_CLIENT, result.claims().getClaim("client_id"));
+    Assertions.assertEquals("id_token", result.claims().getClaim("response_type"));
+  }
+
+  @Test
+  void theSettingDoesNotAffectRowsWithoutASecondLine() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getAdvanced().setAllowDifferentValues(true);
+    // A value that only the covered rows have - the redirect URI keeps one value
+    model.getRedirectUri().setRequestBodyValue("https://rp.example.com/other");
+    place(model.getRedirectUri(), true, true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(REDIRECT_URI, result.url("redirect_uri"));
+    Assertions.assertEquals(REDIRECT_URI, result.claims().getClaim("redirect_uri"));
+  }
+
+  // The claims row and its two boxes
+
+  @ParameterizedTest(name = "inRequest={0}, inRequestBody={1}")
+  @CsvSource({ "true,true", "true,false", "false,true", "false,false" })
+  void claimsFollowTheirTwoBoxes(final boolean inRequest, final boolean inRequestBody) throws Exception {
+    final OIDCAuthnRequestParameterModel model = claimsModel();
+    model.setClaimInRequest(inRequest);
+    model.setClaimInRequestBody(inRequestBody);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(inRequest, result.url("claims") != null, "In the URL");
+    Assertions.assertEquals(inRequestBody, result.claims().getClaim("claims") != null, "In the request object");
+  }
+
+  @Test
+  void claimsInBothLocationsAreTheSame() throws Exception {
+    final OIDCAuthnRequestParameterModel model = claimsModel();
+    model.setClaimInRequest(true);
+    model.setClaimInRequestBody(true);
+
+    final Result result = generate(model);
+
+    final JsonNode url = MAPPER.readTree(result.url("claims"));
+    Assertions.assertEquals(url, MAPPER.valueToTree(result.claims().getClaim("claims")));
+    Assertions.assertTrue(url.path("id_token").path("birthdate").path("essential").asBoolean());
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = { true, false })
+  void claimsOfATemplateOrAnOlderExportKeepTheirPlacement(final boolean inRequestBody) throws Exception {
+    // Templates and older exports only say whether the claims go in the request object
+    final OIDCAuthnRequestParameterModel model = claimsModel();
+    model.setClaimInRequest(null);
+    model.setClaimInRequestBody(inRequestBody);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(!inRequestBody, result.url("claims") != null, "In the URL");
+    Assertions.assertEquals(inRequestBody, result.claims().getClaim("claims") != null, "In the request object");
+  }
+
+  /**
+   * A model with claims, and a request object that is created whether the claims are placed in it or not.
+   */
+  private static OIDCAuthnRequestParameterModel claimsModel() {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.setClaims(Map.of("id_token", Map.of("birthdate", Map.of("essential", true))));
+    model.getAdvanced().getState().setRequestBody(true);
+    return model;
   }
 
   @Test
@@ -1000,6 +1202,7 @@ class AuthorizationParameterResolverTest {
           model.getAdvanced().getLoginHint().setValuePresent(true);
           model.setClaims(Map.of("id_token", Map.of("https://id.oidc.se/claim/personalIdentityNumber",
               Map.of("essential", true))));
+          model.setClaimInRequest(true);
         }),
         Arguments.of("no parameters", (ModelSetup) model -> {
           for (final String row : List.of("client_id", "redirect_uri", "scope", "response_type", "prompt")) {
@@ -1142,6 +1345,7 @@ class AuthorizationParameterResolverTest {
         .redirectUri(new ModelParameter(REDIRECT_URI, false, true))
         .clientId(new ModelParameter(RP, false, true))
         .acrValues(new ModelParameter("", false, false))
+        .claimInRequest(false)
         .claimInRequestBody(false)
         .advanced(OidcRestController.createDefaultAdvancedOptions())
         .keys(KeyOptionsParameterModel.builder()
@@ -1166,6 +1370,45 @@ class AuthorizationParameterResolverTest {
   private static OIDCAuthnRequestParameterModel requestObjectModel() {
     final OIDCAuthnRequestParameterModel model = defaultModel();
     model.getRequestObject().setModuleEnabled(true);
+    return model;
+  }
+
+  /**
+   * The rows that may send one value in the request URL and another in the request object, with a value for each
+   * location. The row name is also the name of the parameter as it is sent.
+   */
+  static Stream<Arguments> splitRows() {
+    return Stream.of(
+        Arguments.of("state", "url-state", "body-state"),
+        Arguments.of("nonce", "url-nonce", "body-nonce"),
+        Arguments.of("prompt", "login", "consent select_account"),
+        Arguments.of("acr_values", LOA3, LOA2),
+        Arguments.of("client_id", RP, OTHER_CLIENT),
+        Arguments.of("response_type", "code", "id_token"));
+  }
+
+  private static ModelParameter splitParameter(final OIDCAuthnRequestParameterModel model, final String row) {
+    return switch (row) {
+      case "state" -> model.getAdvanced().getState();
+      case "nonce" -> model.getAdvanced().getNonce();
+      case "prompt" -> model.getAdvanced().getPrompt();
+      case "acr_values" -> model.getAcrValues();
+      case "client_id" -> model.getClientId();
+      case "response_type" -> model.getAdvanced().getResponseType();
+      default -> throw new IllegalArgumentException(row);
+    };
+  }
+
+  /**
+   * A model with request object options enabled, and one row sending a value of its own in the request object.
+   */
+  private static OIDCAuthnRequestParameterModel splitModel(final String row, final String urlValue,
+      final String bodyValue, final boolean allowed) {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getAdvanced().setAllowDifferentValues(allowed);
+    final ModelParameter parameter = splitParameter(model, row);
+    parameter.setValue(urlValue);
+    parameter.setRequestBodyValue(bodyValue);
     return model;
   }
 

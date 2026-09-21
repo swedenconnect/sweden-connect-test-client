@@ -301,6 +301,7 @@ public class OidcRestController {
         .redirectUri(new ModelParameter(selectedRp.getMetadata().getRedirectionURI().toASCIIString(), false, true))
         .clientId(new ModelParameter(selectedRp.getEntityId(), false, true))
         .acrValues(new ModelParameter("", false, false))
+        .claimInRequest(false)
         .claimInRequestBody(false)
         .callUserInfo(true)
         .advanced(createDefaultAdvancedOptions())
@@ -360,7 +361,8 @@ public class OidcRestController {
 
   /**
    * Creates the initial advanced options of the request builder. State and nonce are pre-generated, and PKCE (S256) is
-   * sent in the request URL. The {@code max_age} row is off, with its value pre-filled with {@code 0}.
+   * sent in the request URL. The {@code max_age} row is off, with its value pre-filled with {@code 0}, and the rows
+   * send the same value in the request URL and in the request object.
    *
    * @return the default advanced options
    */
@@ -374,6 +376,7 @@ public class OidcRestController {
         .responseType(ModelParameter.builder().value("code").valuePresent(true).requestBody(false).build())
         .codeChallenge(ModelParameter.builder().valuePresent(true).requestBody(false).build())
         .codeChallengeMethod(ModelParameter.builder().value("S256").valuePresent(true).requestBody(false).build())
+        .allowDifferentValues(false)
         .moduleEnabled(false)
         .build();
   }

@@ -54,6 +54,12 @@ public class OIDCAuthnRequestParameterModel {
   private ModelParameter redirectUri;
   private ModelParameter acrValues;
   private Map<String, Object> claims;
+  /**
+   * Whether the claims are sent in the request URL. {@code null}, as in templates and requests exported before the
+   * claims row had two boxes of its own, means that they are sent in the URL unless {@link #claimInRequestBody} is
+   * set.
+   */
+  private Boolean claimInRequest;
   private Boolean claimInRequestBody;
   private RequestObjectParamterModel requestObject;
   private AdvancedOptionsParamterModel advanced;
