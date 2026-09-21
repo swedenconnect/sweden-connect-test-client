@@ -6,9 +6,15 @@
 
 ---
 
-### Version 1.0.13
+### Version 1.0.14
 
 Date: _not yet released_
+
+- 
+
+### Version 1.0.13
+
+Date: 2026-09-21
 
 - `max_age` is no longer sent on every request. It is now a row under "Advanced request options", off by default.
 - A new setting, `credentials.signing2`, gives an OIDC RP a second active signing key. It is published along with the
