@@ -167,7 +167,7 @@ class OidcSendMethodTest {
   @Test
   void theTokenRequestSettingsAreRecordedForEachRequest() throws Exception {
     final OIDCAuthnRequestParameterModel model = model();
-    final TokenRequestParameterModel settings = TokenRequestParameterModel.defaults(RP, RP + "/redirect", OP + "/token");
+    final TokenRequestParameterModel settings = TokenRequestParameterModel.defaults(RP, RP + "/redirect", OP);
     settings.setAuthMethod(TokenRequestParameterModel.NONE);
 
     model.setTokenRequest(settings);
@@ -261,7 +261,7 @@ class OidcSendMethodTest {
         .signMessage(OidcRestController.createDefaultSignRequest("key"))
         .requestObject(RequestObjectParamterModel.builder()
             .issuer(new ModelParameter(RP, true, true))
-            .audience(new ModelParameter(OP + "/token", true, true))
+            .audience(new ModelParameter(OP, true, true))
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false)

@@ -10,7 +10,8 @@
 
 Date: _not yet released_
 
-- 
+- The default `aud` of the request object, and of the client assertion sent to the token endpoint, is now the issuer
+  identifier of the selected OP instead of its token endpoint.
 
 ### Version 1.0.13
 

@@ -92,12 +92,12 @@ public class TokenRequestParameterModel {
    *
    * @param entityId the entity ID of the RP
    * @param redirectUri the redirect URI of the RP
-   * @param tokenEndpoint the token endpoint of the OP
+   * @param opIssuer the issuer identifier of the OP - the default audience of the client assertion
    * @return the default settings
    */
   @Nonnull
   public static TokenRequestParameterModel defaults(@Nullable final String entityId,
-      @Nullable final String redirectUri, @Nullable final String tokenEndpoint) {
+      @Nullable final String redirectUri, @Nullable final String opIssuer) {
     return TokenRequestParameterModel.builder()
         .authMethod(PRIVATE_KEY_JWT)
         .moduleEnabled(false)
@@ -111,7 +111,7 @@ public class TokenRequestParameterModel {
         .clientAssertion(row("", true))
         .assertionIss(row(entityId, true))
         .assertionSub(row(entityId, true))
-        .assertionAud(row(tokenEndpoint, true))
+        .assertionAud(row(opIssuer, true))
         .assertionIat(row("", true))
         .assertionJti(row("", true))
         .assertionExp(row("", true))

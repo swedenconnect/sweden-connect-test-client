@@ -16,6 +16,8 @@
 package se.swedenconnect.testclient.oidc;
 
 import com.nimbusds.jose.jwk.JWKSet;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,6 +27,7 @@ import net.minidev.json.JSONObject;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Representation of an OpenID Provider that may be tested against - either statically configured or discovered
@@ -54,6 +57,16 @@ public class OidcOp {
    * The Entity Identifier of the provider.
    */
   private String entityId;
+
+  /**
+   * The issuer identifier of the provider. For OP:s discovered through OpenID Federation this is the OP's entity
+   * identifier, and for statically configured OP:s it is the {@code issuer} of the OP's metadata - read when the
+   * metadata is fetched. A {@code null} value means that the issuer has not been established yet, and
+   * {@link #getIssuer()} then falls back to the entity identifier.
+   */
+  @Nullable
+  private String issuer;
+
   private String metadataEndpoint;
   private String authorizationEndpoint;
   private String tokenEndpoint;
@@ -78,4 +91,25 @@ public class OidcOp {
 
   /** For federation OP:s - the point in time when the resolved metadata expires. */
   private Instant expiresAt;
+
+  /**
+   * Gets the issuer identifier of the provider. If the issuer has not been established, the provider's entity
+   * identifier is returned.
+   *
+   * @return the issuer identifier
+   */
+  @Nonnull
+  public String getIssuer() {
+    return Optional.ofNullable(this.issuer).orElseGet(this::getEntityId);
+  }
+
+  /**
+   * Tells whether the provider's issuer identifier has been established, i.e., whether {@link #getIssuer()} returns
+   * the issuer and not the entity identifier fallback.
+   *
+   * @return {@code true} if the issuer is known, and {@code false} otherwise
+   */
+  public boolean isIssuerKnown() {
+    return this.issuer != null;
+  }
 }

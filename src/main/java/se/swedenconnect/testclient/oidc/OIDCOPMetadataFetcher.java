@@ -17,6 +17,7 @@ package se.swedenconnect.testclient.oidc;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import jakarta.annotation.Nonnull;
+import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
 import org.springframework.web.client.RestClient;
 
@@ -29,6 +30,7 @@ import java.util.Objects;
  * @author Martin Lindström
  * @author Felix Hellman
  */
+@Slf4j
 public class OIDCOPMetadataFetcher {
   private RestClient client;
 
@@ -51,6 +53,38 @@ public class OIDCOPMetadataFetcher {
     return this.client.get().uri(oidcOp.getMetadataEndpoint()).retrieve()
         .toEntity(JSONObject.class)
         .getBody();
+  }
+
+  /**
+   * Gets the issuer identifier of the given OP.
+   * <p>
+   * For OP:s discovered through OpenID Federation the issuer is the OP's entity identifier, and for statically
+   * configured OP:s it is the {@code issuer} of the OP's metadata. If the metadata can not be fetched, or holds no
+   * {@code issuer}, the OP's configured entity identifier is used.
+   * </p>
+   *
+   * @param oidcOp the OP
+   * @return the issuer identifier
+   */
+  @Nonnull
+  public String getIssuer(@Nonnull final OidcOp oidcOp) {
+    if (oidcOp.isIssuerKnown()) {
+      return oidcOp.getIssuer();
+    }
+    try {
+      final JSONObject metadata = this.getOPMetadata(oidcOp);
+      final String issuer = Objects.nonNull(metadata) ? metadata.getAsString("issuer") : null;
+      if (Objects.nonNull(issuer) && !issuer.isBlank()) {
+        oidcOp.setIssuer(issuer);
+        return issuer;
+      }
+      log.info("No issuer found in the metadata for OP {} - using its entity identifier", oidcOp.getEntityId());
+    }
+    catch (final RuntimeException e) {
+      log.info("Failed to fetch the metadata for OP {} ({}) - using its entity identifier as issuer",
+          oidcOp.getEntityId(), e.getMessage());
+    }
+    return oidcOp.getEntityId();
   }
 
   /**

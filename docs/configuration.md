@@ -351,14 +351,18 @@ All four endpoints below are required. Unlike an OP discovered via OpenID Federa
 `authorization-endpoint`, `token-endpoint` and `user-info-endpoint` are **not** derived from its metadata document -
 they are read directly from these properties and used as-is when the test client talks to the OP.
 `metadata-endpoint` is only used to display/fetch the OP's metadata for inspection in the user interface (and to
-resolve its JWKS); it has no effect on which endpoints the test client actually calls.
+resolve its JWKS and its `issuer`); it has no effect on which endpoints the test client actually calls.
+
+The `issuer` of the metadata is the default audience (`aud`) of the request object and of the client assertion sent
+to the token endpoint. If the metadata cannot be fetched, or holds no `issuer`, the configured `entity-id` is used
+instead. Both values remain editable in the request builder.
 
 | Property | Description | Type | Default value |
 | :--- | :--- | :--- | :--- |
 | `entity-id` | The entity identifier, i.e., the issuer, of the OP. | String | - |
 | `display-name` | The name displayed in the user interface. | String | the entity identifier |
 | `description` | A description displayed in the user interface. | String | - |
-| `metadata-endpoint` | The URL where the OP publishes its metadata, normally `<entity-id>/.well-known/openid-configuration`. Used only for display/inspection in the UI and to resolve the OP's JWKS - not to read the endpoints below. | String | - |
+| `metadata-endpoint` | The URL where the OP publishes its metadata, normally `<entity-id>/.well-known/openid-configuration`. Used only for display/inspection in the UI and to resolve the OP's JWKS and `issuer` - not to read the endpoints below. | String | - |
 | `authorization-endpoint` | The authorization endpoint of the OP. | String | - |
 | `token-endpoint` | The token endpoint of the OP. | String | - |
 | `user-info-endpoint` | The UserInfo endpoint of the OP. | String | - |
