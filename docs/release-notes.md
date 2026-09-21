@@ -11,12 +11,17 @@
 Date: _not yet released_
 
 - `max_age` is no longer sent on every request. It is now a row under "Advanced request options", off by default.
+- A new setting, `credentials.signing2`, gives an OIDC RP a second active signing key. It is published along with the
+  RP:s signing key, and either of them can be picked under "Key options".
+- A signing key that is configured directly on an SP or RP, instead of through a credential bundle, is now offered
+  under "Key options".
 - New setting under "Advanced request options" for sending one value in the request URL and another in the request
   object, for `state`, `nonce`, `prompt`, `acr_values`, `client_id` and `response_type`.
 - The Claims-parameter now follows its "In Request" and "In Request Body" boxes, so it can be sent in both places, in
   one of them, or in none.
 - A bug where the "In Request" box of Client ID and Redirect URI had no effect on the request that was sent has been
   fixed.
+
 
 ### Version 1.0.12
 

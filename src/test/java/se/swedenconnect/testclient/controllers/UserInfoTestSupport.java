@@ -63,7 +63,7 @@ final class UserInfoTestSupport {
       final RSAKey key = new RSAKeyGenerator(2048).keyID(UUID.randomUUID().toString()).generate();
       final PkiCredential credential = new BasicCredential(key.toPublicKey(), key.toPrivateKey());
       final ClientCredentials credentials =
-          new ClientCredentials(credential, null, credential, null, credential, credential, credential);
+          new ClientCredentials(credential, null, null, credential, null, credential, credential, credential);
       return new OidcRp(RP, "Test RP", "rp", credentials, """
           {
             "response_types" : [ "code" ],
