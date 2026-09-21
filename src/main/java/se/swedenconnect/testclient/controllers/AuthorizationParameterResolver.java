@@ -226,6 +226,32 @@ public class AuthorizationParameterResolver {
   }
 
   /**
+   * Gets the {@code max_age} value for this location. The value must be a whole number of 0 or above (OpenID Connect
+   * Core 1.0, section 3.1.2.1); a row that is on but holds anything else is treated as off, so that the request is
+   * sent without {@code max_age}.
+   *
+   * @return the max age in seconds, or an empty optional if no max age is placed here or its value is not a whole
+   *     number of 0 or above
+   */
+  public Optional<Integer> getMaxAge() {
+    final ModelParameter maxAge = this.model.getAdvanced().getMaxAge();
+    if (maxAge == null || !this.isSelected(maxAge)) {
+      return Optional.empty();
+    }
+    final String value = Optional.ofNullable(maxAge.getValue()).map(String::trim).orElse("");
+    if (!value.matches("\\d+")) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(Integer.valueOf(value));
+    }
+    catch (final NumberFormatException e) {
+      // Larger than the request library can hold - the row is treated as off
+      return Optional.empty();
+    }
+  }
+
+  /**
    * Gets the PKCE code challenge method and code verifier for this location. PKCE is placed in a location only when
    * both the code challenge and the code challenge method are selected for it. The code verifier is shared with the
    * other location, and is saved under {@link #CODE_VERIFIER_ATTRIBUTE} for the token request.

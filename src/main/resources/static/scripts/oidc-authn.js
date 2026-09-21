@@ -1772,6 +1772,7 @@ class OIDCAuthnRequest {
             [adv.state, false],
             [adv.nonce, false],
             [adv.loginHint, false],
+            [adv.maxAge, false],
             [adv.codeChallengeMethod, false],
             [adv.codeChallenge, false],
             [this.pars.userMessage, false],
@@ -2339,6 +2340,16 @@ class OIDCAuthnRequest {
             '#oidc-request-login_hint-request-body',
             '#oidc-request-login_hint-input',
             ["advanced", "loginHint"]
+        );
+        // A configuration saved before the max_age setting existed loads with the row off
+        if (!this.pars.advanced.maxAge) {
+            this.pars.advanced.maxAge = { value: '0', valuePresent: false, requestBody: false };
+        }
+        this.initNestedField(
+            '#oidc-request-max_age-present',
+            '#oidc-request-max_age-request-body',
+            '#oidc-request-max_age-input',
+            ["advanced", "maxAge"]
         );
         this.initModuleSelector(
             "#oidc-request-responsetype-select",
@@ -3069,13 +3080,18 @@ class OIDCAuthnRequest {
             }
         }
 
-        // loginHint: user-editable nested field
-        if (adv.loginHint !== undefined) {
-            const lh = adv.loginHint;
-            const disabled = !(lh.valuePresent || lh.requestBody);
-            $('#oidc-request-login_hint-present').prop('checked', lh.valuePresent || false);
-            $('#oidc-request-login_hint-request-body').prop('checked', lh.requestBody || false);
-            $('#oidc-request-login_hint-input').prop('disabled', disabled).prop('value', disabled ? '' : (lh.value || ''));
+        // loginHint and maxAge: user-editable nested fields
+        for (const [field, inputSel, rbSel, presentSel] of [
+            ['loginHint', '#oidc-request-login_hint-input', '#oidc-request-login_hint-request-body', '#oidc-request-login_hint-present'],
+            ['maxAge',    '#oidc-request-max_age-input',    '#oidc-request-max_age-request-body',    '#oidc-request-max_age-present'],
+        ]) {
+            if (adv[field] !== undefined) {
+                const f = adv[field];
+                const disabled = !(f.valuePresent || f.requestBody);
+                $(presentSel).prop('checked', f.valuePresent || false);
+                $(rbSel).prop('checked', f.requestBody || false);
+                $(inputSel).prop('disabled', disabled).prop('value', disabled ? '' : (f.value || ''));
+            }
         }
 
         // Server-generated fields: state, nonce, codeChallenge (value stays disabled until Modify)

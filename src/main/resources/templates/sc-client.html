@@ -1666,6 +1666,37 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="row mt-4" id="oidc-max_age-row">
+                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 data-bs-original-title="The max_age parameter states the maximum time, in seconds, since the user was last authenticated. A value of 0 requires the user to be re-authenticated. Whole numbers of 0 and above only.">
+                                <label class="col-form-label text-sm-right" for="oidc-request-max_age-input">Max
+                                    Age
+                                </label>
+                            </div>
+                            <div class="col-sm-6">
+                                <input type="number" min="0" step="1" class="form-control"
+                                       id="oidc-request-max_age-input">
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input"
+                                       id="oidc-request-max_age-request-body">
+                                <label for="oidc-request-max_age-request-body">
+                                    <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                          data-bs-original-title="Check this box if you want this parameter to be present in request body.">
+                                    In Request Body
+                                </span>
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input" id="oidc-request-max_age-present">
+                                <label for="oidc-request-max_age-present">
+                                                                                                                <span data-bs-toggle="tooltip"
+                                                                                                                      data-bs-placement="bottom"
+                                                                                                                      data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request
+                                </label>
+                            </div>
+                        </div>
                         <div class="row mt-4" id="oidc-code_challenge_method-row">
                             <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                  data-bs-original-title="The code_challenge_method indicates the transformation method used to generate the code_challenge (typically 'S256' or 'plain').">
