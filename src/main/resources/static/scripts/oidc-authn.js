@@ -1682,6 +1682,7 @@ class OIDCAuthnRequest {
         });
 
         this.refreshSignMessage();
+        this.initSplitLines();
     }
 
     /**
@@ -1827,6 +1828,7 @@ class OIDCAuthnRequest {
             const placement = OIDCAuthnRequest.placement(mode);
             claimsPresent.prop('checked', placement.valuePresent);
             claimsRequestBody.prop('checked', placement.requestBody);
+            this.pars.claimInRequest = placement.valuePresent;
             this.pars.claimInRequestBody = placement.requestBody;
         }
         this.pars.requestObject.moduleEnabled = mode === OIDCAuthnRequest.MODE_REQUEST_BODY;
@@ -1846,6 +1848,7 @@ class OIDCAuthnRequest {
         this.updateSignMessageView(false);
         this.computeClaims();
         this.updateModeButtons();
+        this.updateSplitLines();
     }
 
     /**
@@ -1877,6 +1880,7 @@ class OIDCAuthnRequest {
         const placement = OIDCAuthnRequest.placement(this.getMode());
         if (placement.valuePresent) {
             claimsPresent.prop('checked', true);
+            this.pars.claimInRequest = true;
         }
         if (placement.requestBody) {
             claimsRequestBody.prop('checked', true);
@@ -2045,6 +2049,9 @@ class OIDCAuthnRequest {
 
         let inRequest = $("#oidc-request-claims-present").prop("checked");
         let inRequestBody = $("#oidc-request-claims-request-body").prop("checked");
+        // The claims follow their two boxes like every other row - they may be sent in both locations, or in none
+        this.pars.claimInRequest = inRequest;
+        this.pars.claimInRequestBody = inRequestBody;
 
         // The preview is only shown when the claims parameter is sent
         let disabled = !(inRequest || inRequestBody);
@@ -2146,6 +2153,7 @@ class OIDCAuthnRequest {
             else {
                 inputElement.prop('value', parent.pars[valueReference]["value"]);
             }
+            parent.pars[valueReference]["valuePresent"] = isChecked;
         };
         if (valueReference != null) {
             inputElement.change(function () {
@@ -2238,6 +2246,18 @@ class OIDCAuthnRequest {
         inRequestBodyCheckbox.prop("checked", parent.pars["claimInRequestBody"]);
         inRequestBodyCheckbox.click(function () {
             parent.pars["claimInRequestBody"] = inRequestBodyCheckbox.prop("checked");
+        });
+
+        let inRequestCheckbox = $("#oidc-request-claims-present");
+        if (parent.pars["claimInRequest"] === undefined || parent.pars["claimInRequest"] === null) {
+            // Templates and requests exported before the claims row had two boxes only say whether the claims go in
+            // the request object - they keep the placement they gave before
+            parent.pars["claimInRequest"] = !parent.pars["claimInRequestBody"]
+                && Object.keys(parent.pars["claims"] || {}).length > 0;
+        }
+        inRequestCheckbox.prop("checked", parent.pars["claimInRequest"]);
+        inRequestCheckbox.click(function () {
+            parent.pars["claimInRequest"] = inRequestCheckbox.prop("checked");
         });
     }
 
@@ -2557,40 +2577,93 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Gets the values of a value list row.
-     * @param row the row, see valueListRows()
+     * Gets the values of one line of a value list row.
+     * @param value the line's value, a space-separated string
      * @returns {string[]} the values, in the order they were added
      */
-    static valueListValues(row) {
-        const par = row.par();
-        return par && par.value ? par.value.split(' ').filter(value => value.trim() !== '') : [];
+    static listValues(value) {
+        return value ? value.split(' ').filter(v => v.trim() !== '') : [];
     }
 
     /**
-     * Initializes a value list row - its list, its "Add" menu and its custom value input, see valueListRows().
+     * Gets the lines of a value list row - the line of the request URL and the line of the request object. The
+     * second line is only used while the row sends different values in the two locations, see updateSplitLines().
+     * @param row the row, see valueListRows()
+     * @returns {object[]} the URL line and the request object line
+     */
+    valueListLines(row) {
+        return [
+            {
+                prefix: row.prefix,
+                knownValues: row.knownValues,
+                emptyText: row.emptyText,
+                otherText: row.otherText,
+                get: () => row.par().value,
+                // Switches the row on or off with the boxes of the active mode as the last value is removed or the
+                // first one added
+                set: (value) => {
+                    const par = row.par();
+                    par.value = value;
+                    this.switchRow(par, value !== '');
+                    $(row.prefix + '-present').prop('checked', par.valuePresent || false);
+                    $(row.prefix + '-request-body').prop('checked', par.requestBody || false);
+                    this.updateSplitLines();
+                }
+            },
+            {
+                prefix: row.prefix + '-body',
+                knownValues: row.knownValues,
+                emptyText: row.emptyText,
+                otherText: row.otherText,
+                get: () => row.par().requestBodyValue,
+                set: (value) => { row.par().requestBodyValue = value; }
+            }
+        ];
+    }
+
+    /**
+     * Initializes a value list row - both its lines and its two boxes, see valueListRows().
      * @param row the row
      */
     initValueList(row) {
-        const list = $(row.prefix + '-list');
-        const addDiv = $(row.prefix + '-drop-div');
-        const customDiv = $(row.prefix + '-custom-div');
         const presentCheckbox = $(row.prefix + '-present');
         const requestBodyCheckbox = $(row.prefix + '-request-body');
 
-        // Reads the list back into the row's parameter, switching the row on or off with the boxes of the active mode
+        for (const line of this.valueListLines(row)) {
+            this.initValueListLine(line);
+        }
+        this.refreshValueList(row);
+
+        presentCheckbox.off('change').change(() => {
+            row.par().valuePresent = presentCheckbox.prop('checked');
+            this.updateSplitLines();
+        });
+        requestBodyCheckbox.off('change').change(() => {
+            row.par().requestBody = requestBodyCheckbox.prop('checked');
+            this.updateSplitLines();
+        });
+    }
+
+    /**
+     * Initializes one line of a value list row - its list, its "Add" menu and its custom value input.
+     * @param line the line, see valueListLines()
+     */
+    initValueListLine(line) {
+        const list = $(line.prefix + '-list');
+        const addDiv = $(line.prefix + '-drop-div');
+        const customDiv = $(line.prefix + '-custom-div');
+
+        // Reads the list back into the line's value
         const updateValue = () => {
             const values = [];
             list.find('li span').each(function () {
                 values.push($(this).text());
             });
-            row.par().value = values.join(' ');
-            this.switchRow(row.par(), values.length > 0);
-            presentCheckbox.prop('checked', row.par().valuePresent || false);
-            requestBodyCheckbox.prop('checked', row.par().requestBody || false);
+            line.set(values.join(' '));
         };
 
         addDiv.empty();
-        for (const value of row.knownValues) {
+        for (const value of line.knownValues) {
             addDiv.append($('<a>', {
                 href: 'javascript:void(0)',
                 class: 'dropdown-item',
@@ -2614,21 +2687,14 @@ class OIDCAuthnRequest {
             href: 'javascript:void(0)',
             class: 'dropdown-item',
             'data-list-value': 'other',
-            text: row.otherText,
+            text: line.otherText,
             click: function (event) {
                 event.preventDefault();
                 customDiv.show();
             }
         }));
 
-        this.refreshValueList(row);
-
-        presentCheckbox.off('change').change(function () {
-            row.par().valuePresent = presentCheckbox.prop('checked');
-        });
-        requestBodyCheckbox.off('change').change(function () {
-            row.par().requestBody = requestBodyCheckbox.prop('checked');
-        });
+        this.renderValueListLine(line);
 
         list.off('click').on('click', 'button.btn-close', function () {
             const ul = $(this).closest('ul');
@@ -2642,14 +2708,14 @@ class OIDCAuthnRequest {
 
             if (ul.children('li').length === 0) {
                 ul.append($('<li>')
-                    .text(row.emptyText)
+                    .text(line.emptyText)
                     .addClass('list-group-item d-flex justify-content-between align-items-center'));
             }
             updateValue();
         });
 
-        $(row.prefix + '-custom-button').off('click').click(function () {
-            const custom = $(row.prefix + '-custom');
+        $(line.prefix + '-custom-button').off('click').click(function () {
+            const custom = $(line.prefix + '-custom');
             const value = custom.val().trim();
             if (value !== '') {
                 OIDCAuthnRequest.addListValue(list, value);
@@ -2661,15 +2727,27 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Rebuilds the list of a value list row and updates its checkboxes from this.pars, without rebinding the existing
-     * event handlers.
+     * Rebuilds both lines of a value list row and updates its checkboxes from this.pars, without rebinding the
+     * existing event handlers.
      * @param row the row, see valueListRows()
      */
     refreshValueList(row) {
         const par = row.par();
-        const list = $(row.prefix + '-list');
-        const addDiv = $(row.prefix + '-drop-div');
-        const values = OIDCAuthnRequest.valueListValues(row);
+        for (const line of this.valueListLines(row)) {
+            this.renderValueListLine(line);
+        }
+        $(row.prefix + '-present').prop('checked', par ? (par.valuePresent || false) : false);
+        $(row.prefix + '-request-body').prop('checked', par ? (par.requestBody || false) : false);
+    }
+
+    /**
+     * Rebuilds the list of one line of a value list row from this.pars without rebinding event handlers.
+     * @param line the line, see valueListLines()
+     */
+    renderValueListLine(line) {
+        const list = $(line.prefix + '-list');
+        const addDiv = $(line.prefix + '-drop-div');
+        const values = OIDCAuthnRequest.listValues(line.get());
 
         list.empty();
         for (const value of values) {
@@ -2677,7 +2755,7 @@ class OIDCAuthnRequest {
         }
         if (values.length === 0) {
             list.append($('<li>')
-                .text(row.emptyText)
+                .text(line.emptyText)
                 .addClass('list-group-item d-flex justify-content-between align-items-center'));
         }
 
@@ -2685,9 +2763,6 @@ class OIDCAuthnRequest {
         for (const value of values) {
             addDiv.find('a[data-list-value="' + value + '"]').addClass('disabled');
         }
-
-        $(row.prefix + '-present').prop('checked', par ? (par.valuePresent || false) : false);
-        $(row.prefix + '-request-body').prop('checked', par ? (par.requestBody || false) : false);
     }
 
     /**
@@ -2863,6 +2938,98 @@ class OIDCAuthnRequest {
     }
 
     /**
+     * The rows that can send one value in the request URL and another in the request object. The second line of a row
+     * is shown when the "Allow different values" setting is on and both of the row's boxes are checked, and its value
+     * is kept in the row's parameter as requestBodyValue.
+     * @returns {object[]} the rows
+     */
+    splitRows() {
+        return [
+            { prefix: '#oidc-request-client_id', kind: 'input', par: () => this.pars.clientId },
+            { prefix: '#oidc-request-acr', kind: 'list', list: 'acr', par: () => this.pars.acrValues },
+            { prefix: '#oidc-request-prompt', kind: 'list', list: 'prompt', par: () => this.pars.advanced.prompt },
+            { prefix: '#oidc-request-responsetype', kind: 'select', par: () => this.pars.advanced.responseType },
+            { prefix: '#oidc-request-state', kind: 'input', modify: true, par: () => this.pars.advanced.state },
+            { prefix: '#oidc-request-nonce', kind: 'input', modify: true, par: () => this.pars.advanced.nonce }
+        ];
+    }
+
+    /**
+     * Initializes the "Allow different values" setting and the second lines of the rows it governs. The lines of the
+     * value list rows are initialized with their rows, see initValueList().
+     */
+    initSplitLines() {
+        const setting = $('#oidc-request-different-values');
+        if (this.pars.advanced.allowDifferentValues === undefined
+            || this.pars.advanced.allowDifferentValues === null) {
+            // A request exported before the setting existed opens with it off
+            this.pars.advanced.allowDifferentValues = false;
+        }
+        setting.prop('checked', this.pars.advanced.allowDifferentValues);
+        setting.off('change').on('change', () => {
+            this.pars.advanced.allowDifferentValues = setting.prop('checked');
+            this.updateSplitLines();
+        });
+
+        for (const row of this.splitRows()) {
+            if (row.kind === 'list') {
+                continue;
+            }
+            const element = $(row.prefix + '-body-' + (row.kind === 'select' ? 'select' : 'input'));
+            element.off('change').on('change', () => {
+                row.par().requestBodyValue = element.prop('value');
+            });
+            if (row.modify) {
+                // As on the first line, the generated value is only edited after "Modify" is clicked
+                element.prop('disabled', true);
+                $(row.prefix + '-body-button').off('click').click(() => element.prop('disabled', false));
+            }
+            // The boxes of these rows are bound by initField(), initServerGeneratedField() and initModuleSelector()
+            $(row.prefix + '-present').off('change.split').on('change.split', () => this.updateSplitLines());
+            $(row.prefix + '-request-body').off('change.split').on('change.split', () => this.updateSplitLines());
+        }
+
+        this.updateSplitLines();
+    }
+
+    /**
+     * Shows the second line of every row that sends different values in the request URL and in the request object,
+     * and hides it for the rest. A line that has never been shown starts out as a copy of the first line's value;
+     * after that the two lines are edited on their own, and a hidden line keeps its value.
+     */
+    updateSplitLines() {
+        const allowed = !!this.pars.advanced.allowDifferentValues;
+        for (const row of this.splitRows()) {
+            const par = row.par();
+            const show = allowed && !!(par && par.valuePresent && par.requestBody);
+            if (show && (par.requestBodyValue === undefined || par.requestBodyValue === null)) {
+                par.requestBodyValue = par.value;
+            }
+            if (show) {
+                this.renderSplitLine(row);
+            }
+            $(row.prefix + '-body-div').toggle(show);
+            $(row.prefix + '-url-label').toggle(show);
+        }
+    }
+
+    /**
+     * Renders the second line of a row from this.pars without rebinding event handlers.
+     * @param row the row, see splitRows()
+     */
+    renderSplitLine(row) {
+        if (row.kind === 'list') {
+            this.renderValueListLine(this.valueListLines(this.valueListRows()[row.list])[1]);
+        }
+        else if (row.kind === 'select') {
+            $(row.prefix + '-body-select').val(row.par().requestBodyValue || '');
+        }
+        else {
+            $(row.prefix + '-body-input').prop('value', row.par().requestBodyValue || '');
+        }
+    }
+
+    /**
      * Loads predefined templates from the server and populates the template dropdown.
      */
     initTemplates() {
@@ -2980,9 +3147,15 @@ class OIDCAuthnRequest {
         }
         if (template.claims !== undefined || template.claimInRequestBody !== undefined) {
             if (template.claims !== undefined) this.pars.claims = template.claims;
-            if (template.claimInRequestBody !== undefined) this.pars.claimInRequestBody = template.claimInRequestBody;
+            if (template.claimInRequestBody !== undefined) {
+                // A template only says whether the claims go in the request object
+                this.pars.claimInRequestBody = template.claimInRequestBody;
+                this.pars.claimInRequest = !template.claimInRequestBody;
+            }
             this.refreshClaims();
         }
+        // A template does not touch the "Allow different values" setting
+        this.updateSplitLines();
     }
 
     /**
@@ -3150,7 +3323,7 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Refreshes the claims UI from this.pars.claims and this.pars.claimInRequestBody.
+     * Refreshes the claims UI from this.pars.claims and the claims row's two boxes.
      * Clears and rebuilds claim rows, then calls computeClaims() to sync the textarea.
      */
     refreshClaims() {
@@ -3187,13 +3360,16 @@ class OIDCAuthnRequest {
             }
         }
 
+        if (this.pars.claimInRequest !== undefined && this.pars.claimInRequest !== null) {
+            $('#oidc-request-claims-present').prop('checked', this.pars.claimInRequest);
+        }
+        if (this.pars.claimInRequestBody !== undefined && this.pars.claimInRequestBody !== null) {
+            $('#oidc-request-claims-request-body').prop('checked', this.pars.claimInRequestBody);
+        }
+
         // Ensure claims are flagged as present so computeClaims writes them
         if (Object.keys(claims).length > 0) {
             this.switchOnClaims();
-        }
-
-        if (this.pars.claimInRequestBody !== undefined) {
-            $('#oidc-request-claims-request-body').prop('checked', this.pars.claimInRequestBody);
         }
 
         this.computeClaims();

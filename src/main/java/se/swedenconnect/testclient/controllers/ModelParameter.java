@@ -39,4 +39,21 @@ public class ModelParameter {
   private String value;
   private Boolean requestBody;
   private Boolean valuePresent;
+  /**
+   * The value sent in the request object when the parameter sends different values in the two locations, see
+   * {@link AdvancedOptionsParamterModel#getAllowDifferentValues()}. {@code null}, as in templates and requests
+   * exported before the setting existed, means that {@link #value} is sent in both locations.
+   */
+  private String requestBodyValue;
+
+  /**
+   * Creates a parameter that sends the same value in the request URL and in the request object.
+   *
+   * @param value the value
+   * @param requestBody whether the parameter is placed in the request object
+   * @param valuePresent whether the parameter is placed in the request URL
+   */
+  public ModelParameter(final String value, final Boolean requestBody, final Boolean valuePresent) {
+    this(value, requestBody, valuePresent, null);
+  }
 }

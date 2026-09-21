@@ -42,5 +42,11 @@ public class AdvancedOptionsParamterModel {
   private ModelParameter maxAge;
   private ModelParameter codeChallengeMethod;
   private ModelParameter codeChallenge;
+  /**
+   * Whether a parameter that is sent both in the request URL and in the request object may carry a different value
+   * in each location. {@code null}, as in templates and requests exported before the setting existed, means that it
+   * may not.
+   */
+  private Boolean allowDifferentValues;
   private Boolean moduleEnabled;
 }
