@@ -67,10 +67,16 @@ import se.swedenconnect.testclient.utils.UrlBuilderBean;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * REST Controller for OpenID Connect support.
@@ -263,18 +269,19 @@ public class OidcRestController {
         .serializable()
         .apply(credentialForSigning);
 
-    final List<KeyModel> signKeys = credentialBundles.getRegisteredCredentials()
-        .stream()
-        .map(credentialBundles::getCredential)
-        .map(credential -> new JwkTransformerFunction()
-            .serializable()
-            .apply(credential))
+    // The keys of the RP itself are registered keys, and are marked as such. They are selectable also when they are
+    // configured in place, i.e., when they are not reachable through a credential bundle.
+    final Set<String> registeredKids = rpSigningKeys(selectedRp).stream()
+        .map(JWK::getKeyID)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+
+    final List<KeyModel> signKeys = selectableSigningKeys(selectedRp).stream()
         .map(jwk -> {
           final KeyModel.KeyModelBuilder builder = KeyModel.builder()
               .alg(Optional.ofNullable(jwk.getKeyType()).map(KeyType::getValue).orElse("?"))
               .kid(jwk.getKeyID())
               .typ("");
-          if (signKey.getKeyID().equals(jwk.getKeyID())) {
+          if (registeredKids.contains(jwk.getKeyID())) {
             builder.description("[Registered Key]");
           }
           return builder.build();
@@ -413,7 +420,8 @@ public class OidcRestController {
       final AuthorizationParameterResolver resolver =
           new AuthorizationParameterResolver(model, false, httpSession::setAttribute);
       final AuthenticationRequest authRequest =
-          AuthorizationRequestCustomizer.customize(builder, kidtoJwkFunction(opJWKS), resolver).build();
+          AuthorizationRequestCustomizer.customize(builder, this.kidtoJwkFunction(opJWKS, selectedRp), resolver)
+              .build();
       final SentAuthorizationRequest sentRequest =
           AuthorizationRequestCustomizer.toSentRequest(authRequest, resolver, method);
 
@@ -456,37 +464,97 @@ public class OidcRestController {
     if (kid == null) {
       return null;
     }
-    final Function<PkiCredential, String> keyId =
-        credential -> new JwkTransformerFunction().serializable().apply(credential).getKeyID();
-    final PkiCredential rpCredential =
-        Optional.ofNullable(rp.getCredentials()).map(ClientCredentials::getCredentialForSigning).orElse(null);
-    if (rpCredential != null && kid.equals(keyId.apply(rpCredential))) {
+    final PkiCredential rpCredential = rpSigningCredentials(rp).stream()
+        .filter(credential -> kid.equals(keyId(credential)))
+        .findFirst()
+        .orElse(null);
+    if (rpCredential != null) {
       return Pair.of(kid, rpCredential);
     }
     final PkiCredential registered = Optional.ofNullable(this.credentialBundles).stream()
         .flatMap(bundles -> bundles.getRegisteredCredentials().stream().map(bundles::getCredential))
-        .filter(credential -> kid.equals(keyId.apply(credential)))
+        .filter(credential -> kid.equals(keyId(credential)))
         .findFirst()
         .orElse(null);
     return Pair.of(kid, registered);
   }
 
-  private Function<String, JWK> kidtoJwkFunction(final JWKSet opJWKS) {
-    return (s) -> {
-      return Optional.ofNullable(opJWKS.getKeyByKeyId(s))
-          .or(() -> {
-            final JWKSet signKeys = new JWKSet(credentialBundles.getRegisteredCredentials()
-                .stream()
-                .map(credentialBundles::getCredential)
-                .map(credential -> new JwkTransformerFunction()
-                    .serializable()
-                    .apply(credential)).toList());
-            return Optional.ofNullable(signKeys
-                .getKeyByKeyId(s));
-          }).orElseThrow(() -> {
-            return new RuntimeException("Failed to determine key for kid %s".formatted(s));
-          });
-    };
+  /**
+   * Gets the active signing credentials of an RP, i.e., its registered keys.
+   *
+   * @param rp the RP
+   * @return the credentials (possibly empty)
+   */
+  @Nonnull
+  private static List<PkiCredential> rpSigningCredentials(@Nonnull final OidcRp rp) {
+    return Optional.ofNullable(rp.getCredentials())
+        .map(ClientCredentials::getCredentialsForSigning)
+        .orElseGet(List::of);
+  }
+
+  /**
+   * Gets the registered signing keys of an RP as JWK:s that carry the private key.
+   *
+   * @param rp the RP
+   * @return the keys (possibly empty)
+   */
+  @Nonnull
+  private static List<JWK> rpSigningKeys(@Nonnull final OidcRp rp) {
+    return rpSigningCredentials(rp).stream()
+        .map(credential -> new JwkTransformerFunction().serializable().apply(credential))
+        .toList();
+  }
+
+  /**
+   * Gets the keys that may be selected as the signing key of a request - the credentials of the bundles along with the
+   * RP:s own signing credentials, which are not necessarily reachable through a bundle. A key appears once, no matter
+   * how many ways it is reachable.
+   *
+   * @param rp the RP
+   * @return the keys, in the order they are offered
+   */
+  @Nonnull
+  private List<JWK> selectableSigningKeys(@Nonnull final OidcRp rp) {
+    final List<JWK> keys = new ArrayList<>();
+    final Set<String> kids = new HashSet<>();
+    Stream.concat(
+            Optional.ofNullable(this.credentialBundles).stream()
+                .flatMap(bundles -> bundles.getRegisteredCredentials().stream().map(bundles::getCredential))
+                .map(credential -> new JwkTransformerFunction().serializable().apply(credential)),
+            rpSigningKeys(rp).stream())
+        .forEach(jwk -> {
+          if (kids.add(jwk.getKeyID())) {
+            keys.add(jwk);
+          }
+        });
+    return keys;
+  }
+
+  /**
+   * Gets the key ID of a credential.
+   *
+   * @param credential the credential
+   * @return the key ID
+   */
+  @Nonnull
+  private static String keyId(@Nonnull final PkiCredential credential) {
+    return new JwkTransformerFunction().serializable().apply(credential).getKeyID();
+  }
+
+  /**
+   * Gets the function that resolves a key ID to the key to use - a key of the OP, or one of the keys that may be
+   * selected as the signing key of the request.
+   *
+   * @param opJWKS the JWK set of the OP
+   * @param rp the RP
+   * @return the function
+   */
+  @Nonnull
+  private Function<String, JWK> kidtoJwkFunction(@Nonnull final JWKSet opJWKS, @Nonnull final OidcRp rp) {
+    final JWKSet signKeys = new JWKSet(this.selectableSigningKeys(rp));
+    return kid -> Optional.ofNullable(opJWKS.getKeyByKeyId(kid))
+        .or(() -> Optional.ofNullable(signKeys.getKeyByKeyId(kid)))
+        .orElseThrow(() -> new RuntimeException("Failed to determine key for kid %s".formatted(kid)));
   }
 
   /**

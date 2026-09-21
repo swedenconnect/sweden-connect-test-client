@@ -34,6 +34,14 @@ public class ClientCredentialsProperties {
   private PkiCredentialConfigurationProperties signing;
 
   /**
+   * An additional, active, signing credential. Affects OIDC RP:s only, where it is published as a registered key of
+   * the RP and is selectable under "Key options". May not be the same key as {@link #signing}.
+   */
+  @Getter
+  @Setter
+  private PkiCredentialConfigurationProperties signing2;
+
+  /**
    * Set in advance before rolling the signing credential ...
    */
   @Getter

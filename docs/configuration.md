@@ -183,13 +183,15 @@ sense described above.
 | Property | Description | Type | Default value |
 | :--- | :--- | :--- | :--- |
 | `credentials.signing` | The signing credential. Signs `AuthnRequest` messages, JWT:s and client assertions. | Credential | `testclient.default-credential` |
+| `credentials.signing2` | An additional, active, signing credential. It is a registered key of the client, published next to the signing credential, and may be selected under "Key options" when a request is built. Affects OIDC RP:s only, for SAML SP:s it is ignored. May not be the same key as `credentials.signing`. | Credential | - (not published) |
 | `credentials.future-signing` | A signing credential to be used *after* a key rollover. It is published in the SAML SP metadata as an additional signing key, but is not used for signing. | Credential | - (not published) |
 | `credentials.encryption` | The encryption credential, i.e., the key that assertions and JWT:s are encrypted for. | Credential | `testclient.default-credential` |
 | `credentials.previous-encryption` | The encryption credential that was used *before* a key rollover. Decryption is attempted with this key as well. | Credential | - |
 | `credentials.metadata` | The credential used to sign SAML SP metadata and OpenID Federation entity statements. | Credential | `testclient.default-credential`, and if that is not assigned, the signing credential |
 
 Either `credentials.signing` or `testclient.default-credential` must be assigned, and the same holds for
-`credentials.encryption`. If neither is present, the application fails at startup.
+`credentials.encryption`. If neither is present, the application fails at startup. The same happens if
+`credentials.signing2` of an OIDC RP is the same key as its signing credential.
 
 <a name="tls-and-http-settings"></a>
 ## TLS and HTTP settings
@@ -296,7 +298,8 @@ federation, the federation version is used.
 
 The `metadata` setting is parsed as OpenID Connect client metadata. Two of its members are always set by the
 application and can not be assigned in the JSON: the redirection URI, which is
-`<base-url>/oidc/redirect/{path-suffix}`, and the JWK set, which is built from the signing credential of the RP.
+`<base-url>/oidc/redirect/{path-suffix}`, and the JWK set, which is built from the signing credentials of the RP,
+i.e., `credentials.signing` and, if it is assigned, `credentials.signing2`.
 
 By default, the RP:s public keys are embedded directly in its metadata as `jwks`. Setting `use-jwks-url: true`
 publishes a `jwks_uri` instead (`<base-url>/{path-suffix}/jwks`), pointing at a JWKS endpoint that serves the same

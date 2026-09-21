@@ -11,6 +11,10 @@
 Date: _not yet released_
 
 - `max_age` is no longer sent on every request. It is now a row under "Advanced request options", off by default.
+- A new setting, `credentials.signing2`, gives an OIDC RP a second active signing key. It is published along with the
+  RP:s signing key, and either of them can be picked under "Key options".
+- A signing key that is configured directly on an SP or RP, instead of through a credential bundle, is now offered
+  under "Key options".
 
 ### Version 1.0.12
 

@@ -117,6 +117,26 @@ class EntityConfigurationFactoryTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
+  void publishesBothSigningKeysOfTheRp() throws Exception {
+    final OidcRp rp = TestFederation.createRpWithTwoSigningKeys(RP_ENTITY_ID);
+    final EntityConfigurationFactory factory = new EntityConfigurationFactory(
+        properties(), List.of(new EntityID(TRUST_ANCHOR)), null);
+
+    final EntityStatementClaimsSet claims = factory.createEntityConfiguration(rp).getClaimsSet();
+
+    final JSONObject rpMetadata = claims.getMetadata(EntityType.OPENID_RELYING_PARTY);
+    final JWKSet metadataKeys = JWKSet.parse((Map<String, Object>) rpMetadata.get("jwks"));
+    assertEquals(rp.getJwkSet().getKeys().stream().map(JWK::getKeyID).toList(),
+        metadataKeys.getKeys().stream().map(JWK::getKeyID).toList());
+    assertEquals(2, metadataKeys.getKeys().size());
+    metadataKeys.getKeys().forEach(jwk -> {
+      assertEquals(KeyUse.SIGNATURE, jwk.getKeyUse());
+      assertFalse(jwk.isPrivate());
+    });
+  }
+
+  @Test
   void rpDeclaredMetadataOverridesTheDefaults() throws Exception {
     final OidcRp rp = TestFederation.createRp(RP_ENTITY_ID, """
         {

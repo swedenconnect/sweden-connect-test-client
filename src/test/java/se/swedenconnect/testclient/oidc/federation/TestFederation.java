@@ -119,9 +119,32 @@ final class TestFederation {
       final RSAKey key = generateKey();
       final PkiCredential credential = new BasicCredential(key.toPublicKey(), key.toPrivateKey());
       final ClientCredentials credentials =
-          new ClientCredentials(credential, null, credential, null, credential, credential, credential);
+          new ClientCredentials(credential, null, null, credential, null, credential, credential, credential);
       return new OidcRp(entityId, "Test RP", "testrp1", credentials, metadata, entityId + "/redirect",
           false, entityId + "/jwks", entityConfiguration);
+    }
+    catch (final Exception e) {
+      throw new IllegalArgumentException("Failed to create test RP", e);
+    }
+  }
+
+  /**
+   * Creates an {@link OidcRp} that has two active signing credentials, i.e., one that also has
+   * {@code credentials.signing2} assigned.
+   *
+   * @param entityId the RP entity identifier
+   * @return an {@link OidcRp}
+   */
+  static OidcRp createRpWithTwoSigningKeys(final String entityId) {
+    try {
+      final RSAKey key = generateKey();
+      final PkiCredential credential = new BasicCredential(key.toPublicKey(), key.toPrivateKey());
+      final RSAKey key2 = generateKey();
+      final PkiCredential credential2 = new BasicCredential(key2.toPublicKey(), key2.toPrivateKey());
+      final ClientCredentials credentials = new ClientCredentials(
+          credential, credential2, null, credential, null, credential, credential, credential);
+      return new OidcRp(entityId, "Test RP", "testrp1", credentials, RP_METADATA, entityId + "/redirect",
+          false, entityId + "/jwks", true);
     }
     catch (final Exception e) {
       throw new IllegalArgumentException("Failed to create test RP", e);

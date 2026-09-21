@@ -93,8 +93,10 @@ public class OidcRp {
 
     final JwkTransformerFunction jwkTransformer = new JwkTransformerFunction();
     // TODO: other metadata
-    final JWKSet jwkSet = new JWKSet(JwkUtils.declareUse(
-        jwkTransformer.apply(this.credentials.getCredentialForSigning()), KeyUse.SIGNATURE, null));
+    // All active signing credentials are registered keys of the RP and are published.
+    final JWKSet jwkSet = new JWKSet(this.credentials.getCredentialsForSigning().stream()
+        .map(credential -> JwkUtils.declareUse(jwkTransformer.apply(credential), KeyUse.SIGNATURE, null))
+        .toList());
     this.jwkSet = jwkSet.toPublicJWKSet();
 
     if (this.useJwksUrl) {

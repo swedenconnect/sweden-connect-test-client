@@ -36,6 +36,10 @@ public class ClientCredentials {
   @Getter
   private final PkiCredential signing;
 
+  /** Optional additional, active, signing credential. Used by OIDC RP:s only. */
+  @Getter
+  private final PkiCredential signing2;
+
   /** Optional future signing certificate. */
   @Getter
   private final PkiCredential futureSigning;
@@ -64,6 +68,7 @@ public class ClientCredentials {
    * Constructor.
    *
    * @param signing the signing credential
+   * @param signing2 an additional, active, signing credential (OIDC RP:s only)
    * @param futureSigning the future signing credential (used before key-rollover)
    * @param encryption the encryption credential
    * @param previousEncryption the previous encryption credential (used after key-rollover)
@@ -74,6 +79,7 @@ public class ClientCredentials {
    * @throws IllegalArgumentException if a credential use is missing
    */
   public ClientCredentials(@Nullable final PkiCredential signing,
+      @Nullable final PkiCredential signing2,
       @Nullable final PkiCredential futureSigning,
       @Nullable final PkiCredential encryption,
       @Nullable final PkiCredential previousEncryption,
@@ -81,6 +87,7 @@ public class ClientCredentials {
       @Nullable final PkiCredential defaultCredential,
       @Nonnull final PkiCredential nonRegisteredCredential) throws IllegalArgumentException {
     this.signing = signing;
+    this.signing2 = signing2;
     this.futureSigning = futureSigning;
     this.encryption = encryption;
     this.previousEncryption = previousEncryption;
@@ -110,11 +117,12 @@ public class ClientCredentials {
       @Nullable final ClientCredentialsProperties properties, @Nullable final PkiCredential defaultCredential,
       @Nullable final PkiCredential nonRegisteredCredential) throws Exception {
     if (properties == null) {
-      return new ClientCredentials(null, null, null, null, null, defaultCredential, nonRegisteredCredential);
+      return new ClientCredentials(null, null, null, null, null, null, defaultCredential, nonRegisteredCredential);
     }
     else {
       return new ClientCredentials(
           properties.getSigning() != null ? credentialFactory.createCredential(properties.getSigning()) : null,
+          properties.getSigning2() != null ? credentialFactory.createCredential(properties.getSigning2()) : null,
           properties.getFutureSigning() != null
               ? credentialFactory.createCredential(properties.getFutureSigning())
               : null,
@@ -135,6 +143,35 @@ public class ClientCredentials {
   @Nonnull
   public PkiCredential getCredentialForSigning() {
     return Optional.ofNullable(this.signing).orElseGet(() -> this.defaultCredential);
+  }
+
+  /**
+   * Gets all active signing credentials, i.e., the credential returned by {@link #getCredentialForSigning()} and, if
+   * assigned, the additional signing credential. All of them are registered keys of the client.
+   *
+   * @return a non-empty list of credentials
+   */
+  @Nonnull
+  public List<PkiCredential> getCredentialsForSigning() {
+    final List<PkiCredential> credentials = new ArrayList<>();
+    credentials.add(this.getCredentialForSigning());
+    Optional.ofNullable(this.signing2).ifPresent(credentials::add);
+    return credentials;
+  }
+
+  /**
+   * Asserts that the additional signing credential, if assigned, is not the same key as the credential returned by
+   * {@link #getCredentialForSigning()}.
+   *
+   * @param owner the name of the client owning the credentials, used in the error message
+   * @throws IllegalArgumentException if the same key is assigned twice
+   */
+  public void assertDistinctSigningCredentials(@Nonnull final String owner) throws IllegalArgumentException {
+    if (this.signing2 != null
+        && this.signing2.getPublicKey().equals(this.getCredentialForSigning().getPublicKey())) {
+      throw new IllegalArgumentException(
+          "The signing2 credential of %s is the same key as its signing credential".formatted(owner));
+    }
   }
 
   /**

@@ -113,9 +113,11 @@ public class OidcConfiguration {
 
       final String jwksUri = this.urlBuilder.buildUrl(p.getPathSuffix(), "jwks");
 
-      rps.add(new OidcRp(entityId, p.getDescription(), p.getPathSuffix(),
-          ClientCredentials.create(
-              this.credentialFactory, p.getCredentials(), defaultCredential, nonRegisteredCredential),
+      final ClientCredentials credentials = ClientCredentials.create(
+          this.credentialFactory, p.getCredentials(), defaultCredential, nonRegisteredCredential);
+      credentials.assertDistinctSigningCredentials(entityId);
+
+      rps.add(new OidcRp(entityId, p.getDescription(), p.getPathSuffix(), credentials,
           p.getMetadata(), this.urlBuilder.buildUrl(OidcController.REDIRECTION_URL_BASE, p.getPathSuffix()),
           p.isUseJwksUrl(), jwksUri,
           this.properties.getFederation().isEnabled() && p.isCreateEntityConfiguration()));
