@@ -80,7 +80,7 @@ class AuthorizationParameterResolverTest {
   private static final String RP = "https://rp.example.com";
   private static final String REDIRECT_URI = "https://rp.example.com/oidc/redirect/rp";
   private static final String AUTHORIZATION_ENDPOINT = "https://op.example.com/authorize";
-  private static final String TOKEN_ENDPOINT = "https://op.example.com/token";
+  private static final String OP_ISSUER = "https://op.example.com";
 
   private static final String USER_MESSAGE = "https://id.oidc.se/param/userMessage";
   private static final String SIGN_REQUEST = "https://id.oidc.se/param/signRequest";
@@ -1355,7 +1355,7 @@ class AuthorizationParameterResolverTest {
             .build())
         .requestObject(RequestObjectParamterModel.builder()
             .issuer(new ModelParameter(RP, true, true))
-            .audience(new ModelParameter(TOKEN_ENDPOINT, true, true))
+            .audience(new ModelParameter(OP_ISSUER, true, true))
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false)

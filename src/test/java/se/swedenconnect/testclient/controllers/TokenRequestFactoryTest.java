@@ -60,7 +60,8 @@ class TokenRequestFactoryTest {
 
   private static final String RP = "https://rp.example.com/rp";
   private static final String REDIRECT_URI = RP + "/redirect";
-  private static final String TOKEN_ENDPOINT = "https://op.example.com/token";
+  private static final String OP_ISSUER = "https://op.example.com";
+  private static final String TOKEN_ENDPOINT = OP_ISSUER + "/token";
   private static final String CODE = "the-code";
   private static final String VERIFIER = "the-code-verifier";
   private static final Instant NOW = Instant.ofEpochSecond(1789650256L);
@@ -106,12 +107,12 @@ class TokenRequestFactoryTest {
     final JWTClaimsSet claims = JWTClaimsSet.parse(assertion.getPayload().toJSONObject());
     assertEquals(RP, claims.getIssuer());
     assertEquals(RP, claims.getSubject());
-    assertEquals(List.of(TOKEN_ENDPOINT), claims.getAudience());
+    assertEquals(List.of(OP_ISSUER), claims.getAudience());
     assertEquals(NOW.getEpochSecond(), claims.getIssueTime().toInstant().getEpochSecond());
     assertEquals(NOW.getEpochSecond() + 300, claims.getExpirationTime().toInstant().getEpochSecond());
     assertNotNull(UUID.fromString(claims.getJWTID()));
     // A single audience is a string, as before
-    assertEquals(TOKEN_ENDPOINT, assertion.getPayload().toJSONObject().get("aud"));
+    assertEquals(OP_ISSUER, assertion.getPayload().toJSONObject().get("aud"));
 
     assertEquals(claims.toJSONObject(), request.clientAssertion().claims());
     assertEquals("RS256", request.clientAssertion().header().get("alg"));
@@ -465,7 +466,7 @@ class TokenRequestFactoryTest {
     assertRow("", true, defaults.getClientAssertion());
     assertRow(RP, true, defaults.getAssertionIss());
     assertRow(RP, true, defaults.getAssertionSub());
-    assertRow(TOKEN_ENDPOINT, true, defaults.getAssertionAud());
+    assertRow(OP_ISSUER, true, defaults.getAssertionAud());
     assertRow("", true, defaults.getAssertionIat());
     assertRow("", true, defaults.getAssertionJti());
     assertRow("", true, defaults.getAssertionExp());
@@ -477,7 +478,7 @@ class TokenRequestFactoryTest {
   }
 
   private static TokenRequestParameterModel defaults() {
-    return TokenRequestParameterModel.defaults(RP, REDIRECT_URI, TOKEN_ENDPOINT);
+    return TokenRequestParameterModel.defaults(RP, REDIRECT_URI, OP_ISSUER);
   }
 
   private static SentTokenRequest create(final TokenRequestParameterModel settings) throws TokenRequestException {

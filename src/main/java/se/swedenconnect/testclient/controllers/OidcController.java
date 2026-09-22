@@ -148,7 +148,7 @@ public class OidcController {
         tokenRequestSettings.settings(),
         TokenRequestParameterModel.defaults(selectedRp.getEntityId(),
             Optional.ofNullable(selectedRp.getMetadata().getRedirectionURI()).map(URI::toASCIIString).orElse(null),
-            selectedOp.getTokenEndpoint()));
+            selectedOp.getIssuer()));
 
     final SentTokenRequest tokenRequest;
     try {

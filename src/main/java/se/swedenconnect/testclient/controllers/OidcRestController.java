@@ -290,6 +290,9 @@ public class OidcRestController {
         .toList();
 
 
+    // Both the request object and the client assertion default to having the OP's issuer as audience
+    final String opIssuer = this.fetcher.getIssuer(selectedOp);
+
     return OIDCAuthnRequestParameterModel.builder()
         .op(op)
         .rp(rp)
@@ -313,12 +316,12 @@ public class OidcRestController {
             .moduleEnabled(true).build())
         .requestObject(RequestObjectParamterModel.builder()
             .issuer(new ModelParameter(selectedRp.getEntityId(), true, true))
-            .audience(new ModelParameter(selectedOp.getTokenEndpoint(), true, true))
+            .audience(new ModelParameter(opIssuer, true, true))
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false).build())
         .tokenRequest(TokenRequestParameterModel.defaults(selectedRp.getEntityId(),
-            selectedRp.getMetadata().getRedirectionURI().toASCIIString(), selectedOp.getTokenEndpoint()))
+            selectedRp.getMetadata().getRedirectionURI().toASCIIString(), opIssuer))
         .build();
   }
 

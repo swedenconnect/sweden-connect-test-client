@@ -75,6 +75,7 @@ class OidcSigningKeySelectionTest {
     Mockito.when(this.registry.get(OP)).thenReturn(op);
     this.fetcher = Mockito.mock(OIDCOPMetadataFetcher.class);
     Mockito.when(this.fetcher.getOPJWKS(op)).thenReturn(new JWKSet());
+    Mockito.when(this.fetcher.getIssuer(op)).thenReturn(OP);
   }
 
   @Test
@@ -255,7 +256,7 @@ class OidcSigningKeySelectionTest {
         .signMessage(signRequestInRequestUrl(signKey))
         .requestObject(RequestObjectParamterModel.builder()
             .issuer(new ModelParameter(RP, true, true))
-            .audience(new ModelParameter(OP + "/token", true, true))
+            .audience(new ModelParameter(OP, true, true))
             .signRequest(true)
             .encryptRequest(false)
             .moduleEnabled(true)

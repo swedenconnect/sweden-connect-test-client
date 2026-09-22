@@ -369,6 +369,7 @@ public class OidfService {
 
     return OidcOp.builder()
         .entityId(issuer)
+        .issuer(issuer)
         .displayName(displayName)
         .description(description)
         .authorizationEndpoint(metadata.getAsString("authorization_endpoint"))

@@ -129,7 +129,7 @@ class OidcTokenRequestFlowTest {
     final PkiCredential rpCredential = this.rp.getCredentials().getCredentialForSigning();
     assertTrue(assertion.verify(new RSASSAVerifier((RSAPublicKey) rpCredential.getPublicKey())));
     assertEquals(RP, assertion.getPayload().toJSONObject().get("iss"));
-    assertEquals(TOKEN_ENDPOINT, assertion.getPayload().toJSONObject().get("aud"));
+    assertEquals(OP, assertion.getPayload().toJSONObject().get("aud"));
 
     // The request is recorded as it was sent
     final SentTokenRequest recorded = response.getTokenRequest();
@@ -395,7 +395,7 @@ class OidcTokenRequestFlowTest {
   }
 
   private TokenRequestParameterModel defaults() {
-    return TokenRequestParameterModel.defaults(RP, RP + "/redirect", TOKEN_ENDPOINT);
+    return TokenRequestParameterModel.defaults(RP, RP + "/redirect", OP);
   }
 
   private void recordBody(final org.springframework.http.client.ClientHttpRequest request) {
