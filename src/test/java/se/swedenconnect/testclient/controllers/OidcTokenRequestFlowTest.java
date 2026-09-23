@@ -40,6 +40,7 @@ import org.thymeleaf.standard.serializer.StandardJavaScriptSerializer;
 import se.swedenconnect.security.credential.BasicCredential;
 import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
+import se.swedenconnect.testclient.oidc.OidcOp;
 import se.swedenconnect.testclient.oidc.OidcRp;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -337,11 +338,10 @@ class OidcTokenRequestFlowTest {
   void aTokenResponseThatCannotBeProcessedIsNoLongerReportedAsAnOpError() throws Exception {
     this.server.expect(requestTo(TOKEN_ENDPOINT))
         .andRespond(withSuccess(UserInfoTestSupport.tokenResponse(), MediaType.APPLICATION_JSON));
+    // The recorded request claims are not a JWTClaimsSet - reading them fails the processing
+    this.session.setAttribute("jwt_claims", "not a claims set");
 
-    // Without iss the response parameters cannot be recorded
-    this.controller.handleRedirection(new MockHttpServletRequest(), "rp", null, null, "state", null, "code");
-    final OIDCResponse response =
-        (OIDCResponse) this.session.getAttribute(OidcController.SESSION_NAME_OIDC_RESPONSE);
+    final OIDCResponse response = this.redirect();
 
     assertNull(response.getOpError());
     assertNull(response.getTokenError());
@@ -349,6 +349,143 @@ class OidcTokenRequestFlowTest {
         "The token response from %s could not be processed".formatted(TOKEN_ENDPOINT)), response.getErrors().get(0));
     assertNotNull(response.getTokenRequest());
     assertEquals(ACCESS_TOKEN, response.getResponse().get("access_token"));
+    // The body is still available to the viewer
+    assertEquals(UserInfoTestSupport.tokenResponse(), response.getTokenResponseBody());
+  }
+
+  @Test
+  void anErrorWithoutAMessageIsNamedByItsType() {
+    assertEquals("IllegalStateException", OidcController.message(new IllegalStateException()));
+    assertEquals("Boom", OidcController.message(new IllegalStateException("Boom")));
+  }
+
+  // The iss parameter of the authorization response
+
+  @Test
+  void aMissingIssIsNotAnErrorWhenTheOpDoesNotAdvertiseIt() throws Exception {
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withSuccess(UserInfoTestSupport.tokenResponse(), MediaType.APPLICATION_JSON));
+
+    final OIDCResponse response = this.redirectWithoutIss();
+
+    assertNull(response.getErrors());
+    assertNull(response.getOpError());
+    assertNull(response.getTokenError());
+    assertEquals(ACCESS_TOKEN, response.getAccessToken());
+    assertEquals("196911292032", response.getIdTokenClaims().get(UserInfoTestSupport.PERSONAL_IDENTITY_NUMBER));
+    assertFalse(response.getRequestParameters().containsKey("iss"));
+    assertFalse(response.getResponseParameters().containsKey("iss"));
+  }
+
+  @Test
+  void aMissingIssIsReportedWhenTheOpAdvertisesIt() throws Exception {
+    this.opAdvertisesIss();
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withSuccess(UserInfoTestSupport.tokenResponse(), MediaType.APPLICATION_JSON));
+
+    final OIDCResponse response = this.redirectWithoutIss();
+
+    assertEquals(1, response.getErrors().size());
+    assertTrue(response.getErrors().get(0).contains("no iss parameter"), response.getErrors().get(0));
+    assertTrue(response.getErrors().get(0).contains("authorization_response_iss_parameter_supported"),
+        response.getErrors().get(0));
+    // The result is complete apart from the error
+    assertNull(response.getOpError());
+    assertNull(response.getTokenError());
+    assertEquals(ACCESS_TOKEN, response.getAccessToken());
+    assertEquals("196911292032", response.getIdTokenClaims().get(UserInfoTestSupport.PERSONAL_IDENTITY_NUMBER));
+  }
+
+  @Test
+  void anIssThatIsPresentIsNeverReported() throws Exception {
+    this.opAdvertisesIss();
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withSuccess(UserInfoTestSupport.tokenResponse(), MediaType.APPLICATION_JSON));
+
+    final OIDCResponse response = this.redirect();
+
+    assertNull(response.getErrors());
+    assertEquals(OP, response.getRequestParameters().get("iss"));
+    assertEquals(OP, response.getResponseParameters().get("iss"));
+  }
+
+  // null values in the token response
+
+  @Test
+  void aNullValueInTheTokenResponseIsReportedPerField() throws Exception {
+    final String body = UserInfoTestSupport.tokenResponseWith("\"scope\": null, \"refresh_token\": null");
+    this.server.expect(requestTo(TOKEN_ENDPOINT)).andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+
+    final OIDCResponse response = this.redirect();
+
+    assertEquals(List.of("The token response parameter 'scope' has the JSON value null",
+        "The token response parameter 'refresh_token' has the JSON value null"), response.getErrors());
+    // Everything else is shown as it would be without the null values
+    assertNull(response.getOpError());
+    assertNull(response.getTokenError());
+    assertEquals(ACCESS_TOKEN, response.getAccessToken());
+    assertEquals("196911292032", response.getIdTokenClaims().get(UserInfoTestSupport.PERSONAL_IDENTITY_NUMBER));
+    // The token response keeps the null values as received
+    assertTrue(response.getResponse().containsKey("scope"));
+    assertNull(response.getResponse().get("scope"));
+    assertTrue(response.getResponseParameters().containsKey("refresh_token"));
+    assertEquals(body, response.getTokenResponseBody());
+  }
+
+  @Test
+  void aNullAccessTokenAndIdTokenAreHandledAsIfAbsent() throws Exception {
+    final String body = "{ \"access_token\": null, \"id_token\": null, \"token_type\": \"Bearer\" }";
+    this.server.expect(requestTo(TOKEN_ENDPOINT)).andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+
+    final OIDCResponse response = this.redirect();
+
+    assertEquals(2, response.getErrors().size());
+    assertNull(response.getTokenError());
+    assertNull(response.getAccessToken());
+    assertTrue(response.getIdTokenClaims().isEmpty());
+    assertNotNull(response.getResponseParameters());
+  }
+
+  // The body that "View Token Response" shows
+
+  @Test
+  void theBodyOfASuccessfulTokenResponseIsKept() throws Exception {
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withSuccess(UserInfoTestSupport.tokenResponse(), MediaType.APPLICATION_JSON));
+
+    assertEquals(UserInfoTestSupport.tokenResponse(), this.redirect().getTokenResponseBody());
+  }
+
+  @Test
+  void theBodyOfAnErrorStatusIsKept() throws Exception {
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(ERROR_BODY));
+
+    assertEquals(ERROR_BODY, this.redirect().getTokenResponseBody());
+  }
+
+  @Test
+  void theBodyOfASuccessResponseThatCannotBeReadIsKept() throws Exception {
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withSuccess("<html>Not JSON</html>", MediaType.TEXT_HTML));
+
+    assertEquals("<html>Not JSON</html>", this.redirect().getTokenResponseBody());
+  }
+
+  @Test
+  void noBodyGivesNoTokenResponseBody() throws Exception {
+    this.server.expect(requestTo(TOKEN_ENDPOINT)).andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+
+    assertNull(this.redirect().getTokenResponseBody());
+  }
+
+  @Test
+  void aTokenRequestThatWasNotSentGivesNoTokenResponseBody() throws Exception {
+    this.session.setAttribute(OidcController.SESSION_NAME_TOKEN_REQUEST_SETTINGS,
+        new OidcController.TokenRequestSettings(null, Pair.of("unknown-kid", null)));
+    this.server.expect(never(), anything());
+
+    assertNull(this.redirect().getTokenResponseBody());
   }
 
   @Test
@@ -405,6 +542,17 @@ class OidcTokenRequestFlowTest {
   private Map<String, List<String>> sentParameters() {
     assertEquals(1, this.sentBodies.size());
     return URLUtils.parseParameters(this.sentBodies.get(0));
+  }
+
+  private void opAdvertisesIss() {
+    ((OidcOp) this.session.getAttribute("selected_op")).setIssParameterSupported(true);
+  }
+
+  private OIDCResponse redirectWithoutIss() throws Exception {
+    final String view = this.controller.handleRedirection(new MockHttpServletRequest(), "rp", null, null, "state",
+        null, "code").getViewName();
+    assertEquals("redirect:/", view);
+    return (OIDCResponse) this.session.getAttribute(OidcController.SESSION_NAME_OIDC_RESPONSE);
   }
 
   private OIDCResponse redirect() throws Exception {

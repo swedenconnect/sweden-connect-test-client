@@ -67,6 +67,11 @@ public class OIDCResponse {
   /** Why no tokens were received from the token endpoint, or {@code null} if they were (or were never requested). */
   private TokenEndpointError tokenError;
   private Map<String, Object> response;
+  /**
+   * The body of the token endpoint response as it was received, or {@code null} if no non-empty body was received.
+   * This is what "View Token Response" shows.
+   */
+  private String tokenResponseBody;
   private List<String> errors;
   @JsonProperty("op_error")
   private Boolean opError;

@@ -34,7 +34,9 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -56,6 +58,7 @@ class OidfServiceTest {
   private static final MediaType RESOLVE_RESPONSE = MediaType.parseMediaType("application/resolve-response+jwt");
 
   private List<String> trustChain;
+  private boolean opAdvertisesIss;
   private RSAKey taKey;
   private RSAKey opKey;
   private RSAKey imKey;
@@ -112,6 +115,23 @@ class OidfServiceTest {
     // The trust chain is the one reported by the trust anchor.
     assertEquals(2, op.getTrustChain().size());
     assertNotNull(op.getExpiresAt());
+  }
+
+  @Test
+  void theIssParameterSupportOfAFederationOpIsReadFromTheResolvedMetadata() {
+    this.opAdvertisesIss = true;
+    this.expectFederation();
+
+    assertTrue(this.service.resolveOp(new EntityID(OP), new EntityID(TA)).advertisesIssParameter());
+  }
+
+  @Test
+  void aFederationOpWhoseMetadataDoesNotHoldIssParameterSupportDoesNotAdvertiseIt() {
+    this.expectFederation();
+
+    final OidcOp op = this.service.resolveOp(new EntityID(OP), new EntityID(TA));
+    assertNull(op.getIssParameterSupported());
+    assertFalse(op.advertisesIssParameter());
   }
 
   @Test
@@ -267,6 +287,9 @@ class OidfServiceTest {
     metadata.put("token_endpoint", OP + "/token");
     metadata.put("userinfo_endpoint", OP + "/userinfo");
     metadata.put("jwks", new JSONObject(new JWKSet(this.opKey.toPublicJWK()).toJSONObject()));
+    if (this.opAdvertisesIss) {
+      metadata.put(OidcOp.ISS_PARAMETER_SUPPORTED, true);
+    }
     return metadata;
   }
 

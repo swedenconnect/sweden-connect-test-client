@@ -380,6 +380,7 @@ public class OidfService {
         .trustAnchor(trustAnchor.getValue())
         .trustChain(Optional.ofNullable(chain).map(TrustChain::toSerializedJWTs).orElseGet(List::of))
         .resolvedMetadata(metadata)
+        .issParameterSupported(OidcOp.readIssParameterSupported(metadata))
         .jwks(this.resolveJwks(op, metadata, chain))
         .expiresAt(Optional.ofNullable(resolved.getExpirationTime()).map(Date::toInstant).orElse(null))
         .build();

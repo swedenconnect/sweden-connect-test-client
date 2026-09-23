@@ -48,6 +48,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.net.URI;
 import java.text.ParseException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -170,6 +171,18 @@ public class OidcController {
     }
     final Map<String, Object> tokenResponse = Objects.requireNonNull(tokenResult.tokenResponse());
 
+    // Neither a missing iss nor a null value in the token response stops the processing - they are reported as
+    // errors on the result page along with everything that could be read.
+    final List<String> errors = new ArrayList<>();
+    if (iss == null && selectedOp.advertisesIssParameter()) {
+      errors.add("The authorization response contained no iss parameter, although %s advertises %s"
+          .formatted(selectedOp.getEntityId(), OidcOp.ISS_PARAMETER_SUPPORTED));
+    }
+    tokenResponse.entrySet().stream()
+        .filter(entry -> entry.getValue() == null)
+        .forEach(entry -> errors.add(
+            "The token response parameter '%s' has the JSON value null".formatted(entry.getKey())));
+
     try {
       final String accessToken = tokenResponse.get("access_token") instanceof final String s ? s : null;
       final JWTClaimsSet jwtClaims = (JWTClaimsSet) httpSession.getAttribute("jwt_claims");
@@ -188,7 +201,8 @@ public class OidcController {
       final UserInfoEvaluation userInfo =
           UserInfoEvaluation.evaluate(authRequest, jwtClaims, idTokenClaims, userInfoExchange, false);
 
-      final Map<String, Object> requestParameters = new HashMap<>(Map.of("iss", iss));
+      final Map<String, Object> requestParameters = new HashMap<>();
+      Optional.ofNullable(iss).ifPresent(i -> requestParameters.put("iss", i));
       Optional.ofNullable(state).ifPresent(s -> requestParameters.put("state", s));
 
       Optional.ofNullable(authRequest.getRequestObject())
@@ -212,7 +226,8 @@ public class OidcController {
       requestParameters.put("token_endpoint", selectedOp.getTokenEndpoint());
       requestParameters.put("userInfo_endpoint", selectedOp.getUserInfoEndpoint());
       requestParameters.put("auth_endpoint", selectedOp.getAuthorizationEndpoint());
-      final Map<String, Object> responseParameters = new HashMap<>(Map.copyOf(tokenResponse));
+      // A HashMap, not Map.copyOf - a token response parameter may have the JSON value null
+      final Map<String, Object> responseParameters = new HashMap<>(tokenResponse);
       Optional.ofNullable(state).ifPresent(s -> responseParameters.put("state", s));
       Optional.ofNullable(iss).ifPresent(s -> responseParameters.put("iss", s));
       Optional.ofNullable(code).ifPresent(s -> responseParameters.put("code", s));
@@ -236,7 +251,9 @@ public class OidcController {
           .responseProtection(ProtectionInfo.builder().format("JSON").build())
           .requestParameters(requestParameters)
           .responseParameters(responseParameters)
-          .response(tokenResponse);
+          .response(tokenResponse)
+          .tokenResponseBody(tokenResult.body())
+          .errors(errors.isEmpty() ? null : errors);
 
 
       if (authClaims.isPresent()) {
@@ -258,14 +275,16 @@ public class OidcController {
       return new ModelAndView("redirect:/");
     }
     catch (final RuntimeException e) {
-      log.info("Failed to process the token response from {}: {}", selectedOp.getTokenEndpoint(), e.getMessage());
+      log.info("Failed to process the token response from {}: {}", selectedOp.getTokenEndpoint(), message(e));
+      log.debug("Failed to process the token response from {}", selectedOp.getTokenEndpoint(), e);
+      errors.addFirst("The token response from %s could not be processed: %s"
+          .formatted(selectedOp.getTokenEndpoint(), message(e)));
       httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE, OIDCResponse.builder()
-          .errors(List.of("The token response from %s could not be processed: %s".formatted(
-              selectedOp.getTokenEndpoint(),
-              Optional.ofNullable(e.getMessage()).orElseGet(() -> e.getClass().getSimpleName()))))
+          .errors(errors)
           .authorizationRequest(this.sentRequest(authRequest))
           .tokenRequest(tokenRequest)
           .response(tokenResponse)
+          .tokenResponseBody(tokenResult.body())
           .build());
       return new ModelAndView("redirect:/");
     }
@@ -287,6 +306,7 @@ public class OidcController {
         .tokenError(error)
         .authorizationRequest(this.sentRequest(authRequest))
         .tokenRequest(tokenRequest)
+        .tokenResponseBody(error.getBody())
         .build());
     return new ModelAndView("redirect:/");
   }
@@ -315,6 +335,18 @@ public class OidcController {
       }
       return this.keyOptionsSignKey.getRight();
     }
+  }
+
+  /**
+   * Gets the message of an error. An error without a message is named by its type - so that nothing is reported as
+   * "null".
+   *
+   * @param e the error
+   * @return the message, or the name of the error type
+   */
+  @Nonnull
+  static String message(@Nonnull final Throwable e) {
+    return Optional.ofNullable(e.getMessage()).orElseGet(() -> e.getClass().getSimpleName());
   }
 
   /**

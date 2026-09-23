@@ -536,6 +536,17 @@ class OIDCAuthenticationResult {
             tokenRequestButton.hide();
         }
 
+        const tokenResponseButton = $('#oidc-authn-result-view-token-response');
+        if (resultData.tokenResponseBody) {
+            tokenResponseButton.show().off('click').click(() => {
+                codeViewer.displayParts('Token Response',
+                                        [OIDCAuthenticationResult.tokenResponsePart(resultData.tokenResponseBody)]);
+            });
+        }
+        else {
+            tokenResponseButton.hide();
+        }
+
         if (resultData.errors && resultData.errors.length > 0) {
             const heading = resultErrorDiv.find('.card-header');
             if (resultData.tokenError) {
@@ -566,16 +577,6 @@ class OIDCAuthenticationResult {
         }
         else {
             resultErrorDiv.hide();
-        }
-
-        const viewResponseButton = $('#oidc-authn-result-view-response');
-        if (resultData.response) {
-            viewResponseButton.click(() => {
-                codeViewer.displayJson('OIDC Response', resultData.response);
-            });
-        }
-        else {
-            viewResponseButton.hide();
         }
 
         $('#oidc-authn-result-view-authnrequest-details').click((event) => {
@@ -797,6 +798,21 @@ class OIDCAuthenticationResult {
      * @param tokenRequest the token request as it was sent, as reported by the server
      * @returns {object[]} the parts, see CodeViewer.displayParts()
      */
+    /**
+     * The token endpoint response as a part for the viewer. A body that is JSON is shown formatted, and a body that is
+     * not, for example an HTML error page, is shown as raw text.
+     * @param body the response body as it was received
+     * @returns {object} the part, see CodeViewer.displayParts()
+     */
+    static tokenResponsePart(body) {
+        try {
+            return { json: JSON.parse(body) };
+        }
+        catch (e) {
+            return { text: body };
+        }
+    }
+
     static tokenRequestParts(tokenRequest) {
         const parameters = tokenRequest.parameters || {};
         const parts = [{

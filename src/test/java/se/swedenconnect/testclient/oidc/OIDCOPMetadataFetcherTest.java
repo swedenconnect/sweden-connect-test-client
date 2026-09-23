@@ -92,6 +92,34 @@ class OIDCOPMetadataFetcherTest {
   }
 
   @Test
+  void theIssParameterSupportOfAStaticOpIsReadFromItsMetadata() {
+    this.metadataIs(Map.of("issuer", OP, OidcOp.ISS_PARAMETER_SUPPORTED, true));
+
+    final OidcOp op = this.staticOp();
+    this.fetcher.getIssuer(op);
+    Assertions.assertTrue(op.advertisesIssParameter());
+  }
+
+  @Test
+  void metadataWithoutIssParameterSupportDoesNotAdvertiseIt() {
+    this.metadataIs(Map.of("issuer", OP));
+
+    final OidcOp op = this.staticOp();
+    this.fetcher.getIssuer(op);
+    Assertions.assertNull(op.getIssParameterSupported());
+    Assertions.assertFalse(op.advertisesIssParameter());
+  }
+
+  @Test
+  void metadataThatCanNotBeFetchedDoesNotAdvertiseIssParameterSupport() {
+    this.server.expect(requestTo(METADATA_ENDPOINT)).andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+    final OidcOp op = this.staticOp();
+    this.fetcher.getIssuer(op);
+    Assertions.assertFalse(op.advertisesIssParameter());
+  }
+
+  @Test
   void theIssuerOfAFederationOpIsItsEntityIdentifierAndNoMetadataIsFetched() {
     final OidcOp op = OidcOp.builder()
         .entityId(OP)
