@@ -1398,12 +1398,13 @@
                                 <label class="col-form-label text-sm-right"
                                        for="oidc-request-claims-textarea">Claims</label>
                             </div>
-                            <div class="col-sm-6" id="oidc-claims-textarea-column">
+                            <!-- Hidden until the claims parameter is sent - see updateClaimsPreview() -->
+                            <div class="col-sm-6" id="oidc-claims-textarea-column" style="display: none;">
                             <textarea class="form-control user-message" id="oidc-request-claims-textarea" rows="15"
                                       placeholder="No claims will be sent"></textarea>
                             </div>
                             <!-- Keeps the boxes in place while the preview is hidden -->
-                            <div class="col-sm-6" id="oidc-claims-textarea-spacer" style="display: none;"></div>
+                            <div class="col-sm-6" id="oidc-claims-textarea-spacer"></div>
                             <div class="col-sm-2">
                                 <input type="checkbox" class="form-check-input" id="oidc-request-claims-present">
                                 <label for="oidc-request-claims-present">
