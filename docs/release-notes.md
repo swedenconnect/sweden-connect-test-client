@@ -8,7 +8,7 @@
 
 ### Version 1.0.15
 
-Date: _not yet released_
+Date: 2026-09-23
 
 - A missing `iss` parameter in the authorization response, and a token response field with the JSON value `null`, no
   longer stop the result from being shown. Both are reported as errors on the result page instead.
