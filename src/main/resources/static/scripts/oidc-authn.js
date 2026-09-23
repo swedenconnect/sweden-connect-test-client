@@ -1541,6 +1541,11 @@ class OIDCAuthnRequest {
         this.initValueList(this.valueListRows().acr);
 
         $("#oidc-request-claims-textarea").prop('disabled', true);
+        // An imported request brings its claims in this.pars - they only reach the UI when the rows are built. The
+        // boxes are left as initRequestObjectOptions() set them from this.pars, and computeClaims() then writes the
+        // preview and switches it on or off - until now nothing did that before the user touched a box.
+        this.rebuildClaimRows();
+        this.computeClaims();
 
 
         $('#oidc-request-restart-button').click(() => {
@@ -2036,6 +2041,20 @@ class OIDCAuthnRequest {
         return Object.keys(claimRequest).length > 0 ? claimRequest : null;
     }
 
+    /**
+     * Shows or hides the claims preview area. The preview is only shown when the claims parameter is sent, that is
+     * when "In Request URL" or "In Request Body" is checked on the Claims row. The spacer keeps the two boxes in
+     * place while the preview is hidden.
+     * @returns {boolean} whether the claims parameter is sent, i.e., whether the preview is shown
+     */
+    updateClaimsPreview() {
+        const sent = $("#oidc-request-claims-present").prop("checked")
+            || $("#oidc-request-claims-request-body").prop("checked");
+        $("#oidc-claims-textarea-column").toggle(sent);
+        $("#oidc-claims-textarea-spacer").toggle(!sent);
+        return sent;
+    }
+
     computeClaims() {
         const outerClaims = {};
         const parent = this;
@@ -2069,11 +2088,7 @@ class OIDCAuthnRequest {
         this.pars.claimInRequest = inRequest;
         this.pars.claimInRequestBody = inRequestBody;
 
-        // The preview is only shown when the claims parameter is sent
-        let disabled = !(inRequest || inRequestBody);
-        $("#oidc-claims-textarea-column").toggle(!disabled);
-        $("#oidc-claims-textarea-spacer").toggle(disabled);
-        if (!disabled) {
+        if (this.updateClaimsPreview()) {
             claimsTextArea.prop("value", json);
             claimsTextArea.prop("placeholder", json);
             this.pars.claims = outerClaims;
@@ -3339,14 +3354,15 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Refreshes the claims UI from this.pars.claims and the claims row's two boxes.
-     * Clears and rebuilds claim rows, then calls computeClaims() to sync the textarea.
+     * Clears the claim rows and rebuilds them from this.pars.claims. The boxes of the Claims row are not touched -
+     * this only makes the rows show the claims that are in this.pars.
      */
-    refreshClaims() {
+    rebuildClaimRows() {
         // Clear existing claim rows, keeping the hidden template rows
         $('#oidc-id-claims-table').children().not('[id*="template"]').remove();
         $('#oidc-userinfo-claims-table').children().not('[id*="template"]').remove();
 
+        // A snapshot - computeClaims(), which each added row triggers, replaces this.pars.claims
         const claims = this.pars.claims || {};
 
         for (const [type, location] of [['id', 'id_token'], ['userinfo', 'userinfo']]) {
@@ -3375,6 +3391,14 @@ class OIDCAuthnRequest {
                 }
             }
         }
+    }
+
+    /**
+     * Refreshes the claims UI from this.pars.claims and the claims row's two boxes.
+     * Clears and rebuilds claim rows, then calls computeClaims() to sync the textarea.
+     */
+    refreshClaims() {
+        this.rebuildClaimRows();
 
         if (this.pars.claimInRequest !== undefined && this.pars.claimInRequest !== null) {
             $('#oidc-request-claims-present').prop('checked', this.pars.claimInRequest);
@@ -3384,7 +3408,7 @@ class OIDCAuthnRequest {
         }
 
         // Ensure claims are flagged as present so computeClaims writes them
-        if (Object.keys(claims).length > 0) {
+        if (Object.keys(this.pars.claims || {}).length > 0) {
             this.switchOnClaims();
         }
 
