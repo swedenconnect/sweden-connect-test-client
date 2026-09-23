@@ -10,7 +10,10 @@
 
 Date: _not yet released_
 
--
+- A missing `iss` parameter in the authorization response, and a token response field with the JSON value `null`, no
+  longer stop the result from being shown. Both are reported as errors on the result page instead.
+- A new "View Token Response" button in the Authentication Request card shows the response from the token endpoint,
+  also when it is an error or could not be processed. It replaces "View Response" in the OIDC Response card.
 
 ### Version 1.0.14
 

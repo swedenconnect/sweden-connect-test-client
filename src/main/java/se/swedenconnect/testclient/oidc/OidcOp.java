@@ -43,6 +43,9 @@ import java.util.Optional;
 @Setter
 public class OidcOp {
 
+  /** The OP metadata parameter telling whether {@code iss} is included in authorization responses (RFC 9207). */
+  public static final String ISS_PARAMETER_SUPPORTED = "authorization_response_iss_parameter_supported";
+
   /**
    * How an OP was configured.
    */
@@ -93,6 +96,14 @@ public class OidcOp {
   private Instant expiresAt;
 
   /**
+   * Whether the provider advertises {@value #ISS_PARAMETER_SUPPORTED} in its metadata, i.e., whether it states that
+   * it includes the {@code iss} parameter in its authorization responses (RFC 9207). A {@code null} value means that
+   * the provider's metadata has not been read, or that it does not hold the parameter.
+   */
+  @Nullable
+  private Boolean issParameterSupported;
+
+  /**
    * Gets the issuer identifier of the provider. If the issuer has not been established, the provider's entity
    * identifier is returned.
    *
@@ -111,5 +122,34 @@ public class OidcOp {
    */
   public boolean isIssuerKnown() {
     return this.issuer != null;
+  }
+
+  /**
+   * Tells whether the provider advertises that it includes the {@code iss} parameter in its authorization responses.
+   * A provider whose metadata has not been read, or that does not hold the parameter, does not advertise it.
+   *
+   * @return {@code true} if {@value #ISS_PARAMETER_SUPPORTED} is set in the provider's metadata, and {@code false}
+   *     otherwise
+   */
+  public boolean advertisesIssParameter() {
+    return Boolean.TRUE.equals(this.issParameterSupported);
+  }
+
+  /**
+   * Reads {@value #ISS_PARAMETER_SUPPORTED} from OP metadata.
+   *
+   * @param metadata the OP metadata (may be {@code null})
+   * @return the value of the parameter, or {@code null} if the metadata does not hold it
+   */
+  @Nullable
+  public static Boolean readIssParameterSupported(@Nullable final JSONObject metadata) {
+    final Object value = Optional.ofNullable(metadata).map(m -> m.get(ISS_PARAMETER_SUPPORTED)).orElse(null);
+    if (value instanceof final Boolean bool) {
+      return bool;
+    }
+    if (value instanceof final String string) {
+      return Boolean.valueOf(string);
+    }
+    return null;
   }
 }

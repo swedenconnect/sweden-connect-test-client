@@ -46,9 +46,11 @@ public class TokenRequestSender {
    * The outcome of a token request - either the token response or why it was not received.
    *
    * @param tokenResponse the token response (RFC 6749, section 5.1), or {@code null} if the request failed
+   * @param body the response body as it was received, or {@code null} if no non-empty body was received
    * @param error why the request failed, or {@code null} if the token response was received
    */
-  public record Result(@Nullable Map<String, Object> tokenResponse, @Nullable TokenEndpointError error) {
+  public record Result(@Nullable Map<String, Object> tokenResponse, @Nullable String body,
+      @Nullable TokenEndpointError error) {
   }
 
   /**
@@ -84,7 +86,7 @@ public class TokenRequestSender {
     }
     catch (final Exception e) {
       log.info("Token request to {} failed: {}", request.url(), e.getMessage());
-      return new Result(null, TokenEndpointError.builder()
+      return new Result(null, null, TokenEndpointError.builder()
           .message("The token request to %s failed - no response was received: %s".formatted(request.url(),
               Optional.ofNullable(e.getMessage()).orElseGet(() -> e.getClass().getSimpleName())))
           .build());
@@ -96,7 +98,7 @@ public class TokenRequestSender {
 
     if (!response.getStatusCode().is2xxSuccessful()) {
       log.info("Token request to {} was answered with status {}", request.url(), status);
-      return new Result(null, TokenEndpointError.builder()
+      return new Result(null, responseBody, TokenEndpointError.builder()
           .message("The token endpoint %s answered the token request with an error".formatted(request.url()))
           .httpStatus(status)
           .error(stringClaim(json, "error"))
@@ -106,14 +108,14 @@ public class TokenRequestSender {
     }
     if (json == null) {
       log.info("Token response from {} could not be read", request.url());
-      return new Result(null, TokenEndpointError.builder()
+      return new Result(null, responseBody, TokenEndpointError.builder()
           .message("The token endpoint %s answered the token request, but the response could not be read as a JSON"
               .formatted(request.url()) + " object")
           .httpStatus(status)
           .body(responseBody)
           .build());
     }
-    return new Result(json, null);
+    return new Result(json, responseBody, null);
   }
 
   @Nullable

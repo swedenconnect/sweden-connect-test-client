@@ -62,6 +62,9 @@ public class OIDCOPMetadataFetcher {
    * configured OP:s it is the {@code issuer} of the OP's metadata. If the metadata can not be fetched, or holds no
    * {@code issuer}, the OP's configured entity identifier is used.
    * </p>
+   * <p>
+   * When the metadata is read, {@value OidcOp#ISS_PARAMETER_SUPPORTED} is kept on the OP as well.
+   * </p>
    *
    * @param oidcOp the OP
    * @return the issuer identifier
@@ -73,6 +76,7 @@ public class OIDCOPMetadataFetcher {
     }
     try {
       final JSONObject metadata = this.getOPMetadata(oidcOp);
+      oidcOp.setIssParameterSupported(OidcOp.readIssParameterSupported(metadata));
       final String issuer = Objects.nonNull(metadata) ? metadata.getAsString("issuer") : null;
       if (Objects.nonNull(issuer) && !issuer.isBlank()) {
         oidcOp.setIssuer(issuer);

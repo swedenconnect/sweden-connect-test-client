@@ -125,6 +125,15 @@ final class UserInfoTestSupport {
         { "access_token": "%s", "token_type": "Bearer", "id_token": "%s" }""".formatted(ACCESS_TOKEN, idToken);
   }
 
+  /**
+   * The token response of {@link #tokenResponse()} with extra top-level fields, given as raw JSON (for example
+   * {@code "scope": null}).
+   */
+  static String tokenResponseWith(final String extraFields) {
+    final String response = tokenResponse();
+    return response.substring(0, response.lastIndexOf('}')) + ", " + extraFields + " }";
+  }
+
   static Map<String, Object> idTokenClaims() {
     return Map.of("sub", "user", PERSONAL_IDENTITY_NUMBER, "196911292032");
   }
