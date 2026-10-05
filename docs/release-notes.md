@@ -10,7 +10,11 @@
 
 Date: _not yet released_
 
--
+- A trust mark that could not be fetched is tried again after a short retry interval (`trust-mark-retry-interval`,
+  default one minute), and the entity configuration gets the trust mark as soon as it has been obtained. Before, the
+  RP could be left without its trust mark until restarted.
+- `POST /oidc/federation/refresh` also fetches the trust marks of the RP:s again. Neither that endpoint nor
+  `trust-marks/refresh` drops a valid trust mark if the issuer can not be reached.
 
 ### Version 1.0.15
 

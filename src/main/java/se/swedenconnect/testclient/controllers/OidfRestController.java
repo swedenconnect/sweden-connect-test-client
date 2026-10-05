@@ -144,7 +144,8 @@ public class OidfRestController {
   }
 
   /**
-   * Re-runs the discovery and resolution of the federation OP:s.
+   * Re-runs the discovery and resolution of the federation OP:s, and fetches the trust marks of our RP:s again
+   * before their entity configurations are signed anew.
    *
    * @return a {@link FederationInfoModel}
    */
@@ -158,18 +159,19 @@ public class OidfRestController {
       final OidfService.FederationRefreshResult result = this.federationService.refreshOps();
       this.opRegistry.updateFederationOps(result.ops(), result.failures(), result.errors());
     }
+    this.entityConfigurationFactory.refresh(this.rps);
     return this.getInfo();
   }
 
   /**
-   * Discards the cached trust marks and entity configurations, meaning that the trust marks are fetched from their
-   * issuers again.
+   * Fetches the trust marks of our RP:s again and signs their entity configurations anew. A trust mark that an RP
+   * already holds is kept if it can not be renewed.
    *
    * @return a {@link FederationInfoModel}
    */
   @PostMapping(value = "/trust-marks/refresh", produces = MediaType.APPLICATION_JSON_VALUE)
   public FederationInfoModel refreshTrustMarks() {
-    this.entityConfigurationFactory.clearCache();
+    this.entityConfigurationFactory.refresh(this.rps);
     return this.getInfo();
   }
 

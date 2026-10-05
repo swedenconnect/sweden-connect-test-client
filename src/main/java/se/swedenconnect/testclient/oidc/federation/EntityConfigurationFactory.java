@@ -30,7 +30,7 @@ import se.swedenconnect.testclient.config.OidfProperties;
 import se.swedenconnect.testclient.oidc.OidcRp;
 
 import java.net.URI;
-import java.time.Duration;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -79,7 +79,8 @@ public class EntityConfigurationFactory {
 
   /**
    * Gets the entity configuration for the supplied RP. A cached statement is returned as long as it has not passed
-   * half its validity time.
+   * half its validity time and holds the trust marks that the RP currently has. When a trust mark is obtained,
+   * renewed or expires, the entity configuration is signed again.
    *
    * @param rp the Relying Party
    * @return an {@link EntityStatement}
@@ -88,23 +89,39 @@ public class EntityConfigurationFactory {
   @Nonnull
   public EntityStatement getEntityConfiguration(@Nonnull final OidcRp rp) {
     assertHasEntityConfiguration(rp);
+    final List<TrustMarkResolver.ResolvedTrustMark> trustMarks = this.getTrustMarks(rp);
+    final List<String> published = publishable(trustMarks, this.now());
     final CachedConfiguration cached = this.cache.get(rp.getEntityId());
-    if (cached != null && Instant.now().isBefore(cached.renewAt())) {
+    if (cached != null && this.now().isBefore(cached.renewAt()) && cached.trustMarks().equals(published)) {
       return cached.statement();
     }
-    final EntityStatement statement = this.createEntityConfiguration(rp);
-    this.cache.put(rp.getEntityId(), new CachedConfiguration(statement, this.renewalTimeFor(statement)));
+    final EntityStatement statement = this.createEntityConfiguration(rp, trustMarks);
+    this.cache.put(rp.getEntityId(), new CachedConfiguration(statement, this.renewalTimeFor(statement), published));
     return statement;
   }
 
   /**
-   * Discards all cached entity configurations (and trust marks), meaning that they are created anew the next time
-   * they are asked for.
+   * Fetches the trust marks of the supplied RP:s again and signs their entity configurations anew. A trust mark
+   * that an RP already holds is kept if it can not be renewed. RP:s that have no entity configuration are ignored.
+   *
+   * @param rps the Relying Parties
    */
-  public void clearCache() {
-    this.cache.clear();
-    if (this.trustMarkResolver != null) {
-      this.trustMarkResolver.clearCache();
+  public void refresh(@Nonnull final List<OidcRp> rps) {
+    for (final OidcRp rp : rps) {
+      if (!rp.hasEntityConfiguration()) {
+        continue;
+      }
+      if (this.trustMarkResolver != null) {
+        this.trustMarkResolver.refresh(rp);
+      }
+      this.cache.remove(rp.getEntityId());
+      try {
+        this.getEntityConfiguration(rp);
+      }
+      catch (final IllegalArgumentException e) {
+        // The reason (a missing required trust mark) has already been logged when the trust mark was fetched.
+        log.debug("No entity configuration created for {}: {}", rp.getEntityId(), e.getMessage());
+      }
     }
   }
 
@@ -142,8 +159,21 @@ public class EntityConfigurationFactory {
   @Nonnull
   public EntityStatement createEntityConfiguration(@Nonnull final OidcRp rp) {
     assertHasEntityConfiguration(rp);
+    return this.createEntityConfiguration(rp, this.getTrustMarks(rp));
+  }
+
+  /**
+   * Creates a freshly signed entity configuration for the supplied RP holding the supplied trust marks.
+   *
+   * @param rp the Relying Party
+   * @param trustMarks the trust marks of the RP
+   * @return an {@link EntityStatement}
+   */
+  @Nonnull
+  private EntityStatement createEntityConfiguration(@Nonnull final OidcRp rp,
+      @Nonnull final List<TrustMarkResolver.ResolvedTrustMark> trustMarks) {
     final OidfSigner signer = this.getSigner(rp);
-    final Instant issuedAt = Instant.now();
+    final Instant issuedAt = this.now();
     final Instant expiresAt = issuedAt.plus(this.properties.getEntityConfigurationValidity());
 
     final EntityID entityId = new EntityID(rp.getEntityId());
@@ -154,7 +184,7 @@ public class EntityConfigurationFactory {
       claims.setAuthorityHints(this.authorityHints);
     }
     claims.setMetadata(EntityType.OPENID_RELYING_PARTY, this.rpMetadata(rp));
-    this.assignTrustMarks(claims, rp);
+    this.assignTrustMarks(claims, rp, trustMarks);
     Optional.ofNullable(this.federationEntityMetadata()).ifPresent(claims::setFederationEntityMetadata);
 
     try {
@@ -185,13 +215,14 @@ public class EntityConfigurationFactory {
    *
    * @param claims the claims of the entity configuration
    * @param rp the Relying Party
+   * @param trustMarks the trust marks of the RP
    */
-  private void assignTrustMarks(@Nonnull final EntityStatementClaimsSet claims, @Nonnull final OidcRp rp) {
-    final List<TrustMarkResolver.ResolvedTrustMark> trustMarks = this.getTrustMarks(rp);
+  private void assignTrustMarks(@Nonnull final EntityStatementClaimsSet claims, @Nonnull final OidcRp rp,
+      @Nonnull final List<TrustMarkResolver.ResolvedTrustMark> trustMarks) {
     if (trustMarks.isEmpty()) {
       return;
     }
-    final Instant now = Instant.now();
+    final Instant now = this.now();
     final JSONArray entries = new JSONArray();
     for (final TrustMarkResolver.ResolvedTrustMark trustMark : trustMarks) {
       if (trustMark.isValidAt(now)) {
@@ -203,7 +234,8 @@ public class EntityConfigurationFactory {
                 trustMark.trustMarkType(), rp.getEntityId(), trustMark.error()));
       }
       else {
-        log.warn("Publishing the entity configuration for {} without the trust mark {}",
+        // The reason has already been logged when the trust mark was fetched.
+        log.debug("Publishing the entity configuration for {} without the trust mark {}",
             rp.getEntityId(), trustMark.trustMarkType());
       }
     }
@@ -261,8 +293,9 @@ public class EntityConfigurationFactory {
   }
 
   /**
-   * Calculates when an entity configuration should be created anew - when it has passed half its validity time, or,
-   * if it holds trust marks, when the trust marks should be fetched again.
+   * Calculates when an entity configuration should be created anew - when it has passed half its validity time.
+   * Changes to the trust marks are detected when the entity configuration is asked for (see
+   * {@link #getEntityConfiguration(OidcRp)}).
    *
    * @param statement the entity configuration
    * @return the time when it should be renewed
@@ -271,16 +304,35 @@ public class EntityConfigurationFactory {
   private Instant renewalTimeFor(@Nonnull final EntityStatement statement) {
     final Date expirationTime = statement.getClaimsSet().getExpirationTime();
     if (expirationTime == null) {
-      return Instant.now();
+      return this.now();
     }
-    final Duration halfValidity = this.properties.getEntityConfigurationValidity().dividedBy(2);
-    final Instant renewAt = expirationTime.toInstant().minus(halfValidity);
-    if (!statement.getClaimsSet().toJSONObject().containsKey("trust_marks")) {
-      return renewAt;
-    }
-    // A cached entity configuration must not outlive the trust marks it holds.
-    final Instant trustMarkRenewal = Instant.now().plus(this.properties.getTrustMarkRefreshInterval());
-    return trustMarkRenewal.isBefore(renewAt) ? trustMarkRenewal : renewAt;
+    return expirationTime.toInstant().minus(this.properties.getEntityConfigurationValidity().dividedBy(2));
+  }
+
+  /**
+   * Gets the trust marks that are published, i.e., the ones that are valid at the given time.
+   *
+   * @param trustMarks the trust marks of an RP
+   * @param now the current time
+   * @return the serialized trust marks that are published
+   */
+  @Nonnull
+  private static List<String> publishable(@Nonnull final List<TrustMarkResolver.ResolvedTrustMark> trustMarks,
+      @Nonnull final Instant now) {
+    return trustMarks.stream()
+        .filter(tm -> tm.isValidAt(now))
+        .map(tm -> tm.trustMark().serialize())
+        .toList();
+  }
+
+  /**
+   * Gets the current time - from the clock of the trust mark resolver, if there is one.
+   *
+   * @return the current time
+   */
+  @Nonnull
+  private Instant now() {
+    return this.trustMarkResolver != null ? this.trustMarkResolver.getClock().instant() : Instant.now();
   }
 
   /**
@@ -288,8 +340,10 @@ public class EntityConfigurationFactory {
    *
    * @param statement the entity configuration
    * @param renewAt when it should be created anew
+   * @param trustMarks the serialized trust marks that it holds
    */
-  private record CachedConfiguration(@Nonnull EntityStatement statement, @Nonnull Instant renewAt) {
+  private record CachedConfiguration(@Nonnull EntityStatement statement, @Nonnull Instant renewAt,
+      @Nonnull List<String> trustMarks) {
   }
 
 }

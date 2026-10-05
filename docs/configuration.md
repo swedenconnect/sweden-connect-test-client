@@ -461,6 +461,13 @@ expired. It is then cached until it expires, and at most for `trust-mark-refresh
 obtained, the entity configuration is published without it, unless the trust mark is declared as `required`, in which
 case no entity configuration is published at all for that RP.
 
+A failed fetch is logged and tried again after `trust-mark-retry-interval`, so a trust mark issuer that is not up when
+the test client starts does not leave the RP without its trust mark. If the renewal of a trust mark that the RP already
+holds fails, the current trust mark is kept until it expires, and the renewal is retried at the same interval. Whenever
+a trust mark is obtained, renewed or expires, the entity configuration of the RP is signed again, so that it always
+holds the current trust marks. The fetching is made when the entity configuration is asked for, so the trust mark
+appears in the first entity configuration that is asked for after the retry interval has passed.
+
 | Property | Description | Type | Default value |
 | :--- | :--- | :--- | :--- |
 | `trust-marks[]` | The trust marks published in the entity configurations of our RP:s. An RP may declare its own list under `testclient.oidc.rps[].trust-marks`, and in that case this list is not used for that RP. | List | empty |
@@ -470,6 +477,7 @@ case no entity configuration is published at all for that RP.
 | `trust-marks[].value` | A pre-issued trust mark, i.e., a signed JWT received out-of-band. If assigned, the trust mark is published as it is and nothing is fetched from the issuer. | String | - |
 | `trust-marks[].required` | Whether the trust mark is required. If a required trust mark can not be obtained, no entity configuration is published for the RP. | Boolean | `false` |
 | `trust-mark-refresh-interval` | How long a fetched trust mark is used before it is fetched again. A trust mark that expires before this interval has passed is re-fetched when it expires. | Duration | `1h` |
+| `trust-mark-retry-interval` | How long to wait before trying again when a trust mark could not be fetched. A trust mark that the RP already holds is kept until it expires while the renewal is retried. | Duration | `1m` |
 
 The trust marks are published with the trust mark type both as `trust_mark_type`, which is what OpenID Federation 1.0
 uses, and as `id`, which is what the drafts that preceded it used. The Sweden Connect federation services read the
@@ -483,8 +491,8 @@ understand the entry.
 | :--- | :--- |
 | `GET /{rp-path-suffix}/.well-known/openid-federation` | The entity configuration of an RP. |
 | `GET /oidc/federation/info` | Our federation entities, including their trust marks, the trust anchors, and the status of the OP:s discovered from the federation. |
-| `POST /oidc/federation/trust-marks/refresh` | Discards the cached trust marks and entity configurations, so that the trust marks are fetched from their issuers again. |
-| `POST /oidc/federation/refresh` | Re-runs the discovery and resolution of the federation OP:s. This also happens automatically at `refresh-interval`. |
+| `POST /oidc/federation/trust-marks/refresh` | Fetches the trust marks of our RP:s from their issuers again and signs the entity configurations anew. A trust mark that an RP already holds is kept if it can not be renewed. |
+| `POST /oidc/federation/refresh` | Re-runs the discovery and resolution of the federation OP:s, and then does what `trust-marks/refresh` does. The OP discovery also runs automatically at `refresh-interval`, without fetching the trust marks. |
 | `GET /oidc/federation/chain?entity_id=&trust_anchor=` | The trust chain of an entity, as reported by the trust anchor, both serialized and decoded. |
 | `GET /oidc/federation/entity-configuration?entity_id=` | The entity configuration of an entity, ours or a remote one. |
 

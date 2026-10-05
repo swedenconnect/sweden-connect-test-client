@@ -131,6 +131,14 @@ public class OidfProperties implements InitializingBean {
   @Setter
   private Duration trustMarkRefreshInterval = Duration.ofHours(1);
 
+  /**
+   * How long to wait before trying again when a trust mark could not be fetched. A trust mark that the RP already
+   * holds is kept until it expires while the renewal is retried.
+   */
+  @Getter
+  @Setter
+  private Duration trustMarkRetryInterval = Duration.ofMinutes(1);
+
   @Override
   public void afterPropertiesSet() {
     if (this.enabled) {
@@ -146,6 +154,8 @@ public class OidfProperties implements InitializingBean {
       this.trustMarks.forEach(TrustMarkProperties::afterPropertiesSet);
       Assert.notNull(this.trustMarkRefreshInterval,
           "testclient.oidc.federation.trust-mark-refresh-interval must be set");
+      Assert.isTrue(this.trustMarkRetryInterval != null && this.trustMarkRetryInterval.isPositive(),
+          "testclient.oidc.federation.trust-mark-retry-interval must be set to a positive duration");
     }
   }
 

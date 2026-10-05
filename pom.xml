@@ -63,7 +63,7 @@
     <spring.boot.version>4.1.1</spring.boot.version>
 
     <credentials-support.version>2.2.1</credentials-support.version>
-    <bc.version>1.85</bc.version>
+    <bc.version>1.86</bc.version>
     <opensaml-addons.version>2.2.1</opensaml-addons.version>
   </properties>
 
@@ -110,7 +110,7 @@
       <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
-        <version>10.9.1</version>
+        <version>10.10</version>
       </dependency>
 
       <dependency>

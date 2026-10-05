@@ -29,15 +29,20 @@ import se.swedenconnect.testclient.config.OidfProperties;
 import se.swedenconnect.testclient.oidc.OidcRp;
 import se.swedenconnect.testclient.oidc.federation.TrustMarkResolver.ResolvedTrustMark;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
@@ -244,11 +249,171 @@ class TrustMarkResolverTest {
         Map.of(rpWithoutEc.getPathSuffix(), List.of(trustMarkProperties())));
 
     assertTrue(resolver.resolve(rpWithoutEc).isEmpty());
-    resolver.clearCache();
-    assertTrue(resolver.resolve(rpWithoutEc).isEmpty());
+    assertTrue(resolver.refresh(rpWithoutEc).isEmpty());
 
     // No expectations were set up - any request to the issuer would fail the verification.
     this.server.verify();
+  }
+
+  @Test
+  void theDefaultRetryIntervalIsOneMinute() {
+    assertEquals(Duration.ofMinutes(1), new OidfProperties().getTrustMarkRetryInterval());
+  }
+
+  @Test
+  void aFailedFetchIsRetriedAfterTheRetryInterval() {
+    final TestFederation.TestClock clock = new TestFederation.TestClock();
+    final TrustMarkResolver resolver = this.resolver(clock);
+
+    // The issuer is down - the failure is reported, and no new attempt is made within the retry interval.
+    this.expectIssuerDown();
+    assertNotNull(resolver.resolve(this.rp).get(0).error());
+    clock.advance(Duration.ofSeconds(59));
+    assertNull(resolver.resolve(this.rp).get(0).trustMark());
+    this.server.verify();
+
+    // The issuer is up again - the trust mark is fetched once the retry interval has passed.
+    this.server.reset();
+    this.expectIssuerUp(Instant.now().plus(Duration.ofHours(2)));
+    clock.advance(Duration.ofSeconds(1));
+    final ResolvedTrustMark resolved = resolver.resolve(this.rp).get(0);
+    assertNull(resolved.error());
+    assertNotNull(resolved.trustMark());
+    this.server.verify();
+  }
+
+  @Test
+  void theRetryIntervalIsConfigurable() {
+    this.properties.setTrustMarkRetryInterval(Duration.ofMinutes(5));
+    final TestFederation.TestClock clock = new TestFederation.TestClock();
+    final TrustMarkResolver resolver = this.resolver(clock);
+
+    this.expectIssuerDown();
+    assertNull(resolver.resolve(this.rp).get(0).trustMark());
+    clock.advance(Duration.ofMinutes(4));
+    assertNull(resolver.resolve(this.rp).get(0).trustMark());
+    this.server.verify();
+
+    this.server.reset();
+    this.expectIssuerUp(Instant.now().plus(Duration.ofHours(2)));
+    clock.advance(Duration.ofMinutes(1));
+    assertNotNull(resolver.resolve(this.rp).get(0).trustMark());
+    this.server.verify();
+  }
+
+  @Test
+  void aFailedRenewalKeepsTheCurrentTrustMarkAndIsRetried() {
+    final TestFederation.TestClock clock = new TestFederation.TestClock();
+    final TrustMarkResolver resolver = this.resolver(clock);
+
+    this.expectIssuerUp(Instant.now().plus(Duration.ofHours(3)));
+    final ResolvedTrustMark first = resolver.resolve(this.rp).get(0);
+    assertNotNull(first.trustMark());
+    this.server.verify();
+
+    // The regular renewal (after the refresh interval) fails - the current trust mark is kept.
+    this.server.reset();
+    this.expectIssuerDown();
+    clock.advance(this.properties.getTrustMarkRefreshInterval());
+    assertSame(first, resolver.resolve(this.rp).get(0));
+    clock.advance(Duration.ofSeconds(59));
+    assertSame(first, resolver.resolve(this.rp).get(0));
+    this.server.verify();
+
+    // The retry succeeds - the trust mark is replaced.
+    this.server.reset();
+    this.expectIssuerUp(Instant.now().plus(Duration.ofHours(4)));
+    clock.advance(Duration.ofSeconds(1));
+    final ResolvedTrustMark renewed = resolver.resolve(this.rp).get(0);
+    assertNotNull(renewed.trustMark());
+    assertNotEquals(first.trustMark().serialize(), renewed.trustMark().serialize());
+    this.server.verify();
+  }
+
+  @Test
+  void aKeptTrustMarkIsDroppedWhenItExpires() {
+    this.properties.setTrustMarkRefreshInterval(Duration.ofSeconds(60));
+    final TestFederation.TestClock clock = new TestFederation.TestClock();
+    final TrustMarkResolver resolver = this.resolver(clock);
+
+    final Instant expiresAt = clock.instant().plusSeconds(90);
+    this.expectIssuerUp(expiresAt);
+    final ResolvedTrustMark first = resolver.resolve(this.rp).get(0);
+    assertNotNull(first.trustMark());
+    this.server.verify();
+
+    // The renewal fails - the trust mark is kept, and the next attempt is made when it expires (before the retry
+    // interval has passed).
+    this.server.reset();
+    this.expectIssuerDown();
+    clock.advance(Duration.ofSeconds(60));
+    assertSame(first, resolver.resolve(this.rp).get(0));
+    this.server.verify();
+
+    this.server.reset();
+    this.expectIssuerDown();
+    clock.advance(Duration.ofSeconds(30));
+    final ResolvedTrustMark expired = resolver.resolve(this.rp).get(0);
+    assertNull(expired.trustMark());
+    assertNotNull(expired.error());
+    assertFalse(expired.isValidAt(clock.instant()));
+    this.server.verify();
+  }
+
+  @Test
+  void refreshFetchesTheTrustMarkAgain() {
+    final TestFederation.TestClock clock = new TestFederation.TestClock();
+    final TrustMarkResolver resolver = this.resolver(clock);
+
+    this.expectIssuerUp(Instant.now().plus(Duration.ofHours(2)));
+    final ResolvedTrustMark first = resolver.resolve(this.rp).get(0);
+    this.server.verify();
+
+    // Not due - but refresh fetches it anyway.
+    this.server.reset();
+    this.expectIssuerUp(Instant.now().plus(Duration.ofHours(3)));
+    final ResolvedTrustMark refreshed = resolver.refresh(this.rp).get(0);
+    assertNotNull(refreshed.trustMark());
+    assertNotEquals(first.trustMark().serialize(), refreshed.trustMark().serialize());
+    this.server.verify();
+
+    // A refresh with the issuer down keeps the current trust mark.
+    this.server.reset();
+    this.expectIssuerDown();
+    assertSame(refreshed, resolver.refresh(this.rp).get(0));
+    this.server.verify();
+  }
+
+  @Test
+  void refreshRetriesAFailedFetchAtOnce() {
+    final TestFederation.TestClock clock = new TestFederation.TestClock();
+    final TrustMarkResolver resolver = this.resolver(clock);
+
+    this.expectIssuerDown();
+    assertNull(resolver.resolve(this.rp).get(0).trustMark());
+    this.server.verify();
+
+    this.server.reset();
+    this.expectIssuerUp(Instant.now().plus(Duration.ofHours(2)));
+    assertNotNull(resolver.refresh(this.rp).get(0).trustMark());
+    this.server.verify();
+  }
+
+  private TrustMarkResolver resolver(final TestFederation.TestClock clock) {
+    this.properties.getTrustMarks().add(trustMarkProperties());
+    return new TrustMarkResolver(this.properties, this.client, Map.of(), clock);
+  }
+
+  private void expectIssuerDown() {
+    this.server.expect(ExpectedCount.once(), requestTo(TMI + "/.well-known/openid-federation"))
+        .andRespond(withServerError());
+  }
+
+  private void expectIssuerUp(final Instant expiresAt) {
+    this.expectIssuerConfiguration(ExpectedCount.once());
+    this.expectTrustMark(ExpectedCount.once(),
+        TestFederation.trustMark(TMI, this.tmiKey, RP_ENTITY_ID, TRUST_MARK_TYPE, expiresAt, "trust_mark_type"),
+        TRUST_MARK);
   }
 
   private TrustMarkResolver resolver() {

@@ -30,6 +30,8 @@ import se.swedenconnect.testclient.oidc.OidcRp;
 
 import java.net.URI;
 import java.text.ParseException;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -45,6 +47,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * endpoint of its issuer. Fetched trust marks are validated - they must be signed by the issuer, be issued about the
  * RP, hold the requested trust mark type and not have expired - and are then cached until they expire (or at most
  * for the configured refresh interval).
+ * </p>
+ * <p>
+ * A trust mark that could not be obtained is fetched again after the configured retry interval. If the RP already
+ * holds a valid trust mark of the same type, that one is kept until it expires while the renewal is retried.
  * </p>
  * <p>
  * Trust marks, and the entity configurations they are read from, are handled as {@link SignedJWT}:s rather than as
@@ -81,8 +87,11 @@ public class TrustMarkResolver {
   /** The trust marks declared by the individual RP:s - keyed by the RP path suffix. */
   private final Map<String, List<TrustMarkProperties>> rpTrustMarks;
 
-  /** Cached trust marks - keyed by RP entity identifier and trust mark type. */
+  /** Cached trust marks, and failed attempts to get them - keyed by RP entity identifier and trust mark type. */
   private final Map<String, CachedTrustMark> cache = new ConcurrentHashMap<>();
+
+  /** The clock. */
+  private final Clock clock;
 
   /**
    * Constructor.
@@ -94,9 +103,23 @@ public class TrustMarkResolver {
    */
   public TrustMarkResolver(@Nonnull final OidfProperties properties, @Nonnull final OidfClient client,
       @Nonnull final Map<String, List<TrustMarkProperties>> rpTrustMarks) {
+    this(properties, client, rpTrustMarks, Clock.systemUTC());
+  }
+
+  /**
+   * Constructor accepting the clock to use (for testing).
+   *
+   * @param properties the federation settings
+   * @param client the federation HTTP client
+   * @param rpTrustMarks the trust marks declared by the individual RP:s, keyed by RP path suffix
+   * @param clock the clock
+   */
+  TrustMarkResolver(@Nonnull final OidfProperties properties, @Nonnull final OidfClient client,
+      @Nonnull final Map<String, List<TrustMarkProperties>> rpTrustMarks, @Nonnull final Clock clock) {
     this.properties = properties;
     this.client = client;
     this.rpTrustMarks = Map.copyOf(rpTrustMarks);
+    this.clock = clock;
   }
 
   /**
@@ -123,10 +146,32 @@ public class TrustMarkResolver {
   }
 
   /**
-   * Discards all cached trust marks, meaning that they are fetched again the next time they are needed.
+   * Fetches the trust marks of the supplied RP again, whether they are due or not. A trust mark that the RP already
+   * holds is kept if it can not be renewed.
+   *
+   * @param rp the Relying Party
+   * @return the trust marks
    */
-  public void clearCache() {
-    this.cache.clear();
+  @Nonnull
+  public List<ResolvedTrustMark> refresh(@Nonnull final OidcRp rp) {
+    if (!rp.hasEntityConfiguration()) {
+      return List.of();
+    }
+    for (final TrustMarkProperties tm : this.trustMarksFor(rp)) {
+      this.cache.computeIfPresent(cacheKey(rp, tm),
+          (key, cached) -> new CachedTrustMark(cached.trustMark(), Instant.EPOCH));
+    }
+    return this.resolve(rp);
+  }
+
+  /**
+   * Gets the clock that the resolver uses.
+   *
+   * @return the clock
+   */
+  @Nonnull
+  Clock getClock() {
+    return this.clock;
   }
 
   /**
@@ -142,26 +187,52 @@ public class TrustMarkResolver {
     return declared != null && !declared.isEmpty() ? declared : this.properties.getTrustMarks();
   }
 
+  /**
+   * Gets a trust mark - from the cache, or from its issuer if it is due for renewal or retry.
+   * <p>
+   * The method is synchronized so that concurrent requests for an entity configuration do not make one attempt
+   * each against the issuer.
+   * </p>
+   *
+   * @param rp the Relying Party
+   * @param tm the trust mark settings
+   * @return the trust mark
+   */
   @Nonnull
-  private ResolvedTrustMark resolve(@Nonnull final OidcRp rp, @Nonnull final TrustMarkProperties tm) {
-    final String cacheKey = rp.getEntityId() + "|" + tm.getTrustMarkType();
+  private synchronized ResolvedTrustMark resolve(@Nonnull final OidcRp rp, @Nonnull final TrustMarkProperties tm) {
+    final String cacheKey = cacheKey(rp, tm);
     final CachedTrustMark cached = this.cache.get(cacheKey);
-    if (cached != null && Instant.now().isBefore(cached.refreshAt())) {
+    if (cached != null && this.clock.instant().isBefore(cached.refreshAt())) {
       return cached.trustMark();
     }
     final ResolvedTrustMark resolved = this.get(rp, tm);
-    if (resolved.trustMark() == null) {
-      // Nothing to cache - but keep a valid trust mark from an earlier round rather than dropping it because the
-      // issuer was unavailable this time.
-      if (cached != null && cached.trustMark().isValidAt(Instant.now())) {
-        log.warn("Failed to refresh trust mark {} for {} - keeping the one we already have: {}",
-            tm.getTrustMarkType(), rp.getEntityId(), resolved.error());
-        return cached.trustMark();
-      }
+    final Instant now = this.clock.instant();
+    if (resolved.trustMark() != null) {
+      this.cache.put(cacheKey, new CachedTrustMark(resolved, this.refreshTimeFor(resolved)));
       return resolved;
     }
-    this.cache.put(cacheKey, new CachedTrustMark(resolved, this.refreshTimeFor(resolved)));
+    final Duration retryInterval = this.properties.getTrustMarkRetryInterval();
+    final Instant retryAt = now.plus(retryInterval);
+    if (cached != null && cached.trustMark().isValidAt(now)) {
+      // Keep the valid trust mark we already have rather than dropping it because the renewal failed, and try
+      // again after the retry interval (or when it expires, if that comes first).
+      final ResolvedTrustMark current = cached.trustMark();
+      log.warn("{} - keeping the current trust mark until {}, retry in {}",
+          resolved.error(), current.expiresAt() != null ? current.expiresAt() : "further notice", retryInterval);
+      final Instant refreshAt = current.expiresAt() != null && current.expiresAt().isBefore(retryAt)
+          ? current.expiresAt()
+          : retryAt;
+      this.cache.put(cacheKey, new CachedTrustMark(current, refreshAt));
+      return current;
+    }
+    log.warn("{} - retry in {}", resolved.error(), retryInterval);
+    this.cache.put(cacheKey, new CachedTrustMark(resolved, retryAt));
     return resolved;
+  }
+
+  @Nonnull
+  private static String cacheKey(@Nonnull final OidcRp rp, @Nonnull final TrustMarkProperties tm) {
+    return rp.getEntityId() + "|" + tm.getTrustMarkType();
   }
 
   @Nonnull
@@ -239,7 +310,7 @@ public class TrustMarkResolver {
           .formatted(tm.getTrustMarkType(), claims.getIssuer(), tm.getIssuer()));
     }
     final Instant expiresAt = Optional.ofNullable(claims.getExpirationTime()).map(Date::toInstant).orElse(null);
-    if (expiresAt != null && expiresAt.isBefore(Instant.now())) {
+    if (expiresAt != null && expiresAt.isBefore(this.clock.instant())) {
       return ResolvedTrustMark.failed(tm,
           "The trust mark %s for %s expired at %s".formatted(tm.getTrustMarkType(), rp.getEntityId(), expiresAt));
     }
@@ -263,7 +334,7 @@ public class TrustMarkResolver {
    */
   @Nonnull
   private Instant refreshTimeFor(@Nonnull final ResolvedTrustMark trustMark) {
-    final Instant interval = Instant.now().plus(this.properties.getTrustMarkRefreshInterval());
+    final Instant interval = this.clock.instant().plus(this.properties.getTrustMarkRefreshInterval());
     return Optional.ofNullable(trustMark.expiresAt())
         .filter(expiresAt -> expiresAt.isBefore(interval))
         .orElse(interval);
@@ -351,7 +422,6 @@ public class TrustMarkResolver {
      */
     @Nonnull
     public static ResolvedTrustMark failed(@Nonnull final TrustMarkProperties tm, @Nonnull final String error) {
-      log.warn("{}", error);
       return new ResolvedTrustMark(tm.getTrustMarkType(), tm.getIssuer(), null, null, tm.isRequired(), error);
     }
 

@@ -25,10 +25,15 @@ import com.nimbusds.openid.connect.sdk.federation.entities.EntityStatementClaims
 import com.nimbusds.openid.connect.sdk.federation.entities.EntityType;
 import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.client.ExpectedCount;
+import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import se.swedenconnect.testclient.config.OidfProperties;
 import se.swedenconnect.testclient.oidc.OidcRp;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +42,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
  * Tests for {@link EntityConfigurationFactory}.
@@ -241,6 +251,144 @@ class EntityConfigurationFactoryTest {
     assertEquals("The RP %s has no Entity Configuration".formatted(RP_ENTITY_ID), e.getMessage());
     assertThrows(IllegalArgumentException.class, () -> factory.createEntityConfiguration(rp));
     assertTrue(factory.getTrustMarks(rp).isEmpty());
+  }
+
+  @Test
+  void signsTheEntityConfigurationAgainWhenAFailedTrustMarkIsObtained() {
+    final Fetching f = new Fetching();
+
+    // The issuer is down at startup - the entity configuration is published without the trust mark, and it is
+    // served from the cache until the retry interval has passed.
+    f.expectIssuerDown();
+    final EntityStatement first = f.factory.getEntityConfiguration(f.rp);
+    assertNull(trustMarksOf(first));
+    f.clock.advance(Duration.ofSeconds(59));
+    assertSame(first, f.factory.getEntityConfiguration(f.rp));
+    f.server.verify();
+
+    // The issuer is up - the next request after the retry interval gets an entity configuration with the trust mark.
+    f.server.reset();
+    final String trustMark = f.expectIssuerUp(Instant.now().plus(Duration.ofHours(2)));
+    f.clock.advance(Duration.ofSeconds(1));
+    final EntityStatement second = f.factory.getEntityConfiguration(f.rp);
+    assertNotSame(first, second);
+    assertEquals(List.of(trustMark), trustMarksOf(second));
+    assertSame(second, f.factory.getEntityConfiguration(f.rp));
+    f.server.verify();
+  }
+
+  @Test
+  void signsTheEntityConfigurationAgainWhenTheTrustMarkIsRenewed() {
+    final Fetching f = new Fetching();
+
+    final String first = f.expectIssuerUp(Instant.now().plus(Duration.ofHours(3)));
+    assertEquals(List.of(first), trustMarksOf(f.factory.getEntityConfiguration(f.rp)));
+    f.server.verify();
+
+    // A failed renewal keeps the trust mark in the entity configuration.
+    f.server.reset();
+    f.expectIssuerDown();
+    f.clock.advance(f.properties.getTrustMarkRefreshInterval());
+    assertEquals(List.of(first), trustMarksOf(f.factory.getEntityConfiguration(f.rp)));
+    f.server.verify();
+
+    f.server.reset();
+    final String renewed = f.expectIssuerUp(Instant.now().plus(Duration.ofHours(4)));
+    f.clock.advance(f.properties.getTrustMarkRetryInterval());
+    assertEquals(List.of(renewed), trustMarksOf(f.factory.getEntityConfiguration(f.rp)));
+    f.server.verify();
+  }
+
+  @Test
+  void refreshFetchesTheTrustMarksAgainAndSignsTheEntityConfigurationAnew() {
+    final Fetching f = new Fetching();
+
+    final String first = f.expectIssuerUp(Instant.now().plus(Duration.ofHours(2)));
+    final EntityStatement statement = f.factory.getEntityConfiguration(f.rp);
+    assertEquals(List.of(first), trustMarksOf(statement));
+    f.server.verify();
+
+    f.server.reset();
+    final String refreshed = f.expectIssuerUp(Instant.now().plus(Duration.ofHours(3)));
+    f.factory.refresh(List.of(f.rp));
+    f.server.verify();
+    final EntityStatement afterRefresh = f.factory.getEntityConfiguration(f.rp);
+    assertNotSame(statement, afterRefresh);
+    assertEquals(List.of(refreshed), trustMarksOf(afterRefresh));
+
+    // With the issuer down, a refresh keeps the trust mark.
+    f.server.reset();
+    f.expectIssuerDown();
+    f.factory.refresh(List.of(f.rp));
+    f.server.verify();
+    assertEquals(List.of(refreshed), trustMarksOf(f.factory.getEntityConfiguration(f.rp)));
+  }
+
+  @Test
+  void refreshIgnoresRpsWithoutEntityConfiguration() {
+    final Fetching f = new Fetching();
+    f.factory.refresh(List.of(TestFederation.createRp(RP_ENTITY_ID, TestFederation.RP_METADATA, false)));
+    // No expectations were set up - any request to the issuer would fail the verification.
+    f.server.verify();
+  }
+
+  private static List<Object> trustMarksOf(final EntityStatement statement) {
+    final Object entries = statement.getClaimsSet().toJSONObject().get("trust_marks");
+    if (entries == null) {
+      return null;
+    }
+    return ((List<?>) entries).stream().map(e -> ((Map<?, ?>) e).get("trust_mark")).map(Object.class::cast).toList();
+  }
+
+  /**
+   * A factory whose trust mark is fetched from an issuer that is mocked, using a clock that the test controls.
+   */
+  private static final class Fetching {
+
+    private static final MediaType ENTITY_STATEMENT = MediaType.parseMediaType("application/entity-statement+jwt");
+    private static final MediaType TRUST_MARK = MediaType.parseMediaType("application/trust-mark+jwt");
+
+    final OidcRp rp = TestFederation.createRp(RP_ENTITY_ID);
+    final RSAKey issuerKey = TestFederation.generateKey();
+    final TestFederation.TestClock clock = new TestFederation.TestClock();
+    final OidfProperties properties = properties();
+    final MockRestServiceServer server;
+    final EntityConfigurationFactory factory;
+
+    Fetching() {
+      final OidfProperties.TrustMarkProperties tm = new OidfProperties.TrustMarkProperties();
+      tm.setTrustMarkType(TRUST_MARK_TYPE);
+      tm.setIssuer(TRUST_MARK_ISSUER);
+      this.properties.getTrustMarks().add(tm);
+
+      final RestClient.Builder builder = RestClient.builder();
+      this.server = MockRestServiceServer.bindTo(builder).ignoreExpectOrder(true).build();
+      this.factory = new EntityConfigurationFactory(this.properties, List.of(new EntityID(TRUST_ANCHOR)),
+          new TrustMarkResolver(this.properties, new OidfClient(builder.build()), Map.of(), this.clock));
+    }
+
+    void expectIssuerDown() {
+      this.server.expect(ExpectedCount.once(), requestTo(TRUST_MARK_ISSUER + "/.well-known/openid-federation"))
+          .andRespond(withServerError());
+    }
+
+    String expectIssuerUp(final Instant expiresAt) {
+      final JSONObject metadata = new JSONObject();
+      metadata.put("federation_trust_mark_endpoint", TRUST_MARK_ISSUER + "/trust_mark");
+      this.server.expect(ExpectedCount.once(), requestTo(TRUST_MARK_ISSUER + "/.well-known/openid-federation"))
+          .andRespond(withSuccess(
+              TestFederation.entityConfiguration(TRUST_MARK_ISSUER, this.issuerKey, metadata), ENTITY_STATEMENT));
+      final String trustMark = TestFederation.trustMark(
+          TRUST_MARK_ISSUER, this.issuerKey, RP_ENTITY_ID, TRUST_MARK_TYPE, expiresAt, "trust_mark_type");
+      final String url = UriComponentsBuilder.fromUriString(TRUST_MARK_ISSUER + "/trust_mark")
+          .queryParam("sub", RP_ENTITY_ID)
+          .queryParam("trust_mark_type", TRUST_MARK_TYPE)
+          .build()
+          .encode()
+          .toUriString();
+      this.server.expect(ExpectedCount.once(), requestTo(url)).andRespond(withSuccess(trustMark, TRUST_MARK));
+      return trustMark;
+    }
   }
 
   private static OidfProperties properties() {

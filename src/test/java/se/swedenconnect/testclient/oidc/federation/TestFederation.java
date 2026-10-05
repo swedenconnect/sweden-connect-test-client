@@ -39,7 +39,11 @@ import se.swedenconnect.testclient.credentials.ClientCredentials;
 import se.swedenconnect.testclient.oidc.OidcRp;
 
 import java.net.URI;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -344,6 +348,38 @@ final class TestFederation {
     }
     catch (final Exception e) {
       throw new IllegalArgumentException("Failed to sign entity statement", e);
+    }
+  }
+
+  /**
+   * A clock that stands still until it is moved forward.
+   */
+  static final class TestClock extends Clock {
+
+    private Instant now = Instant.now();
+
+    /**
+     * Moves the clock forward.
+     *
+     * @param duration how far to move it
+     */
+    void advance(final Duration duration) {
+      this.now = this.now.plus(duration);
+    }
+
+    @Override
+    public ZoneId getZone() {
+      return ZoneOffset.UTC;
+    }
+
+    @Override
+    public Clock withZone(final ZoneId zone) {
+      return this;
+    }
+
+    @Override
+    public Instant instant() {
+      return this.now;
     }
   }
 
