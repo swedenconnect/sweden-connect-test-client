@@ -404,7 +404,7 @@ shows no "View Entity Configuration" button or "Entity Statement" link for it.
 | :--- | :--- | :--- | :--- |
 | `entity-configuration-validity` | The validity of the entity configurations that we publish. | Duration | `24h` |
 | `client-registration-types[]` | The `client_registration_types` declared in our RP metadata. | List of strings | `automatic` |
-| `organization-number` | The Swedish organization number published as `organization_number` in the RP metadata, unless the RP declares its own. Exactly ten digits, no hyphen. **Required.** | String | - |
+| `organization-number` | The Swedish organization number published as `organization_number` in the RP metadata, unless the RP declares its own. If not set, no `organization_number` is added. Exactly ten digits, no hyphen. | String | - |
 | `subject-type` | The `subject_type` declared in our RP metadata, unless the RP declares its own. | String | `pairwise` |
 | `entity-metadata.organization-name` | The organization name of the `federation_entity` metadata. | String | - |
 | `entity-metadata.contacts[]` | The contacts of the `federation_entity` metadata. | List of strings | empty |

@@ -91,9 +91,9 @@ public class OidfProperties implements InitializingBean {
   private List<String> clientRegistrationTypes = List.of("automatic");
 
   /**
-   * The Swedish organization number of the organization owning the RP:s. Published as
+   * The Swedish organization number of the organization owning the RP:s. If set, it is published as
    * {@code organization_number} in the RP metadata (unless the RP declares its own). Exactly ten digits, no
-   * hyphen.
+   * hyphen. Optional.
    */
   @Getter
   @Setter
@@ -147,9 +147,13 @@ public class OidfProperties implements InitializingBean {
       Assert.notNull(this.refreshInterval, "testclient.oidc.federation.refresh-interval must be set");
       Assert.notNull(this.entityConfigurationValidity,
           "testclient.oidc.federation.entity-configuration-validity must be set");
-      Assert.hasText(this.organizationNumber, "testclient.oidc.federation.organization-number must be set");
-      Assert.isTrue(ORGANIZATION_NUMBER_PATTERN.matcher(this.organizationNumber).matches(),
-          "testclient.oidc.federation.organization-number must be exactly ten digits");
+      if (!StringUtils.hasText(this.organizationNumber)) {
+        this.organizationNumber = null;
+      }
+      else {
+        Assert.isTrue(ORGANIZATION_NUMBER_PATTERN.matcher(this.organizationNumber).matches(),
+            "testclient.oidc.federation.organization-number must be exactly ten digits");
+      }
       Assert.hasText(this.subjectType, "testclient.oidc.federation.subject-type must be set");
       this.trustMarks.forEach(TrustMarkProperties::afterPropertiesSet);
       Assert.notNull(this.trustMarkRefreshInterval,

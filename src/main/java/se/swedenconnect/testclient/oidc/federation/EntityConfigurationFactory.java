@@ -259,12 +259,12 @@ public class EntityConfigurationFactory {
       types.addAll(this.properties.getClientRegistrationTypes());
       metadata.put("client_registration_types", types);
     }
-    // The fields below are mandatory in the Sweden Connect federation. Unless an RP declares them itself, they are
-    // filled in from the federation settings.
+    // Unless an RP declares the fields below itself, they are filled in from the federation settings. The
+    // organization number is only added if one is configured.
     if (!metadata.containsKey("subject_type")) {
       metadata.put("subject_type", this.properties.getSubjectType());
     }
-    if (!metadata.containsKey("organization_number")) {
+    if (!metadata.containsKey("organization_number") && this.properties.getOrganizationNumber() != null) {
       metadata.put("organization_number", this.properties.getOrganizationNumber());
     }
     return metadata;

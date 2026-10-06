@@ -145,6 +145,36 @@ class EntityConfigurationFactoryTest {
   }
 
   @Test
+  void noOrganizationNumberIsAddedWhenNoneIsConfigured() throws Exception {
+    final OidcRp rp = TestFederation.createRp(RP_ENTITY_ID);
+    final OidfProperties properties = properties();
+    properties.setOrganizationNumber(null);
+    final EntityConfigurationFactory factory = new EntityConfigurationFactory(
+        properties, List.of(new EntityID(TRUST_ANCHOR)), null);
+
+    final JSONObject rpMetadata = factory.createEntityConfiguration(rp).getClaimsSet()
+        .getMetadata(EntityType.OPENID_RELYING_PARTY);
+
+    assertNotNull(rpMetadata);
+    assertFalse(rpMetadata.containsKey("organization_number"));
+  }
+
+  @Test
+  void organizationNumberIsOptional() {
+    final OidfProperties properties = validProperties();
+    properties.setOrganizationNumber("");
+    properties.afterPropertiesSet();
+    assertNull(properties.getOrganizationNumber());
+
+    properties.setOrganizationNumber(null);
+    properties.afterPropertiesSet();
+    assertNull(properties.getOrganizationNumber());
+
+    properties.setOrganizationNumber("556677-8899");
+    assertThrows(IllegalArgumentException.class, properties::afterPropertiesSet);
+  }
+
+  @Test
   void rpDeclaredMetadataOverridesTheDefaults() throws Exception {
     final OidcRp rp = TestFederation.createRp(RP_ENTITY_ID, """
         {
@@ -396,6 +426,14 @@ class EntityConfigurationFactoryTest {
     properties.getEntityMetadata().setContacts(List.of("operations@swedenconnect.se"));
     properties.setOrganizationNumber("2021006883");
     properties.setSubjectType("pairwise");
+    return properties;
+  }
+
+  private static OidfProperties validProperties() {
+    final OidfProperties properties = properties();
+    final OidfProperties.TrustAnchorProperties trustAnchor = new OidfProperties.TrustAnchorProperties();
+    trustAnchor.setEntityId(TRUST_ANCHOR);
+    properties.getTrustAnchors().add(trustAnchor);
     return properties;
   }
 

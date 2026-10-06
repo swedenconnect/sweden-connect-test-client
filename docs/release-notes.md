@@ -12,6 +12,8 @@ Date: _not yet released_
 
 - The encryption key of an OIDC RP is now published in its JWK set, so that the OP can encrypt ID tokens and
   UserInfo responses for it.
+- The `organization-number` federation setting is now optional. If it is not set, no `organization_number` is added
+  to the RP metadata.
 
 ### Version 1.0.16
 
