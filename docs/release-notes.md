@@ -14,6 +14,7 @@ Date: _not yet released_
   UserInfo responses for it.
 - The `organization-number` federation setting is now optional. If it is not set, no `organization_number` is added
   to the RP metadata.
+- "In Request URL" is no longer checked by default for Issuer and Audience under "Request object options".
 
 ### Version 1.0.16
 

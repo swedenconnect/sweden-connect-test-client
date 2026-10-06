@@ -118,13 +118,19 @@ class OidcAudienceDefaultsTest {
   }
 
   /**
-   * Asserts that the audience of the request object and of the client assertion both are the expected issuer, and
-   * that both rows are included and left editable.
+   * Asserts that the audience of the request object and of the client assertion both are the expected issuer. The
+   * request object audience goes in the request object only, not in the request URL, and the client assertion
+   * audience is included.
    */
   private void assertAudience(final OIDCAuthnRequestParameterModel template, final String expected) {
     final ModelParameter requestObjectAud = template.getRequestObject().getAudience();
     Assertions.assertEquals(expected, requestObjectAud.getValue());
-    Assertions.assertEquals(true, requestObjectAud.getValuePresent());
+    Assertions.assertEquals(true, requestObjectAud.getRequestBody());
+    Assertions.assertEquals(false, requestObjectAud.getValuePresent());
+
+    final ModelParameter requestObjectIss = template.getRequestObject().getIssuer();
+    Assertions.assertEquals(true, requestObjectIss.getRequestBody());
+    Assertions.assertEquals(false, requestObjectIss.getValuePresent());
 
     final ModelParameter assertionAud = template.getTokenRequest().getAssertionAud();
     Assertions.assertEquals(expected, assertionAud.getValue());
