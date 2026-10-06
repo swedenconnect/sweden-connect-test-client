@@ -15,6 +15,7 @@
  */
 package se.swedenconnect.testclient.oidc;
 
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
@@ -23,12 +24,17 @@ import lombok.Getter;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
+import se.swedenconnect.security.credential.PkiCredential;
 import se.swedenconnect.security.credential.nimbus.JwkTransformerFunction;
 import se.swedenconnect.testclient.controllers.OidcRpLogoController;
 import se.swedenconnect.testclient.credentials.ClientCredentials;
 import se.swedenconnect.testclient.utils.JwkUtils;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Representation of an OIDC RP.
@@ -38,6 +44,9 @@ import java.net.URI;
 public class OidcRp {
 
   private static final JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
+
+  /** Suffix added to the key ID of the encryption JWK when the encryption key is also a signing key. */
+  public static final String ENCRYPTION_KID_SUFFIX = "-enc";
 
   /** The Entity Identifier of the client. */
   @Getter
@@ -91,13 +100,7 @@ public class OidcRp {
     this.metadata = OIDCClientMetadata.parse(json);
     this.metadata.setRedirectionURI(URI.create(redirectUri));
 
-    final JwkTransformerFunction jwkTransformer = new JwkTransformerFunction();
-    // TODO: other metadata
-    // All active signing credentials are registered keys of the RP and are published.
-    final JWKSet jwkSet = new JWKSet(this.credentials.getCredentialsForSigning().stream()
-        .map(credential -> JwkUtils.declareUse(jwkTransformer.apply(credential), KeyUse.SIGNATURE, null))
-        .toList());
-    this.jwkSet = jwkSet.toPublicJWKSet();
+    this.jwkSet = createJwkSet(this.credentials);
 
     if (this.useJwksUrl) {
       this.metadata.setJWKSetURI(URI.create(this.jwksUri));
@@ -116,6 +119,62 @@ public class OidcRp {
 
   }
 
+  /**
+   * Creates the public key set of the RP. All active signing credentials are published with {@code use: sig}, and the
+   * current encryption credential with {@code use: enc}. The previous encryption credential is not published, it is
+   * only used for decryption after a key rollover.
+   * <p>
+   * If the encryption key is also a signing key, it is published once per use. The OP selects keys by {@code kid} and
+   * {@code use}, so the encryption JWK then gets the key ID suffixed with {@value #ENCRYPTION_KID_SUFFIX}.
+   * </p>
+   *
+   * @param credentials the RP credentials
+   * @return the public key set
+   */
+  @Nonnull
+  private static JWKSet createJwkSet(@Nonnull final ClientCredentials credentials) {
+    final JwkTransformerFunction jwkTransformer = new JwkTransformerFunction();
+    final List<PkiCredential> signingCredentials = credentials.getCredentialsForSigning();
+    final List<JWK> keys = new ArrayList<>(signingCredentials.stream()
+        .map(credential -> JwkUtils.declareUse(jwkTransformer.apply(credential), KeyUse.SIGNATURE, null))
+        .toList());
+
+    final PkiCredential encryptionCredential = credentials.getCredentialsForEncryption().getFirst();
+    JWK encryptionKey = JwkUtils.declareUse(jwkTransformer.apply(encryptionCredential), KeyUse.ENCRYPTION, null);
+    final boolean sharedKey = signingCredentials.stream()
+        .anyMatch(c -> c.getPublicKey().equals(encryptionCredential.getPublicKey()));
+    if (sharedKey) {
+      encryptionKey = withKeyId(encryptionKey, encryptionKey.getKeyID() + ENCRYPTION_KID_SUFFIX);
+    }
+    keys.add(encryptionKey);
+
+    return new JWKSet(keys).toPublicJWKSet();
+  }
+
+  /**
+   * Gives a copy of a JWK with another key ID.
+   *
+   * @param jwk the JWK
+   * @param keyId the key ID
+   * @return a JWK with the given key ID
+   */
+  @Nonnull
+  private static JWK withKeyId(@Nonnull final JWK jwk, @Nonnull final String keyId) {
+    final Map<String, Object> json = new LinkedHashMap<>(jwk.toJSONObject());
+    json.put("kid", keyId);
+    try {
+      return JWK.parse(json);
+    }
+    catch (final java.text.ParseException e) {
+      throw new IllegalArgumentException("Failed to assign key ID %s".formatted(keyId), e);
+    }
+  }
+
+  /**
+   * Gets the RP metadata.
+   *
+   * @return the RP metadata
+   */
   @Nonnull
   public OIDCClientMetadata getMetadata() {
     return this.metadata;

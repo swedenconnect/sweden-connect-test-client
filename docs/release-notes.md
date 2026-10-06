@@ -10,7 +10,8 @@
 
 Date: _not yet released_
 
-- 
+- The encryption key of an OIDC RP is now published in its JWK set, so that the OP can encrypt ID tokens and
+  UserInfo responses for it.
 
 ### Version 1.0.16
 

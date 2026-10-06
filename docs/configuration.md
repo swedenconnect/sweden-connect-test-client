@@ -185,7 +185,7 @@ sense described above.
 | `credentials.signing` | The signing credential. Signs `AuthnRequest` messages, JWT:s and client assertions. | Credential | `testclient.default-credential` |
 | `credentials.signing2` | An additional, active, signing credential. It is a registered key of the client, published next to the signing credential, and may be selected under "Key options" when a request is built. Affects OIDC RP:s only, for SAML SP:s it is ignored. May not be the same key as `credentials.signing`. | Credential | - (not published) |
 | `credentials.future-signing` | A signing credential to be used *after* a key rollover. It is published in the SAML SP metadata as an additional signing key, but is not used for signing. | Credential | - (not published) |
-| `credentials.encryption` | The encryption credential, i.e., the key that assertions and JWT:s are encrypted for. | Credential | `testclient.default-credential` |
+| `credentials.encryption` | The encryption credential, i.e., the key that assertions and JWT:s are encrypted for. For an OIDC RP, the key is published in the RP:s JWK set with `use: enc`. If it is also a signing key, it is published once per use, and the encryption JWK gets the key ID suffixed with `-enc`. | Credential | `testclient.default-credential` |
 | `credentials.previous-encryption` | The encryption credential that was used *before* a key rollover. Decryption is attempted with this key as well. | Credential | - |
 | `credentials.metadata` | The credential used to sign SAML SP metadata and OpenID Federation entity statements. | Credential | `testclient.default-credential`, and if that is not assigned, the signing credential |
 

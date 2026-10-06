@@ -115,11 +115,11 @@ class EntityConfigurationFactoryTest {
     // placeholder (see OidcRpLogoController).
     assertFalse(rpMetadata.containsKey("logo_uri"));
 
-    // The client keys published in the metadata must be declared for signature use.
+    // The client keys published in the metadata must be declared for signature and encryption use.
     final JWKSet metadataKeys = JWKSet.parse((Map<String, Object>) rpMetadata.get("jwks"));
-    assertEquals(1, metadataKeys.getKeys().size());
-    assertEquals(KeyUse.SIGNATURE, metadataKeys.getKeys().get(0).getKeyUse());
-    assertFalse(metadataKeys.getKeys().get(0).isPrivate());
+    assertEquals(List.of(KeyUse.SIGNATURE, KeyUse.ENCRYPTION),
+        metadataKeys.getKeys().stream().map(JWK::getKeyUse).toList());
+    metadataKeys.getKeys().forEach(jwk -> assertFalse(jwk.isPrivate()));
 
     assertNotNull(claims.getFederationEntityMetadata());
     assertEquals("Sweden Connect", claims.getFederationEntityMetadata().getOrganizationName());
@@ -139,11 +139,9 @@ class EntityConfigurationFactoryTest {
     final JWKSet metadataKeys = JWKSet.parse((Map<String, Object>) rpMetadata.get("jwks"));
     assertEquals(rp.getJwkSet().getKeys().stream().map(JWK::getKeyID).toList(),
         metadataKeys.getKeys().stream().map(JWK::getKeyID).toList());
-    assertEquals(2, metadataKeys.getKeys().size());
-    metadataKeys.getKeys().forEach(jwk -> {
-      assertEquals(KeyUse.SIGNATURE, jwk.getKeyUse());
-      assertFalse(jwk.isPrivate());
-    });
+    assertEquals(List.of(KeyUse.SIGNATURE, KeyUse.SIGNATURE, KeyUse.ENCRYPTION),
+        metadataKeys.getKeys().stream().map(JWK::getKeyUse).toList());
+    metadataKeys.getKeys().forEach(jwk -> assertFalse(jwk.isPrivate()));
   }
 
   @Test
