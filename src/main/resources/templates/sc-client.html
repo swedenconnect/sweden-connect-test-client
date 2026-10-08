@@ -1619,6 +1619,8 @@
                                     </label>
                                 </div>
                             </div>
+                            <!-- The iat and exp claims of the request object, see initRequestObjectOptions() -->
+                            <div id="oidc-request-object-claim-rows"></div>
                         </div>
 
                     </div>
@@ -2231,6 +2233,15 @@
                                         </select>
                                     </div>
                                 </div>
+                                <div class="row mt-4">
+                                    <label class="col-sm-12 col-form-label">
+                                        <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                              data-bs-original-title="The claims of the JWT next to the sign request (Signature Extension for OpenID Connect 1.2, section 3.1.2). They are included when the JWT is signed and left out when it is unsecured, which is set again each time Signed is changed. A whole number typed for iat or exp is sent as a number, anything else as a string.">
+                                            Request JWT claims
+                                        </span>
+                                    </label>
+                                </div>
+                                <div id="oidc-request-sig-jwt-claim-rows"></div>
                             </div>
                         </div>
                     </div>

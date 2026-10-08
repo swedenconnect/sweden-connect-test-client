@@ -258,7 +258,7 @@ class OidcSendMethodTest {
         .advanced(fixedCodeVerifier(OidcRestController.createDefaultAdvancedOptions()))
         .keys(KeyOptionsParameterModel.builder().moduleEnabled(true).build())
         .userMessage(OidcRestController.createDefaultUserMessage())
-        .signMessage(OidcRestController.createDefaultSignRequest("key"))
+        .signMessage(OidcRestController.createDefaultSignRequest("key", RP, OP))
         .requestObject(RequestObjectParamterModel.builder()
             .issuer(new ModelParameter(RP, true, true))
             .audience(new ModelParameter(OP, true, true))

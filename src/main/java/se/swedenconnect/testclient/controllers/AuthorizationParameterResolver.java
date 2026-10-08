@@ -37,6 +37,7 @@ import net.minidev.json.JSONObject;
 import se.swedenconnect.testclient.oidc.RequestObjectFactory;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -224,7 +225,8 @@ public class AuthorizationParameterResolver {
 
   /**
    * Gets the JWT carrying the sign request in the request URL, see
-   * {@link RequestObjectFactory#getSignRequestJWT(OIDCAuthnRequestParameterModel, Function)}. The request object
+   * {@link RequestObjectFactory#getSignRequestJWT(OIDCAuthnRequestParameterModel, Function, Instant)}, sent now. The
+   * request object
    * carries the sign request as a JSON object instead, so for the request object the result is always empty.
    *
    * @param kidToJwkFunction function giving the key for a key ID
@@ -237,7 +239,7 @@ public class AuthorizationParameterResolver {
     if (this.forRequestBody || this.getSignMessage().isEmpty()) {
       return Optional.empty();
     }
-    return Optional.of(RequestObjectFactory.getSignRequestJWT(this.model, kidToJwkFunction));
+    return Optional.of(RequestObjectFactory.getSignRequestJWT(this.model, kidToJwkFunction, Instant.now()));
   }
 
   public Optional<ResponseType> getResponseType() {
@@ -319,9 +321,11 @@ public class AuthorizationParameterResolver {
   public Optional<JWT> requestBody(final Function<String, JWK> kidToJwtFunction) throws JOSEException, ParseException {
     final JWTClaimsSet claims = RequestObjectFactory.getClaims(
         model,
-        this.toRequestObjectResolver()
+        this.toRequestObjectResolver(),
+        Instant.now()
     );
-    if (claims.toJSONObject().size() <= 2) {
+    // A request object that would hold nothing but iss, aud, iat and exp is not sent
+    if (RequestObjectFactory.ENVELOPE_CLAIMS.containsAll(claims.getClaims().keySet())) {
       return Optional.empty();
     }
     saveFunction.accept("jwt_claims", claims);

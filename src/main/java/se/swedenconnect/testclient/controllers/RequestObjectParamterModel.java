@@ -24,6 +24,11 @@ import lombok.Setter;
 /**
  * The editable model for the request object of an OIDC authentication request - whether one should be created at
  * all, and whether it should be signed and/or encrypted.
+ * <p>
+ * The claims {@code iss}, {@code aud}, {@code iat} and {@code exp} of the request object are {@link ModelParameter}s
+ * where {@code requestBody} tells whether the claim is included in the request object. An empty {@code iat} or
+ * {@code exp} is filled in when the request is sent. A {@code null} claim is not included.
+ * </p>
  *
  * @author Martin Lindström
  * @author Felix Hellman
@@ -34,9 +39,24 @@ import lombok.Setter;
 @Setter
 @Builder
 public class RequestObjectParamterModel {
+  /** The {@code iss} claim. */
   private ModelParameter issuer;
+
+  /** The {@code aud} claim. */
   private ModelParameter audience;
+
+  /** The {@code iat} claim. */
+  private ModelParameter issuedAt;
+
+  /** The {@code exp} claim. */
+  private ModelParameter expiration;
+
+  /** Whether the request object is signed. */
   private Boolean signRequest;
+
+  /** Whether the request object is encrypted. */
   private Boolean encryptRequest;
+
+  /** Whether the "Request object options" section is open. Only used by the UI. */
   private Boolean moduleEnabled;
 }

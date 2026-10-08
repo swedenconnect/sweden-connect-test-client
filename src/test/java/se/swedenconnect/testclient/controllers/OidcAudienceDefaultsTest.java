@@ -118,9 +118,10 @@ class OidcAudienceDefaultsTest {
   }
 
   /**
-   * Asserts that the audience of the request object and of the client assertion both are the expected issuer. The
-   * request object audience goes in the request object only, not in the request URL, and the client assertion
-   * audience is included.
+   * Asserts that the audience of the request object, of the sign request JWT and of the client assertion all are the
+   * expected issuer. The request object audience goes in the request object only, not in the request URL, and the
+   * sign request JWT and client assertion audiences are included. The issuer of the request object and of the sign
+   * request JWT is the RP, and both JWT:s include {@code iat} and {@code exp}, filled in when the request is sent.
    */
   private void assertAudience(final OIDCAuthnRequestParameterModel template, final String expected) {
     final ModelParameter requestObjectAud = template.getRequestObject().getAudience();
@@ -131,6 +132,22 @@ class OidcAudienceDefaultsTest {
     final ModelParameter requestObjectIss = template.getRequestObject().getIssuer();
     Assertions.assertEquals(true, requestObjectIss.getRequestBody());
     Assertions.assertEquals(false, requestObjectIss.getValuePresent());
+
+    for (final ModelParameter time : List.of(template.getRequestObject().getIssuedAt(),
+        template.getRequestObject().getExpiration())) {
+      Assertions.assertEquals("", time.getValue());
+      Assertions.assertEquals(true, time.getRequestBody());
+    }
+
+    final SignatureParameterModel signRequest = template.getSignMessage();
+    Assertions.assertEquals(RP, signRequest.getJwtIssuer().getValue());
+    Assertions.assertEquals(expected, signRequest.getJwtAudience().getValue());
+    for (final ModelParameter claim : List.of(signRequest.getJwtIssuer(), signRequest.getJwtAudience(),
+        signRequest.getJwtIssuedAt(), signRequest.getJwtExpiration())) {
+      Assertions.assertEquals(true, claim.getValuePresent());
+    }
+    Assertions.assertEquals("", signRequest.getJwtIssuedAt().getValue());
+    Assertions.assertEquals("", signRequest.getJwtExpiration().getValue());
 
     final ModelParameter assertionAud = template.getTokenRequest().getAssertionAud();
     Assertions.assertEquals(expected, assertionAud.getValue());

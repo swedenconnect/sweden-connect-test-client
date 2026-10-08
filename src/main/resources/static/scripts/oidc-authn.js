@@ -1475,6 +1475,28 @@ class OIDCAuthnRequest {
             }
         }
         imported.tokenRequest = tokenRequest;
+        // A configuration exported before the sign request JWT claims existed gets the claims of the template,
+        // included if the JWT is signed, and one exported before the request object iat and exp existed gets them
+        // from the template
+        const signMessage = imported.signMessage;
+        if (signMessage && this.pars.signMessage) {
+            for (const row of OIDCAuthnRequest.SIGN_REQUEST_JWT_CLAIMS) {
+                if (!signMessage[row.key] && this.pars.signMessage[row.key]) {
+                    signMessage[row.key] = {
+                        ...this.pars.signMessage[row.key],
+                        valuePresent: signMessage.signJwt !== false
+                    };
+                }
+            }
+        }
+        const requestObject = imported.requestObject;
+        if (requestObject && this.pars.requestObject) {
+            for (const row of OIDCAuthnRequest.REQUEST_OBJECT_TIME_CLAIMS) {
+                if (!requestObject[row.key] && this.pars.requestObject[row.key]) {
+                    requestObject[row.key] = { ...this.pars.requestObject[row.key] };
+                }
+            }
+        }
         this.pars = imported;
     }
 
@@ -1691,9 +1713,17 @@ class OIDCAuthnRequest {
             }
             sigJwtSignKey.append($('<option>', { value: key["kid"], text: description }));
         });
+        this.createIncludeRows($('#oidc-request-sig-jwt-claim-rows'), OIDCAuthnRequest.SIGN_REQUEST_JWT_CLAIMS,
+            () => this.pars.signMessage, 'oidc-request-sig-');
         sigJwtSign.change(function () {
             parent.pars["signMessage"]["signJwt"] = this.checked;
             sigJwtSignKey.prop('disabled', !this.checked);
+            // The claims are included in a signed JWT and left out of an unsecured one
+            for (const row of OIDCAuthnRequest.SIGN_REQUEST_JWT_CLAIMS) {
+                parent.pars.signMessage[row.key].valuePresent = this.checked;
+            }
+            parent.refreshIncludeRows(OIDCAuthnRequest.SIGN_REQUEST_JWT_CLAIMS, parent.pars.signMessage,
+                'oidc-request-sig-');
         });
         sigJwtSignKey.change(function () {
             parent.pars["signMessage"]["signKey"] = sigJwtSignKey.val();
@@ -2261,6 +2291,10 @@ class OIDCAuthnRequest {
         $("#oidc-request-issuer-request-body").prop("disabled", true);
         $("#oidc-request-aud-request-body").prop("disabled", true);
 
+        this.createIncludeRows($('#oidc-request-object-claim-rows'), OIDCAuthnRequest.REQUEST_OBJECT_TIME_CLAIMS,
+            () => this.pars.requestObject, 'oidc-request-object-', 'requestBody',
+            { inputCols: 6, includeLabel: 'In Request Body' });
+
         let parent = this;
         let signRequestCheckbox = $("#oidc-request-sign-request-body");
         signRequestCheckbox.prop("checked", parent.pars["requestObject"]["signRequest"]);
@@ -2476,6 +2510,23 @@ class OIDCAuthnRequest {
         { key: 'assertionExp', name: 'exp', filledIn: true }
     ];
 
+    /**
+     * The claim rows of the JWT that carries the sign request in the request URL (Signature Extension for OpenID
+     * Connect 1.2, section 3.1.2).
+     */
+    static SIGN_REQUEST_JWT_CLAIMS = [
+        { key: 'jwtIssuer', name: 'iss' },
+        { key: 'jwtAudience', name: 'aud' },
+        { key: 'jwtIssuedAt', name: 'iat', filledIn: true },
+        { key: 'jwtExpiration', name: 'exp', filledIn: true }
+    ];
+
+    /** The iat and exp claim rows of the request object. Its iss and aud have rows of their own. */
+    static REQUEST_OBJECT_TIME_CLAIMS = [
+        { key: 'issuedAt', name: 'Issued At (iat)', filledIn: true },
+        { key: 'expiration', name: 'Expiration (exp)', filledIn: true }
+    ];
+
     /** Per client authentication method, the client parameter rows that the method normally sends. */
     static TOKEN_REQUEST_METHOD_ROWS = {
         private_key_jwt: ['clientAssertionType', 'clientAssertion'],
@@ -2497,36 +2548,11 @@ class OIDCAuthnRequest {
         this.initDisplayToggleButton('#oidc-token-request-button', '#oidc-token-request', 'tokenRequest',
             'token request options');
 
-        const createRows = (container, rows) => {
-            container.empty();
-            for (const row of rows) {
-                if (!settings[row.key]) {
-                    settings[row.key] = { value: '', valuePresent: false, requestBody: false };
-                }
-                const id = 'oidc-token-request-' + row.key;
-                const input = $('<input>', { type: 'text', class: 'form-control', id: id + '-input' });
-                if (row.filledIn) {
-                    input.attr('placeholder', 'Filled in at time of sending');
-                }
-                input.on('input change', () => {
-                    settings[row.key].value = input.val();
-                });
-                const include = $('<input>', { type: 'checkbox', class: 'form-check-input', id: id + '-include' });
-                include.on('change', () => {
-                    settings[row.key].valuePresent = include.prop('checked');
-                });
-                container.append($('<div>', { class: 'row mt-4' })
-                    .append($('<div>', { class: 'col-sm-2' })
-                        .append($('<label>', { class: 'col-form-label text-sm-right', for: id + '-input', text: row.name })))
-                    .append($('<div>', { class: 'col-sm-8' }).append(input))
-                    .append($('<div>', { class: 'col-sm-2' })
-                        .append(include)
-                        .append(' ')
-                        .append($('<label>', { for: id + '-include', text: 'Include' }))));
-            }
-        };
-        createRows($('#oidc-token-request-parameters'), OIDCAuthnRequest.TOKEN_REQUEST_PARAMETERS);
-        createRows($('#oidc-token-request-assertion-claim-rows'), OIDCAuthnRequest.TOKEN_REQUEST_ASSERTION_CLAIMS);
+        const getSettings = () => this.pars.tokenRequest;
+        this.createIncludeRows($('#oidc-token-request-parameters'), OIDCAuthnRequest.TOKEN_REQUEST_PARAMETERS,
+            getSettings, 'oidc-token-request-');
+        this.createIncludeRows($('#oidc-token-request-assertion-claim-rows'),
+            OIDCAuthnRequest.TOKEN_REQUEST_ASSERTION_CLAIMS, getSettings, 'oidc-token-request-');
 
         $('#oidc-token-request-auth-method-select').off('change').on('change', (event) => {
             const method = $(event.target).val();
@@ -2548,14 +2574,80 @@ class OIDCAuthnRequest {
         const settings = this.pars.tokenRequest;
         const method = settings.authMethod || 'private_key_jwt';
         $('#oidc-token-request-auth-method-select').val(method);
-        for (const row of OIDCAuthnRequest.TOKEN_REQUEST_PARAMETERS.concat(OIDCAuthnRequest.TOKEN_REQUEST_ASSERTION_CLAIMS)) {
-            const id = '#oidc-token-request-' + row.key;
-            const par = settings[row.key] || {};
-            $(id + '-input').val(par.value || '');
-            $(id + '-include').prop('checked', par.valuePresent === true);
-        }
+        this.refreshIncludeRows(
+            OIDCAuthnRequest.TOKEN_REQUEST_PARAMETERS.concat(OIDCAuthnRequest.TOKEN_REQUEST_ASSERTION_CLAIMS),
+            settings, 'oidc-token-request-');
         $('#oidc-token-request-assertion-claims')
             .toggle(method === 'private_key_jwt' || method === 'client_secret_jwt');
+    }
+
+    /**
+     * Creates rows that each hold a value and an "Include" checkbox - the rows of the token request options, the
+     * claims of the sign request JWT and the iat and exp claims of the request object. The values and checkboxes are
+     * kept in the parameters of the rows, which are created if missing. A row with filledIn set is filled in by the
+     * test client when the request is sent, if left empty.
+     * @param container the element that the rows are added to
+     * @param rows the rows, each with key (the parameter in the settings), name (the label) and filledIn
+     * @param getSettings function giving the object that holds the parameters of the rows - called each time, since
+     *     a template may replace the object
+     * @param idPrefix the prefix of the element IDs of a row, followed by the key
+     * @param includeKey the property of a parameter that the "Include" checkbox sets
+     * @param options inputCols, the width of the value column, and includeLabel, the label of the checkbox
+     */
+    createIncludeRows(container, rows, getSettings, idPrefix, includeKey = 'valuePresent', options = {}) {
+        const inputCols = options.inputCols || 8;
+        const includeLabel = options.includeLabel || 'Include';
+        const par = (key) => {
+            const settings = getSettings();
+            if (!settings[key]) {
+                settings[key] = { value: '', valuePresent: false, requestBody: false };
+            }
+            return settings[key];
+        };
+        container.empty();
+        for (const row of rows) {
+            par(row.key);
+            const id = idPrefix + row.key;
+            const input = $('<input>', { type: 'text', class: 'form-control', id: id + '-input' });
+            if (row.filledIn) {
+                input.attr('placeholder', 'Filled in at time of sending');
+            }
+            input.on('input change', () => {
+                par(row.key).value = input.val();
+            });
+            const include = $('<input>', { type: 'checkbox', class: 'form-check-input', id: id + '-include' });
+            include.on('change', () => {
+                par(row.key)[includeKey] = include.prop('checked');
+            });
+            const rowDiv = $('<div>', { class: 'row mt-4' })
+                .append($('<div>', { class: 'col-sm-2' })
+                    .append($('<label>', { class: 'col-form-label text-sm-right', for: id + '-input', text: row.name })))
+                .append($('<div>', { class: 'col-sm-' + inputCols }).append(input));
+            if (inputCols < 8) {
+                rowDiv.append($('<div>', { class: 'col-sm-' + (8 - inputCols) }));
+            }
+            container.append(rowDiv
+                .append($('<div>', { class: 'col-sm-2' })
+                    .append(include)
+                    .append(' ')
+                    .append($('<label>', { for: id + '-include', text: includeLabel }))));
+        }
+        this.refreshIncludeRows(rows, getSettings(), idPrefix, includeKey);
+    }
+
+    /**
+     * Refreshes rows created by createIncludeRows() without rebinding event handlers.
+     * @param rows the rows
+     * @param settings the object that holds the parameters of the rows
+     * @param idPrefix the prefix of the element IDs of a row
+     * @param includeKey the property of a parameter that the "Include" checkbox shows
+     */
+    refreshIncludeRows(rows, settings, idPrefix, includeKey = 'valuePresent') {
+        for (const row of rows) {
+            const par = settings[row.key] || {};
+            $('#' + idPrefix + row.key + '-input').val(par.value || '');
+            $('#' + idPrefix + row.key + '-include').prop('checked', par[includeKey] === true);
+        }
     }
 
     initModuleSelector(
@@ -3338,6 +3430,7 @@ class OIDCAuthnRequest {
                 if (f.valuePresent !== undefined) $(presentSel).prop('checked', f.valuePresent);
             }
         }
+        this.refreshIncludeRows(OIDCAuthnRequest.REQUEST_OBJECT_TIME_CLAIMS, ro, 'oidc-request-object-', 'requestBody');
     }
 
     /**
@@ -3435,6 +3528,7 @@ class OIDCAuthnRequest {
         $('#oidc-request-sig-jwt-sign').prop('checked', signJwt);
         $('#oidc-request-sig-jwt-signkey-select').val(sig.signKey).prop('disabled', !signJwt);
         $('#oidc-request-sig-jwt-encrypt').prop('checked', sig.encryptJwt || false);
+        this.refreshIncludeRows(OIDCAuthnRequest.SIGN_REQUEST_JWT_CLAIMS, sig, 'oidc-request-sig-');
 
         this.updateSignMessageView(applyScopeRule);
         this.refreshMessageRows($('#oidc-request-sig-messages-div'), sig.signMessage, true);
