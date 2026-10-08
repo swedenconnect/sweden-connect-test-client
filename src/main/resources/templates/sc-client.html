@@ -1449,12 +1449,41 @@
                                     </label>
                                 </div>
                                 <div class="col-sm-6" id="id-claims-template-value-column">
-                                    <input type="text" class="form-control" id="id-claims-template-value">
-                                    <label for="id-claims-template-value" id="id-claims-template-value-label"
-                                           data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                           data-bs-original-title="The expected value(s) of the claim. To specify multiple values separate them with a (',') character (CSV). Leave empty to request the claim without a value.">
-                                        Value
-                                    </label>
+                                    <!-- One field per value, see addClaimValueField() -->
+                                    <div id="id-claims-template-values"></div>
+                                    <!-- The acr claim: the values as a list, as in the ACR values row, see
+                                         updateClaimValueMode() -->
+                                    <div id="id-claims-template-acr" hidden="hidden">
+                                        <ul class="list-group" id="id-claims-template-acr-list">
+                                        </ul>
+                                        <div class="btn-group mt-2" role="group">
+                                            <button id="id-claims-template-acr-drop" type="button"
+                                                    class="btn btn-sm btn-primary dropdown-toggle"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true"
+                                                    aria-expanded="false">Add URI
+                                            </button>
+                                            <div id="id-claims-template-acr-drop-div" class="dropdown-menu">
+                                            </div>
+                                        </div>
+                                        <div class="input-group mt-2" id="id-claims-template-acr-custom-div"
+                                             style="display: none;">
+                                            <input type="text" class="form-control" id="id-claims-template-acr-custom"
+                                                   aria-label="Custom value">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                    id="id-claims-template-acr-custom-button">Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <label id="id-claims-template-value-label"
+                                               data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                               data-bs-original-title="The expected value(s) of the claim, one value per field. One value is sent as &quot;value&quot; and several as &quot;values&quot;, in the order of the fields. A comma is part of the value. Empty fields are not sent, and with no value the claim is requested without one. For the acr claim the values are added from the known URIs or typed, and sent in the order they were added.">
+                                            Value
+                                        </label>
+                                        <button type="button" class="btn btn-link btn-sm"
+                                                id="id-claims-template-add-value">Add value
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="col-sm-1">
                                     <input type="checkbox" class="form-check-input" id="id-claims-template-essential">
@@ -1496,12 +1525,18 @@
                                     </label>
                                 </div>
                                 <div class="col-sm-6" id="userinfo-claims-template-value-column">
-                                    <input type="text" class="form-control" id="userinfo-claims-template-value">
-                                    <label for="userinfo-claims-template-value" id="userinfo-claims-template-value-label"
-                                           data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                           data-bs-original-title="The expected value(s) of the claim. To specify multiple values separate them with a (',') character (CSV). Leave empty to request the claim without a value.">
-                                        Value
-                                    </label>
+                                    <!-- One field per value, see addClaimValueField() -->
+                                    <div id="userinfo-claims-template-values"></div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <label id="userinfo-claims-template-value-label"
+                                               data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                               data-bs-original-title="The expected value(s) of the claim, one value per field. One value is sent as &quot;value&quot; and several as &quot;values&quot;, in the order of the fields. A comma is part of the value. Empty fields are not sent, and with no value the claim is requested without one.">
+                                            Value
+                                        </label>
+                                        <button type="button" class="btn btn-link btn-sm"
+                                                id="userinfo-claims-template-add-value">Add value
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="col-sm-1">
                                     <input type="checkbox" class="form-check-input" id="userinfo-claims-template-essential">

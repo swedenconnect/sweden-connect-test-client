@@ -1523,7 +1523,9 @@ class OIDCAuthnRequest {
                 "row": "id-claims-row-template",
                 "essential-checkbox": "id-claims-template-essential",
                 "remove-button": "id-claims-template-remove",
-                "value-input": "id-claims-template-value",
+                "values-div": "id-claims-template-values",
+                "add-value-button": "id-claims-template-add-value",
+                "acr": "id-claims-template-acr",
                 "key-input": "id-claims-template-key"
             },
             "userinfo": {
@@ -1531,7 +1533,9 @@ class OIDCAuthnRequest {
                 "row": "userinfo-claims-row-template",
                 "essential-checkbox": "userinfo-claims-template-essential",
                 "remove-button": "userinfo-claims-template-remove",
-                "value-input": "userinfo-claims-template-value",
+                "values-div": "userinfo-claims-template-values",
+                "add-value-button": "userinfo-claims-template-add-value",
+                "acr": "userinfo-claims-template-acr",
                 "key-input": "userinfo-claims-template-key"
             }
         }
@@ -2026,9 +2030,18 @@ class OIDCAuthnRequest {
         $("#" + this.claimIdentifiers[type]["table"] + " > div:last").after(clone);
 
         const keyInput = this.getClaimElement(currentIndex, this.claimIdentifiers[type]["key-input"]);
-        const valueInput = this.getClaimElement(currentIndex, this.claimIdentifiers[type]["value-input"]);
         const essentialCheckBox = this.getClaimElement(currentIndex, this.claimIdentifiers[type]["essential-checkbox"]);
         const removeButton = this.getClaimElement(currentIndex, this.claimIdentifiers[type]["remove-button"]);
+        clone.data('acrMode', false);
+        clone.data('acrValues', []);
+        this.addClaimValueField(currentIndex, type);
+        if (type === 'id') {
+            this.initValueListLine(this.claimAcrLine(currentIndex, type));
+        }
+        this.getClaimElement(currentIndex, this.claimIdentifiers[type]["add-value-button"]).off('click')
+            .on('click', () => {
+                this.addClaimValueField(currentIndex, type).trigger('focus');
+            });
         this.computeClaims();
         // "Essential" and the value are independent - a claim may be requested as essential with a value
         // (OpenID Connect Core 1.0, section 5.5.1)
@@ -2036,9 +2049,7 @@ class OIDCAuthnRequest {
             parent.computeClaims();
         })
         keyInput.on('input change', function () {
-            parent.computeClaims();
-        });
-        valueInput.on('input change', function () {
+            parent.updateClaimValueMode(currentIndex, type);
             parent.computeClaims();
         });
         removeButton.off('click').click(function () {
@@ -2050,25 +2061,157 @@ class OIDCAuthnRequest {
 
     /**
      * Gets what is requested for a claim (OpenID Connect Core 1.0, section 5.5.1) - "essential" when the box is
-     * checked, and the value of the value field when it holds one. A value holding a comma is requested as "values".
+     * checked, and the values of the claim row. Values that are empty or hold only spaces are not sent. One value is
+     * requested as "value" and several as "values", in the order given. The values are sent as typed.
      * @param isEssential whether the "Essential" box is checked
-     * @param value the contents of the value field
+     * @param values the values of the claim row
      * @returns {object|null} what is requested for the claim, or null if nothing is
      */
-    static claimRequest(isEssential, value) {
+    static claimRequest(isEssential, values) {
         const claimRequest = {};
         if (isEssential) {
             claimRequest["essential"] = true;
         }
-        if (value && value.trim() !== "") {
-            if (value.includes(",")) {
-                claimRequest["values"] = value.split(",");
-            }
-            else {
-                claimRequest["value"] = value;
-            }
+        const sent = (values || []).filter(value => value.trim() !== "");
+        if (sent.length === 1) {
+            claimRequest["value"] = sent[0];
+        }
+        else if (sent.length > 1) {
+            claimRequest["values"] = sent;
         }
         return Object.keys(claimRequest).length > 0 ? claimRequest : null;
+    }
+
+    /**
+     * Tells whether a claim row gets its values from a value list like the ACR values row rather than from value
+     * fields - the acr claim of the ID token claims.
+     * @param type the location of the claim, 'id' or 'userinfo'
+     * @param name the claim name
+     * @returns {boolean} whether the row uses the value list
+     */
+    static isAcrClaim(type, name) {
+        return type === 'id' && name === 'acr';
+    }
+
+    /**
+     * Gets the value list line of the acr claim of a claim row, see initValueListLine(). The values are kept with the
+     * row.
+     * @param index the index of the claim row
+     * @param type the location of the claim
+     * @returns {object} the line
+     */
+    claimAcrLine(index, type) {
+        const row = this.getClaimElement(index, this.claimIdentifiers[type]["row"]);
+        return {
+            prefix: '#' + this.claimIdentifiers[type]["acr"].replace('template', index),
+            knownValues: OIDCAuthnRequest.AUTHN_CONTEXT_CLASS_REF_URIS,
+            emptyText: '-- No URIs assigned --',
+            otherText: 'Enter other URI ...',
+            getValues: () => row.data('acrValues') || [],
+            setValues: (values) => {
+                row.data('acrValues', values);
+                this.computeClaims();
+            }
+        };
+    }
+
+    /**
+     * Adds a value field to a claim row. A field can be removed as long as the row has more than one.
+     * @param index the index of the claim row
+     * @param type the location of the claim
+     * @param value the value of the field
+     * @returns {jQuery} the input of the field
+     */
+    addClaimValueField(index, type, value = '') {
+        const valuesDiv = this.getClaimElement(index, this.claimIdentifiers[type]["values-div"]);
+        const input = $('<input>', { type: 'text', class: 'form-control claim-value', 'aria-label': 'Value' })
+            .val(value);
+        const remove = $('<button>', {
+            type: 'button',
+            class: 'btn btn-outline-secondary claim-value-remove',
+            'aria-label': 'Remove this value',
+            title: 'Remove this value',
+            text: '\u00d7'
+        });
+        const field = $('<div>', { class: 'input-group mb-1' }).append(input).append(remove);
+        input.on('input change', () => this.computeClaims());
+        remove.on('click', () => {
+            field.remove();
+            OIDCAuthnRequest.updateClaimValueRemoveButtons(valuesDiv);
+            this.computeClaims();
+        });
+        valuesDiv.append(field);
+        OIDCAuthnRequest.updateClaimValueRemoveButtons(valuesDiv);
+        return input;
+    }
+
+    /**
+     * Shows the remove buttons of the value fields of a claim row when it has more than one field.
+     * @param valuesDiv the element holding the value fields
+     */
+    static updateClaimValueRemoveButtons(valuesDiv) {
+        const fields = valuesDiv.children();
+        fields.find('.claim-value-remove').prop('hidden', fields.length < 2);
+    }
+
+    /**
+     * Gets the values of a claim row - of its value fields, or of its value list for the acr claim of the ID token
+     * claims. Empty values are included.
+     * @param index the index of the claim row
+     * @param type the location of the claim
+     * @returns {string[]} the values, in order
+     */
+    getClaimValues(index, type) {
+        const row = this.getClaimElement(index, this.claimIdentifiers[type]["row"]);
+        if (row.data('acrMode')) {
+            return [...(row.data('acrValues') || [])];
+        }
+        return this.getClaimElement(index, this.claimIdentifiers[type]["values-div"]).find('input.claim-value')
+            .map(function () {
+                return $(this).val();
+            }).get();
+    }
+
+    /**
+     * Sets the values of a claim row, replacing those it holds. Without values the row gets one empty value field.
+     * @param index the index of the claim row
+     * @param type the location of the claim
+     * @param values the values
+     */
+    setClaimValues(index, type, values) {
+        const row = this.getClaimElement(index, this.claimIdentifiers[type]["row"]);
+        if (row.data('acrMode')) {
+            row.data('acrValues', values.filter(value => value.trim() !== ''));
+            this.renderValueListLine(this.claimAcrLine(index, type));
+        }
+        else {
+            this.getClaimElement(index, this.claimIdentifiers[type]["values-div"]).empty();
+            for (const value of (values.length > 0 ? values : [''])) {
+                this.addClaimValueField(index, type, value);
+            }
+        }
+        this.computeClaims();
+    }
+
+    /**
+     * Switches a claim row between value fields and the value list, as its claim name becomes or stops being the acr
+     * claim of the ID token claims. The values that are not empty move to the other input.
+     * @param index the index of the claim row
+     * @param type the location of the claim
+     */
+    updateClaimValueMode(index, type) {
+        const row = this.getClaimElement(index, this.claimIdentifiers[type]["row"]);
+        const name = this.getClaimElement(index, this.claimIdentifiers[type]["key-input"]).val();
+        const acrMode = OIDCAuthnRequest.isAcrClaim(type, name);
+        if (acrMode === !!row.data('acrMode')) {
+            return;
+        }
+        const values = this.getClaimValues(index, type).filter(value => value.trim() !== '');
+        row.data('acrMode', acrMode);
+        this.getClaimElement(index, this.claimIdentifiers[type]["acr"]).prop('hidden', !acrMode);
+        this.getClaimElement(index, this.claimIdentifiers[type]["values-div"]).prop('hidden', acrMode);
+        this.getClaimElement(index, this.claimIdentifiers[type]["add-value-button"]).prop('hidden', acrMode);
+        this.setClaimValues(index, type, values);
     }
 
     /**
@@ -2100,12 +2243,11 @@ class OIDCAuthnRequest {
                 const keyInput = parent.getClaimElement(index, parent.claimIdentifiers[type]["key-input"]);
                 const isEssential =
                     parent.getClaimElement(index, parent.claimIdentifiers[type]["essential-checkbox"]).prop("checked");
-                const valueInput = parent.getClaimElement(index, parent.claimIdentifiers[type]["value-input"]);
                 if (!outerClaims[location]) {
                     outerClaims[location] = {};
                 }
                 outerClaims[location][keyInput.val()] =
-                    OIDCAuthnRequest.claimRequest(isEssential, valueInput.prop("value"));
+                    OIDCAuthnRequest.claimRequest(isEssential, parent.getClaimValues(index, type));
             });
         }
 
@@ -2768,8 +2910,10 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Initializes one line of a value list row - its list, its "Add" menu and its custom value input.
-     * @param line the line, see valueListLines()
+     * Initializes one line of a value list row - its list, its "Add" menu and its custom value input. The line keeps
+     * its values as a space-separated string (get and set), or, if it has getValues and setValues, as an array, so
+     * that a value may hold a space.
+     * @param line the line, see valueListLines() and claimAcrLine()
      */
     initValueListLine(line) {
         const list = $(line.prefix + '-list');
@@ -2782,7 +2926,12 @@ class OIDCAuthnRequest {
             list.find('li span').each(function () {
                 values.push($(this).text());
             });
-            line.set(values.join(' '));
+            if (line.setValues) {
+                line.setValues(values);
+            }
+            else {
+                line.set(values.join(' '));
+            }
         };
 
         addDiv.empty();
@@ -2870,7 +3019,7 @@ class OIDCAuthnRequest {
     renderValueListLine(line) {
         const list = $(line.prefix + '-list');
         const addDiv = $(line.prefix + '-drop-div');
-        const values = OIDCAuthnRequest.listValues(line.get());
+        const values = line.getValues ? line.getValues() : OIDCAuthnRequest.listValues(line.get());
 
         list.empty();
         for (const value of values) {
@@ -3471,16 +3620,16 @@ class OIDCAuthnRequest {
                     this.getClaimElement(index, this.claimIdentifiers[type]["essential-checkbox"])
                         .prop('checked', true);
                 }
-                let value = '';
-                if (spec && spec.value !== undefined) {
-                    value = String(spec.value);
+                // One field, or list entry for the acr claim, per value
+                let values = [];
+                if (spec && spec.value !== undefined && spec.value !== null) {
+                    values = [String(spec.value)];
                 }
-                else if (spec && spec.values !== undefined) {
-                    value = spec.values.join(',');
+                else if (spec && Array.isArray(spec.values)) {
+                    values = spec.values.map(value => String(value));
                 }
-                if (value !== '') {
-                    this.getClaimElement(index, this.claimIdentifiers[type]["value-input"]).val(value)
-                        .trigger('change');
+                if (values.length > 0) {
+                    this.setClaimValues(index, type, values);
                 }
             }
         }

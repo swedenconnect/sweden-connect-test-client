@@ -12,6 +12,8 @@ Date: _not yet released_
 
 - A signed sign request JWT in the request URL now holds `iss`, `aud`, `iat` and `exp`, and the request object holds
   `iat` and `exp`, following version 1.2 of the Signature Extension for OpenID Connect. All can be changed or left out.
+- Claims in the OIDC request builder take one value per field, so a value may now hold a comma. The `acr` ID token
+  claim gets its values from the same list of known URIs as the ACR values row.
 
 ### Version 1.0.17
 
