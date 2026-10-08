@@ -6,9 +6,15 @@
 
 ---
 
-### Version 1.0.18
+### Version 1.0.19
 
 Date: _not yet released_
+
+-
+
+### Version 1.0.18
+
+Date: 2026-10-08
 
 - A signed sign request JWT in the request URL now holds `iss`, `aud`, `iat` and `exp`, and the request object holds
   `iat` and `exp`, following version 1.2 of the Signature Extension for OpenID Connect. All can be changed or left out.
