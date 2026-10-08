@@ -290,13 +290,13 @@ public class OidcRestController {
         .toList();
 
 
-    // Both the request object and the client assertion default to having the OP's issuer as audience
+    // The request object, the sign request JWT and the client assertion default to having the OP's issuer as audience
     final String opIssuer = this.fetcher.getIssuer(selectedOp);
 
     return OIDCAuthnRequestParameterModel.builder()
         .op(op)
         .rp(rp)
-        .signMessage(createDefaultSignRequest(signKey.getKeyID()))
+        .signMessage(createDefaultSignRequest(signKey.getKeyID(), selectedRp.getEntityId(), opIssuer))
         .userMessage(createDefaultUserMessage())
         .scope(new ModelParameter("openid", false, true))
         .requestBodyScope("openid")
@@ -317,6 +317,8 @@ public class OidcRestController {
         .requestObject(RequestObjectParamterModel.builder()
             .issuer(new ModelParameter(selectedRp.getEntityId(), true, false))
             .audience(new ModelParameter(opIssuer, true, false))
+            .issuedAt(new ModelParameter("", true, false))
+            .expiration(new ModelParameter("", true, false))
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false).build())
@@ -328,12 +330,16 @@ public class OidcRestController {
   /**
    * Creates the initial sign request of the request builder. The TBS data and messages are Base64-encoded, the
    * message MIME type is {@code text/plain}, and in the request URL the sign request is a signed JWT that is not
-   * encrypted.
+   * encrypted. The JWT includes {@code iss}, {@code aud}, {@code iat} and {@code exp}, with {@code iat} and
+   * {@code exp} filled in when the request is sent.
    *
    * @param signKey the key ID of the RP's registered signing key, which signs the sign request JWT
+   * @param entityId the entity ID of the RP, the default {@code iss} of the sign request JWT
+   * @param opIssuer the issuer identifier of the OP, the default {@code aud} of the sign request JWT
    * @return the default sign request
    */
-  static SignatureParameterModel createDefaultSignRequest(final String signKey) {
+  static SignatureParameterModel createDefaultSignRequest(final String signKey, final String entityId,
+      final String opIssuer) {
     return SignatureParameterModel.builder()
         .b64Encode(true)
         .includeTbsData(true)
@@ -341,6 +347,10 @@ public class OidcRestController {
         .signJwt(true)
         .signKey(signKey)
         .encryptJwt(false)
+        .jwtIssuer(new ModelParameter(entityId, false, true))
+        .jwtAudience(new ModelParameter(opIssuer, false, true))
+        .jwtIssuedAt(new ModelParameter("", false, true))
+        .jwtExpiration(new ModelParameter("", false, true))
         .requestBody(false)
         .valuePresent(false)
         .build();

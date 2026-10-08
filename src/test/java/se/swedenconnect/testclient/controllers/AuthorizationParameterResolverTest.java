@@ -16,6 +16,7 @@
 package se.swedenconnect.testclient.controllers;
 
 import com.nimbusds.jose.Algorithm;
+import com.nimbusds.jose.JOSEObject;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
 import com.nimbusds.jose.crypto.RSADecrypter;
@@ -58,8 +59,10 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +84,10 @@ class AuthorizationParameterResolverTest {
   private static final String REDIRECT_URI = "https://rp.example.com/oidc/redirect/rp";
   private static final String AUTHORIZATION_ENDPOINT = "https://op.example.com/authorize";
   private static final String OP_ISSUER = "https://op.example.com";
+
+  /** The claims of a sign request JWT with the default settings. */
+  private static final Set<String> SIGN_REQUEST_JWT_CLAIMS =
+      Set.of("tbs_data", "sign_message", "iss", "aud", "iat", "exp");
 
   private static final String USER_MESSAGE = "https://id.oidc.se/param/userMessage";
   private static final String SIGN_REQUEST = "https://id.oidc.se/param/signRequest";
@@ -950,7 +957,10 @@ class AuthorizationParameterResolverTest {
 
     for (final boolean inUrl : List.of(true, false)) {
       final Map<String, Object> signRequest = signRequest(result, inUrl);
-      Assertions.assertEquals(Set.of("tbs_data", "sign_message"), signRequest.keySet(), "inUrl=" + inUrl);
+      // The JWT of the request URL also holds iss, aud, iat and exp. In the request object they are claims of the
+      // request object, not of the sign request
+      Assertions.assertEquals(inUrl ? SIGN_REQUEST_JWT_CLAIMS : Set.of("tbs_data", "sign_message"),
+          signRequest.keySet(), "inUrl=" + inUrl);
       Assertions.assertEquals("Data to sign", unb64(signRequest.get("tbs_data")), "inUrl=" + inUrl);
       Assertions.assertEquals("Meddelande", unb64(map(signRequest.get("sign_message")).get("message#sv")));
     }
@@ -1000,8 +1010,8 @@ class AuthorizationParameterResolverTest {
         ? new ECKeyGenerator(Curve.P_256).generate()
         : new RSAKeyGenerator(2048).generate();
     Assertions.assertFalse(jwt.verify(verifier(unrelatedKey)));
-    Assertions.assertEquals(Set.of("tbs_data", "sign_message"), jwt.getJWTClaimsSet().getClaims().keySet(),
-        "The claims set is the sign request object only");
+    Assertions.assertEquals(SIGN_REQUEST_JWT_CLAIMS, jwt.getJWTClaimsSet().getClaims().keySet(),
+        "The claims set is the sign request object and iss, aud, iat and exp");
   }
 
   @Test
@@ -1049,6 +1059,208 @@ class AuthorizationParameterResolverTest {
       Assertions.assertInstanceOf(PlainJWT.class, inner);
     }
     Assertions.assertEquals(b64("Data"), inner.getJWTClaimsSet().getClaim("tbs_data"));
+  }
+
+  @Test
+  void signedSignRequestJwtHoldsIssAudIatAndExpByDefault() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, SIGN_REQUEST, true, false);
+    model.getSignMessage().setTbsData("Data");
+
+    final long before = Instant.now().getEpochSecond();
+    final Map<String, Object> claims = signRequest(generate(model), true);
+    final long after = Instant.now().getEpochSecond();
+
+    Assertions.assertEquals(RP, claims.get("iss"));
+    Assertions.assertEquals(OP_ISSUER, claims.get("aud"));
+    assertSendingTime(claims, before, after);
+    Assertions.assertEquals(b64("Data"), claims.get("tbs_data"));
+  }
+
+  @Test
+  void unsignedSignRequestJwtWithClaimsOffHoldsOnlyTheSignRequest() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, SIGN_REQUEST, true, false);
+    model.getSignMessage().setTbsData("Data");
+    // As the UI sets the claims when Signed is unchecked
+    model.getSignMessage().setSignJwt(false);
+    signRequestJwtClaims(model).forEach(claim -> claim.setValuePresent(false));
+
+    final JWT jwt = JWTParser.parse(generate(model).url(SIGN_REQUEST));
+
+    Assertions.assertInstanceOf(PlainJWT.class, jwt);
+    Assertions.assertEquals(Set.of("tbs_data", "sign_message"), payload(jwt).keySet());
+  }
+
+  @Test
+  void unsignedSignRequestJwtCanHoldTheClaims() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, SIGN_REQUEST, true, false);
+    model.getSignMessage().setTbsData("Data");
+    model.getSignMessage().setSignJwt(false);
+
+    final JWT jwt = JWTParser.parse(generate(model).url(SIGN_REQUEST));
+
+    Assertions.assertInstanceOf(PlainJWT.class, jwt);
+    Assertions.assertEquals(SIGN_REQUEST_JWT_CLAIMS, payload(jwt).keySet());
+  }
+
+  static Stream<Arguments> signRequestJwtClaimRows() {
+    return Stream.of(
+        Arguments.of("iss",
+            (Function<SignatureParameterModel, ModelParameter>) SignatureParameterModel::getJwtIssuer),
+        Arguments.of("aud",
+            (Function<SignatureParameterModel, ModelParameter>) SignatureParameterModel::getJwtAudience),
+        Arguments.of("iat",
+            (Function<SignatureParameterModel, ModelParameter>) SignatureParameterModel::getJwtIssuedAt),
+        Arguments.of("exp",
+            (Function<SignatureParameterModel, ModelParameter>) SignatureParameterModel::getJwtExpiration));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("signRequestJwtClaimRows")
+  void aSignRequestJwtClaimThatIsOffIsNotSent(final String claim,
+      final Function<SignatureParameterModel, ModelParameter> row) throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, SIGN_REQUEST, true, false);
+    model.getSignMessage().setTbsData("Data");
+    row.apply(model.getSignMessage()).setValuePresent(false);
+
+    final Map<String, Object> claims = signRequest(generate(model), true);
+
+    final Set<String> expected = new HashSet<>(SIGN_REQUEST_JWT_CLAIMS);
+    expected.remove(claim);
+    Assertions.assertEquals(expected, claims.keySet());
+  }
+
+  @Test
+  void typedSignRequestJwtClaimsAreSentAsTyped() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, SIGN_REQUEST, true, false);
+    model.getSignMessage().getJwtIssuer().setValue("https://other-rp.example.com");
+    model.getSignMessage().getJwtAudience().setValue("https://other-op.example.com");
+    model.getSignMessage().getJwtIssuedAt().setValue("1700000000");
+    model.getSignMessage().getJwtExpiration().setValue("tomorrow");
+
+    final Map<String, Object> claims = signRequest(generate(model), true);
+
+    Assertions.assertEquals("https://other-rp.example.com", claims.get("iss"));
+    Assertions.assertEquals("https://other-op.example.com", claims.get("aud"));
+    Assertions.assertEquals(1700000000L, claims.get("iat"));
+    Assertions.assertEquals("tomorrow", claims.get("exp"));
+  }
+
+  @Test
+  void encryptedSignRequestJwtHoldsTheClaimsInsideTheEncryption() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    placeRow(model, SIGN_REQUEST, true, false);
+    model.getSignMessage().setTbsData("Data");
+    model.getSignMessage().setEncryptJwt(true);
+
+    final JWT inner = decryptNested(generate(model).url(SIGN_REQUEST));
+
+    Assertions.assertEquals(SIGN_REQUEST_JWT_CLAIMS, payload(inner).keySet());
+    Assertions.assertEquals(RP, payload(inner).get("iss"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = { true, false })
+  void requestObjectHoldsIatAndExpByDefault(final boolean signed) throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getRequestObject().setSignRequest(signed);
+    model.getAdvanced().getState().setRequestBody(true);
+
+    final long before = Instant.now().getEpochSecond();
+    final Result result = generate(model);
+    final long after = Instant.now().getEpochSecond();
+
+    final JWT jwt = JWTParser.parse(result.url("request"));
+    Assertions.assertEquals(signed ? SignedJWT.class : PlainJWT.class, jwt.getClass());
+    final Map<String, Object> claims = payload(jwt);
+    Assertions.assertEquals(RP, claims.get("iss"));
+    Assertions.assertEquals(OP_ISSUER, claims.get("aud"));
+    assertSendingTime(claims, before, after);
+  }
+
+  @Test
+  void typedRequestObjectIatAndExpAreSentAsTyped() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getAdvanced().getState().setRequestBody(true);
+    model.getRequestObject().getIssuedAt().setValue("now");
+    model.getRequestObject().getExpiration().setValue("-5");
+
+    final Map<String, Object> claims = payload(JWTParser.parse(generate(model).url("request")));
+
+    Assertions.assertEquals("now", claims.get("iat"));
+    Assertions.assertEquals(-5L, claims.get("exp"));
+  }
+
+  @Test
+  void requestObjectIatAndExpThatAreOffAreNotSent() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getAdvanced().getState().setRequestBody(true);
+    model.getRequestObject().getIssuedAt().setRequestBody(false);
+    model.getRequestObject().getExpiration().setRequestBody(false);
+
+    final Map<String, Object> claims = payload(JWTParser.parse(generate(model).url("request")));
+
+    Assertions.assertFalse(claims.containsKey("iat"));
+    Assertions.assertFalse(claims.containsKey("exp"));
+    Assertions.assertTrue(claims.containsKey("iss"));
+  }
+
+  @Test
+  void requestObjectWithOnlyIssAudIatAndExpIsNotSent() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+
+    final Result result = generate(model);
+
+    Assertions.assertNull(result.url("request"));
+    Assertions.assertNull(result.claims());
+  }
+
+  @Test
+  void requestObjectWithoutIssuerIsSentForASingleParameter() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    model.getRequestObject().getIssuer().setRequestBody(false);
+    model.getAdvanced().getState().setRequestBody(true);
+
+    final Map<String, Object> claims = payload(JWTParser.parse(generate(model).url("request")));
+
+    Assertions.assertEquals(Set.of("aud", "iat", "exp", "state"), claims.keySet());
+  }
+
+  @Test
+  void signRequestJwtClaimsAreNotInTheRequestObject() throws Exception {
+    final OIDCAuthnRequestParameterModel model = requestObjectModel();
+    placeRow(model, SIGN_REQUEST, false, true);
+    model.getSignMessage().setTbsData("Data");
+    model.getSignMessage().getJwtIssuer().setValue("https://sign-request-iss.example.com");
+    model.getSignMessage().getJwtIssuedAt().setValue("42");
+    model.getRequestObject().getIssuedAt().setRequestBody(false);
+
+    final Result result = generate(model);
+
+    Assertions.assertNull(result.url(SIGN_REQUEST));
+    final Map<String, Object> claims = payload(JWTParser.parse(result.url("request")));
+    Assertions.assertEquals(RP, claims.get("iss"));
+    Assertions.assertFalse(claims.containsKey("iat"));
+    Assertions.assertEquals(Set.of("tbs_data", "sign_message"), map(claims.get(SIGN_REQUEST)).keySet());
+  }
+
+  /**
+   * Asserts that {@code iat} is the sending time, and that {@code exp} is 300 seconds later.
+   */
+  private static void assertSendingTime(final Map<String, Object> claims, final long before, final long after) {
+    final long iat = Assertions.assertInstanceOf(Long.class, claims.get("iat"));
+    Assertions.assertTrue(iat >= before && iat <= after, "iat must be the sending time");
+    Assertions.assertEquals(iat + 300, claims.get("exp"));
+  }
+
+  private static List<ModelParameter> signRequestJwtClaims(final OIDCAuthnRequestParameterModel model) {
+    final SignatureParameterModel signRequest = model.getSignMessage();
+    return List.of(signRequest.getJwtIssuer(), signRequest.getJwtAudience(), signRequest.getJwtIssuedAt(),
+        signRequest.getJwtExpiration());
   }
 
   @ParameterizedTest
@@ -1142,7 +1354,7 @@ class AuthorizationParameterResolverTest {
    */
   private static Map<String, Object> signRequest(final Result result, final boolean inUrl) throws Exception {
     return inUrl
-        ? JWTParser.parse(result.url(SIGN_REQUEST)).getJWTClaimsSet().getClaims()
+        ? payload(JWTParser.parse(result.url(SIGN_REQUEST)))
         : map(requestObjectClaims(result).getClaim(SIGN_REQUEST));
   }
 
@@ -1151,6 +1363,14 @@ class AuthorizationParameterResolverTest {
    */
   private static JWTClaimsSet requestObjectClaims(final Result result) throws Exception {
     return JWTParser.parse(result.url("request")).getJWTClaimsSet();
+  }
+
+  /**
+   * Gets the payload of a signed or unsecured JWT as it was sent. Unlike its claims set, the time claims are not
+   * parsed, so a typed value that is not a number can be read.
+   */
+  private static Map<String, Object> payload(final JWT jwt) {
+    return ((JOSEObject) jwt).getPayload().toJSONObject();
   }
 
   /**
@@ -1339,7 +1559,7 @@ class AuthorizationParameterResolverTest {
         .requestMode("request")
         .op("https://op.example.com")
         .rp(RP)
-        .signMessage(OidcRestController.createDefaultSignRequest(key.getKeyID()))
+        .signMessage(OidcRestController.createDefaultSignRequest(key.getKeyID(), RP, OP_ISSUER))
         .userMessage(OidcRestController.createDefaultUserMessage())
         .scope(new ModelParameter("openid", false, true))
         .redirectUri(new ModelParameter(REDIRECT_URI, false, true))
@@ -1356,6 +1576,8 @@ class AuthorizationParameterResolverTest {
         .requestObject(RequestObjectParamterModel.builder()
             .issuer(new ModelParameter(RP, true, true))
             .audience(new ModelParameter(OP_ISSUER, true, true))
+            .issuedAt(new ModelParameter("", true, false))
+            .expiration(new ModelParameter("", true, false))
             .signRequest(false)
             .encryptRequest(false)
             .moduleEnabled(false)

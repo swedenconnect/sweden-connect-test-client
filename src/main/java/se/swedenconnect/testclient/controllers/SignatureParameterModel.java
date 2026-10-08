@@ -32,6 +32,13 @@ import java.util.stream.Stream;
  * Apart from the sign request itself ({@code tbs_data} and {@code sign_message}) the model holds settings that decide
  * how the sign request is sent. None of them is sent; see {@link OidcMessageSerializer}.
  * </p>
+ * <p>
+ * The JWT carrying the sign request in the request URL also holds the claims {@code iss}, {@code aud}, {@code iat}
+ * and {@code exp} (Signature Extension for OpenID Connect 1.2, section 3.1.2). Each is a {@link ModelParameter} where
+ * {@code valuePresent} tells whether it is included. An empty {@code iat} or {@code exp} is filled in when the request
+ * is sent. A {@code null} claim is not included. The claims are not used when the sign request is placed in the
+ * request object.
+ * </p>
  *
  * @author Martin Lindström
  * @author Felix Hellman
@@ -75,6 +82,23 @@ public class SignatureParameterModel {
    */
   private Boolean encryptJwt;
 
+  /** The {@code iss} claim of the JWT carrying the sign request in the request URL. */
+  private ModelParameter jwtIssuer;
+
+  /** The {@code aud} claim of the JWT carrying the sign request in the request URL. */
+  private ModelParameter jwtAudience;
+
+  /** The {@code iat} claim of the JWT carrying the sign request in the request URL. */
+  private ModelParameter jwtIssuedAt;
+
+  /** The {@code exp} claim of the JWT carrying the sign request in the request URL. */
+  private ModelParameter jwtExpiration;
+
+  /**
+   * Gets the preferred message of the sign message, used for display.
+   *
+   * @return the first message found, or an empty string
+   */
   @JsonIgnore
   public String getPreferredMessage() {
     if (Objects.nonNull(this.signMessage)) {

@@ -71,8 +71,11 @@ public final class TokenRequestFactory {
   public static final List<String> AUTH_METHODS =
       List.of(PRIVATE_KEY_JWT, CLIENT_SECRET_JWT, CLIENT_SECRET_POST, CLIENT_SECRET_BASIC, NONE);
 
-  /** How long a client assertion that the test client fills in is valid. */
-  static final long ASSERTION_LIFETIME_SECONDS = 300;
+  /**
+   * How long a client assertion that the test client fills in is valid. The request object and the sign request JWT
+   * get the same lifetime when their {@code exp} is filled in.
+   */
+  public static final long ASSERTION_LIFETIME_SECONDS = 300;
 
   /** A typed {@code iat} or {@code exp} that is a whole number is sent as a number, anything else as a string. */
   private static final Pattern WHOLE_NUMBER = Pattern.compile("-?\\d{1,18}");
@@ -242,7 +245,16 @@ public final class TokenRequestFactory {
     }
   }
 
-  private static Object timeClaim(@Nonnull final ModelParameter row, final long filledIn) {
+  /**
+   * Gets the value of a time claim ({@code iat} or {@code exp}) from its row. An empty value is filled in, and a typed
+   * value is sent as typed - a whole number as a number and anything else as a string.
+   *
+   * @param row the claim row
+   * @param filledIn the value, in seconds since the epoch, that an empty row gets
+   * @return the claim value, a {@link Long} or a {@link String}
+   */
+  @Nonnull
+  public static Object timeClaim(@Nonnull final ModelParameter row, final long filledIn) {
     final String typed = value(row);
     if (typed.isEmpty()) {
       return filledIn;

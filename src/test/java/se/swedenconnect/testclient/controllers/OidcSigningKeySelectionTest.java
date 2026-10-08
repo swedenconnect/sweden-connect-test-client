@@ -229,7 +229,7 @@ class OidcSigningKeySelectionTest {
    * The sign request of the request URL, signed with the supplied key.
    */
   private static SignatureParameterModel signRequestInRequestUrl(final String signKey) {
-    final SignatureParameterModel signRequest = OidcRestController.createDefaultSignRequest(signKey);
+    final SignatureParameterModel signRequest = OidcRestController.createDefaultSignRequest(signKey, RP, OP);
     signRequest.setValuePresent(true);
     signRequest.setRequestBody(false);
     return signRequest;

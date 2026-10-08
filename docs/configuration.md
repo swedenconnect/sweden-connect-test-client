@@ -353,9 +353,15 @@ they are read directly from these properties and used as-is when the test client
 `metadata-endpoint` is only used to display/fetch the OP's metadata for inspection in the user interface (and to
 resolve its JWKS and its `issuer`); it has no effect on which endpoints the test client actually calls.
 
-The `issuer` of the metadata is the default audience (`aud`) of the request object and of the client assertion sent
-to the token endpoint. If the metadata cannot be fetched, or holds no `issuer`, the configured `entity-id` is used
-instead. Both values remain editable in the request builder.
+The `issuer` of the metadata is the default audience (`aud`) of the request object, of the JWT carrying a sign request
+in the request URL, and of the client assertion sent to the token endpoint. If the metadata cannot be fetched, or holds
+no `issuer`, the configured `entity-id` is used instead. All values remain editable in the request builder.
+
+The request object and the sign request JWT also hold `iss` (the RP entity ID), `iat` and `exp` by default, as
+[Signature Extension for OpenID Connect 1.2](https://www.oidc.se/specifications/oidc-signature-extension-1_2.html),
+Section 3.1.2, requires for the sign request JWT. An empty `iat` is the time of sending, and an empty `exp` is 300
+seconds later. In the sign request JWT the four claims are included when the JWT is signed and left out when it is
+unsecured, and each claim can be left out or given another value in the request builder.
 
 | Property | Description | Type | Default value |
 | :--- | :--- | :--- | :--- |
