@@ -384,6 +384,36 @@ class AuthorizationParameterResolverTest {
     Assertions.assertEquals("a", userInfo.get("essentialWithValue").get("value").asString());
   }
 
+  @ParameterizedTest(name = "inRequestObject={0}")
+  @ValueSource(booleans = { false, true })
+  void claimValuesAreSentAsGivenIncludingCommasOrderAndDuplicates(final boolean inRequestObject) throws Exception {
+    final OIDCAuthnRequestParameterModel model = inRequestObject ? requestObjectModel() : defaultModel();
+    model.setClaimInRequest(!inRequestObject);
+    model.setClaimInRequestBody(inRequestObject);
+    final Map<String, Object> idTokenClaims = new LinkedHashMap<>();
+    idTokenClaims.put("valueWithComma", Map.of("value", "Lindström, Martin"));
+    idTokenClaims.put("valuesWithComma", Map.of("values", List.of("b, c", "a", " d ")));
+    idTokenClaims.put("duplicateValues", Map.of("values", List.of("x", "x")));
+    idTokenClaims.put("acr", Map.of("essential", true,
+        "values", List.of("http://id.elegnamnden.se/loa/1.0/loa3", "http://id.elegnamnden.se/loa/1.0/loa4")));
+    model.setClaims(Map.of("id_token", idTokenClaims));
+
+    final Result result = generate(model);
+
+    final JsonNode idToken = inRequestObject
+        ? JsonMapper.builder().build().valueToTree(map(result.claims().getClaim("claims"))).get("id_token")
+        : JsonMapper.builder().build().readTree(result.url("claims")).get("id_token");
+    Assertions.assertEquals(Set.of("value"), Set.copyOf(idToken.get("valueWithComma").propertyNames()));
+    Assertions.assertEquals("Lindström, Martin", idToken.get("valueWithComma").get("value").asString());
+    Assertions.assertEquals(List.of("b, c", "a", " d "),
+        idToken.get("valuesWithComma").get("values").valueStream().map(JsonNode::asString).toList());
+    Assertions.assertEquals(List.of("x", "x"),
+        idToken.get("duplicateValues").get("values").valueStream().map(JsonNode::asString).toList());
+    Assertions.assertTrue(idToken.get("acr").get("essential").asBoolean());
+    Assertions.assertEquals(List.of("http://id.elegnamnden.se/loa/1.0/loa3", "http://id.elegnamnden.se/loa/1.0/loa4"),
+        idToken.get("acr").get("values").valueStream().map(JsonNode::asString).toList());
+  }
+
   @Test
   void anEssentialClaimWithAValueIsAlsoKeptInTheRequestObject() throws Exception {
     final OIDCAuthnRequestParameterModel model = requestObjectModel();
