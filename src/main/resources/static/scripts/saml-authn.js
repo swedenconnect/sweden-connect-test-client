@@ -837,9 +837,13 @@ class AuthnRequest {
   }
 
   /**
-   * Initializes the AuthnRequest builder view.
+   * Initializes the AuthnRequest builder view. The view is set up again on the same page each time the flow is
+   * restarted, so the event handlers of an earlier view are removed first. All handlers of the view are attached in the
+   * "samlRequest" event namespace.
    */
   init() {
+    $('#saml-build-authn').find('*').addBack().off('.samlRequest');
+
     this.initRequestBindings(this.pars.request_binding, this.pars.possible_request_bindings);
     this.initRelayState(this.pars.relay_state);
     this.initSignatureOptions(this.pars.signature_option);
@@ -849,7 +853,7 @@ class AuthnRequest {
     this.initIssueInstant();
     // advanced
 
-    $('#saml-advanced-authn-request-button').click(function() {
+    $('#saml-advanced-authn-request-button').on('click.samlRequest', function() {
       $('#saml-advanced-authn-request-button-div').hide();
       $('#saml-advanced-authn-request').show();
     });
@@ -863,11 +867,11 @@ class AuthnRequest {
     this.initScoping();
     this.initSignMessage(this.pars.idp, this.pars.sign_message);
 
-    $('#saml-request-restart-button').click(() => {
+    $('#saml-request-restart-button').on('click.samlRequest', () => {
       this.restartCallback();
     });
 
-    $('#saml-request-submit-button').click(() => {
+    $('#saml-request-submit-button').on('click.samlRequest', () => {
       this.sendAuthnRequestCallback(this.readAndGetAuthnRequestParameters());
     });
   }
@@ -995,7 +999,7 @@ class AuthnRequest {
     const destination = $('#saml-request-destination')
     destination.val(dest || '');
 
-    $('#saml-request-binding-select').change((event) => {
+    $('#saml-request-binding-select').on('change.samlRequest', (event) => {
       const binding = event.target.value;
       if (binding === "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" && redirectUrl) {
         destination.val(redirectUrl);
@@ -1014,7 +1018,7 @@ class AuthnRequest {
     let issueInstantInput = $('#saml-request-issueinstant');
     issueInstantInput.val('');
 
-    $('#saml-request-issueinstant-button').click(function() {
+    $('#saml-request-issueinstant-button').on('click.samlRequest', function() {
       issueInstantInput.val(new Date().toISOString());
       $(this).hide();
     });
@@ -1044,7 +1048,7 @@ class AuthnRequest {
       issuerRow.hide();
     }
 
-    issuerCheckbox.change(function() {
+    issuerCheckbox.on('change.samlRequest', function() {
       issuerRow.toggle(this.checked);
     });
   }
@@ -1082,6 +1086,7 @@ class AuthnRequest {
     let nipFormatSelect = $('#saml-request-nip-format');
     let nipDiv = $('#saml-request-nip-div');
 
+    nipFormatSelect.empty();
     for (let format of AuthnRequest.NAME_ID_FORMATS) {
       nipFormatSelect.append(new Option(format, format));
     }
@@ -1104,7 +1109,7 @@ class AuthnRequest {
       nipDiv.hide();
     }
 
-    nipCheckbox.change(function() {
+    nipCheckbox.on('change.samlRequest', function() {
       nipDiv.toggle(this.checked);
     });
 
@@ -1246,11 +1251,11 @@ class AuthnRequest {
       samlRequestRacDiv.hide();
     }
 
-    samlRequestRacCheckbox.change(function() {
+    samlRequestRacCheckbox.on('change.samlRequest', function() {
       samlRequestRacDiv.toggle(this.checked);
     });
 
-    samlRequestRacList.on('click', 'button.btn-close', function() {
+    samlRequestRacList.on('click.samlRequest', 'button.btn-close', function() {
       let ul = $(this).closest('ul');
       $(this).closest('li').remove();
 
@@ -1268,7 +1273,7 @@ class AuthnRequest {
       }
     });
 
-    $('#saml-request-rac-custom-button').click(function() {
+    $('#saml-request-rac-custom-button').on('click.samlRequest', function() {
       let samlRequestRacCustom = $('#saml-request-rac-custom');
       let uri = samlRequestRacCustom.val().trim();
       if (uri !== '') {
@@ -1326,7 +1331,7 @@ class AuthnRequest {
     }
     acsCustomDiv.hide();
 
-    acsSelect.change(function() {
+    acsSelect.on('change.samlRequest', function() {
       let selectedOption = $(this).find('option:selected');
 
       if (selectedOption.val() === 'add') {
@@ -1437,11 +1442,11 @@ class AuthnRequest {
     pseAttrsListingDiv.empty();
     pseCheckbox.prop('checked', false);
 
-    pseCheckbox.change(function() {
+    pseCheckbox.on('change.samlRequest', function() {
       pseDiv.toggle(this.checked);
     })
 
-    pseAttrsListingDiv.on('click', 'button.btn-close', function() {
+    pseAttrsListingDiv.on('click.samlRequest', 'button.btn-close', function() {
       $(this).parent().parent().parent().remove();
 
       if (pseAttrsListingDiv.children().length === 0) {
@@ -1542,7 +1547,7 @@ class AuthnRequest {
       umDiv.show();
     }
 
-    umCheckbox.change(function() {
+    umCheckbox.on('change.samlRequest', function() {
       umDiv.toggle(this.checked);
     });
   }
@@ -1629,7 +1634,7 @@ class AuthnRequest {
     scopingCheckbox.prop('checked', false);
 
     let scopingRequestIdsList = $('#saml-request-scoping-rid-div');
-    $('#saml-request-scoping-rid-add-button').click(function() {
+    $('#saml-request-scoping-rid-add-button').on('click.samlRequest', function() {
       let mainDiv = $('<div>', {
         class: 'row mt-3'
       });
@@ -1648,7 +1653,7 @@ class AuthnRequest {
     });
 
     let scopingIdpList = $('#saml-request-scoping-idps-div');
-    $('#saml-request-scoping-add-button').click(function() {
+    $('#saml-request-scoping-add-button').on('click.samlRequest', function() {
       let mainDiv = $('<div>', {
         class: 'row mt-3'
       });
@@ -1666,7 +1671,7 @@ class AuthnRequest {
       scopingIdpList.append(mainDiv);
     });
 
-    scopingCheckbox.change(function() {
+    scopingCheckbox.on('change.samlRequest', function() {
       scopingDiv.toggle(this.checked);
     });
   }
@@ -1712,6 +1717,7 @@ class AuthnRequest {
     let smDiv = $('#saml-request-sm-div');
     let smMimeSelect = $('#saml-request-sm-mimetype-select');
 
+    smMimeSelect.empty();
     for (let mt of AuthnRequest.SM_MIME_TYPES) {
       smMimeSelect.append(new Option(mt, mt));
     }
@@ -1738,7 +1744,7 @@ class AuthnRequest {
       smDiv.hide();
     }
 
-    smCheckbox.change(function() {
+    smCheckbox.on('change.samlRequest', function() {
       smDiv.toggle(this.checked);
     });
 
