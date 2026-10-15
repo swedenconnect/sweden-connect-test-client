@@ -92,7 +92,7 @@ public class OidcConfiguration {
 
   @Bean
   OidcOpRegistry oidcOpRegistry(@Qualifier("testclient.oidc.OpList") @Nonnull final List<OidcOp> staticOps) {
-    return new OidcOpRegistry(staticOps);
+    return new OidcOpRegistry(staticOps, this.properties.getOpSorting());
   }
 
   @Bean("testclient.oidc.RpList")

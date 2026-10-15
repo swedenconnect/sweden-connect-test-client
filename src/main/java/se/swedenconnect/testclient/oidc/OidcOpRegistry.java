@@ -19,6 +19,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import lombok.Builder;
 import lombok.Getter;
+import se.swedenconnect.testclient.utils.IdentifierSorting;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,8 +28,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -42,8 +43,14 @@ public class OidcOpRegistry {
   /** The statically configured OP:s. */
   private final List<OidcOp> staticOps;
 
-  /** The OP:s that have been configured using OpenID Federation - keyed by entity identifier. */
-  private final Map<String, OidcOp> federationOps = new ConcurrentHashMap<>();
+  /** The sorting order of the OP:s in the OP selection list, see {@link #getSortedOps()}. */
+  private final List<String> opSorting;
+
+  /**
+   * The OP:s that have been configured using OpenID Federation - keyed by entity identifier, in the order they were
+   * registered.
+   */
+  private final Map<String, OidcOp> federationOps = Collections.synchronizedMap(new LinkedHashMap<>());
 
   /** The errors from the last federation refresh. */
   @Getter
@@ -63,12 +70,24 @@ public class OidcOpRegistry {
    * @param staticOps the statically configured OP:s
    */
   public OidcOpRegistry(@Nonnull final List<OidcOp> staticOps) {
-    this.staticOps = List.copyOf(staticOps);
+    this(staticOps, List.of());
   }
 
   /**
-   * Gets all OP:s. If an OP has been both statically configured and resolved from the federation, the federation
-   * version is used.
+   * Constructor.
+   *
+   * @param staticOps the statically configured OP:s
+   * @param opSorting the sorting order of the OP:s in the OP selection list, see {@link #getSortedOps()}
+   */
+  public OidcOpRegistry(@Nonnull final List<OidcOp> staticOps, @Nonnull final List<String> opSorting) {
+    this.staticOps = List.copyOf(staticOps);
+    this.opSorting = List.copyOf(opSorting);
+  }
+
+  /**
+   * Gets all OP:s. The statically configured OP:s come first, followed by the federation OP:s in the order they were
+   * first discovered. If an OP has been both statically configured and resolved from the federation, the federation
+   * version is used, at the position of the static OP.
    *
    * @return a list of OP:s
    */
@@ -76,8 +95,21 @@ public class OidcOpRegistry {
   public List<OidcOp> getOps() {
     final Map<String, OidcOp> ops = new LinkedHashMap<>();
     this.staticOps.forEach(op -> ops.put(op.getEntityId(), op));
-    ops.putAll(this.federationOps);
+    this.getFederationOps().forEach(op -> ops.put(op.getEntityId(), op));
     return List.copyOf(ops.values());
+  }
+
+  /**
+   * Gets all OP:s, as given by {@link #getOps()}, sorted for the OP selection list. A sorting pattern matches an OP if
+   * it occurs anywhere in its entity identifier, ignoring case. The OP:s are grouped by the first pattern they match,
+   * in the order the patterns are given, and OP:s matching no pattern come last. Within each group, the order of
+   * {@link #getOps()} is kept.
+   *
+   * @return a sorted list of OP:s
+   */
+  @Nonnull
+  public List<OidcOp> getSortedOps() {
+    return IdentifierSorting.sort(this.getOps(), OidcOp::getEntityId, this.opSorting);
   }
 
   /**
@@ -91,13 +123,27 @@ public class OidcOpRegistry {
   }
 
   /**
-   * Gets the OP:s that have been configured using OpenID Federation.
+   * Gets the OP:s that have been configured using OpenID Federation, in the order they were first discovered.
    *
    * @return a list of OP:s
    */
   @Nonnull
   public List<OidcOp> getFederationOps() {
-    return List.copyOf(this.federationOps.values());
+    final List<OidcOp> ops = new ArrayList<>();
+    synchronized (this.federationOpStatuses) {
+      synchronized (this.federationOps) {
+        // An OP may have been discovered, but not resolved, during an earlier refresh than the one when it was
+        // registered, so the order of the statuses is used
+        this.federationOpStatuses.keySet().stream()
+            .map(this.federationOps::get)
+            .filter(Objects::nonNull)
+            .forEach(ops::add);
+        this.federationOps.values().stream()
+            .filter(op -> !this.federationOpStatuses.containsKey(op.getEntityId()))
+            .forEach(ops::add);
+      }
+    }
+    return ops;
   }
 
   /**

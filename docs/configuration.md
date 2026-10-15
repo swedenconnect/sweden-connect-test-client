@@ -233,7 +233,7 @@ configured sources.
 | `testclient.saml.federation.source[].metadata-location` | Where the metadata is fetched from. Either a URL, or a file or classpath resource holding a static metadata document. **Required.** | Resource | - |
 | `testclient.saml.federation.source[].validation-certificate` | The certificate used to validate the signature of the downloaded metadata. If it is not assigned, **no signature validation is performed**, and a warning is logged. | Certificate | - |
 | `testclient.saml.federation.source[].backup-location` | The file where downloaded metadata is cached, so that the application may start even if the metadata source can not be reached. Strongly recommended when the metadata is downloaded over HTTP. Parent directories are created if needed. | File | - |
-| `testclient.saml.federation.idp-sorting[]` | Strings that are matched against the entity identifiers of the Identity Providers in order to control the order in which they are listed in the user interface. | List of strings | empty |
+| `testclient.saml.federation.idp-sorting[]` | Controls the order of the IdP:s in the IdP selection list. A string matches an IdP if it occurs anywhere in the IdP's entityID, ignoring case. The IdP:s are grouped by the first string they match, and the groups are listed in the order the strings are given. IdP:s that match no string come last. Within each group, the IdP:s are listed in metadata order. Nothing is filtered out. | List of strings | empty |
 
 If more than one source is configured, they are combined, and the Identity Providers of all of them are made
 available. The list of Identity Providers is cached for 10 minutes.
@@ -283,6 +283,7 @@ federation, the federation version is used.
 | Property | Description | Type | Default value |
 | :--- | :--- | :--- | :--- |
 | `testclient.oidc.openid-fed-authorities[]` | The entity identifiers of the immediate superiors of our RP:s. Published as `authority_hints` in the entity configurations. **Required** when OpenID Federation is enabled. | List of strings | empty |
+| `testclient.oidc.op-sorting[]` | Controls the order of the OP:s in the OP selection list. A string matches an OP if it occurs anywhere in the OP's entity identifier, ignoring case. The OP:s are grouped by the first string they match, and the groups are listed in the order the strings are given. OP:s that match no string come last. Within each group, statically configured OP:s come first, followed by OP:s from the federation in the order they were first discovered. Nothing is filtered out. | List of strings | empty |
 
 ### The Relying Parties
 

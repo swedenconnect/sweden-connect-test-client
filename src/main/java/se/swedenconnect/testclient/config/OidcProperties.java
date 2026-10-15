@@ -47,6 +47,14 @@ public class OidcProperties implements InitializingBean {
   private List<String> openidFedAuthorities;
 
   /**
+   * Sorting order of the OP:s in the OP selection list. A pattern matches an OP if it occurs anywhere in its entity
+   * identifier, ignoring case. OP:s are grouped by the first pattern they match, in the order the patterns are given,
+   * and OP:s matching no pattern come last.
+   */
+  @Getter
+  private final List<String> opSorting = new ArrayList<>();
+
+  /**
    * The Relying Parties.
    */
   @Getter
