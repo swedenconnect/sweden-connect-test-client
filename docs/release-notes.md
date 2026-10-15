@@ -8,7 +8,7 @@
 
 ### Version 1.0.19
 
-Date: _not yet released_
+Date: 2026-10-19
 
 - Fixed SAML requests being sent to the IdP of an earlier attempt after restarting on the same page. See 
   [#112](https://github.com/swedenconnect/sweden-connect-test-client/issues/112).
