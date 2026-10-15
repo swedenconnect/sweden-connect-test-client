@@ -12,6 +12,9 @@ Date: _not yet released_
 
 - Fixed SAML requests being sent to the IdP of an earlier attempt after restarting on the same page. See 
   [#112](https://github.com/swedenconnect/sweden-connect-test-client/issues/112).
+- New setting `testclient.oidc.op-sorting` for the order of the OP:s in the OP list, and the IdP sorting setting
+  `testclient.saml.federation.idp-sorting` now works as documented. See
+  [#115](https://github.com/swedenconnect/sweden-connect-test-client/issues/115).
 
 ### Version 1.0.18
 

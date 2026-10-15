@@ -221,7 +221,7 @@ public class OidcRestController {
             rp.isUseJwksUrl() ? rp.getJwksUri() : null, entityConfigurationUrl(rp)))
         .toList();
 
-    final List<OpenIdProviderModel> providers = this.opRegistry.getOps().stream()
+    final List<OpenIdProviderModel> providers = this.opRegistry.getSortedOps().stream()
         .map(op -> new OpenIdProviderModel(
             op.getEntityId(),
             op.getDisplayName(),

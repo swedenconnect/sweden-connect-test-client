@@ -96,7 +96,9 @@ public class SamlProperties implements InitializingBean {
     private final List<FederationSource> source = new ArrayList<>();
 
     /**
-     * Sorting order in UI of IdP:s.
+     * Sorting order of the IdP:s in the IdP selection list. A pattern matches an IdP if it occurs anywhere in its
+     * entityID, ignoring case. IdP:s are grouped by the first pattern they match, in the order the patterns are given,
+     * and IdP:s matching no pattern come last.
      */
     @Getter
     private final List<String> idpSorting = new ArrayList<>();

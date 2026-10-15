@@ -34,6 +34,7 @@ import se.swedenconnect.opensaml.saml2.metadata.provider.StaticMetadataProvider;
 import se.swedenconnect.testclient.config.ClientTlsProperties;
 import se.swedenconnect.testclient.config.SamlProperties;
 import se.swedenconnect.testclient.utils.HttpClientUtils;
+import se.swedenconnect.testclient.utils.IdentifierSorting;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +45,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * A bean that represents a SAML federation.
@@ -165,24 +165,8 @@ public class SamlFederation {
   public synchronized List<EntityDescriptor> getIdps() throws ResolverException {
     if (this.idpCache == null || this.cacheLastUpdate == null
         || this.cacheLastUpdate.plus(IDP_CACHE_LIFETIME).isBefore(Instant.now())) {
-      final List<List<EntityDescriptor>> sortedIdps = new ArrayList<>();
-      this.idpSortingOrder.forEach(x -> sortedIdps.add(new ArrayList<>()));
-      sortedIdps.add(new ArrayList<>());
-      final List<EntityDescriptor> idps = this.metadataProvider.getIdentityProviders();
-      for (final EntityDescriptor idp : idps) {
-        boolean sortMatch = false;
-        for (int i = 0; i < this.idpSortingOrder.size(); i++) {
-          if (idps.get(i).getEntityID().toLowerCase().contains(this.idpSortingOrder.get(i).toLowerCase())) {
-            sortedIdps.get(i).add(idp);
-            sortMatch = true;
-            break;
-          }
-        }
-        if (!sortMatch) {
-          sortedIdps.getLast().add(idp);
-        }
-      }
-      this.idpCache = sortedIdps.stream().flatMap(List::stream).collect(Collectors.toList());
+      this.idpCache = IdentifierSorting.sort(
+          this.metadataProvider.getIdentityProviders(), EntityDescriptor::getEntityID, this.idpSortingOrder);
       this.cacheLastUpdate = Instant.now();
     }
     return this.idpCache;
