@@ -1501,9 +1501,13 @@ class OIDCAuthnRequest {
     }
 
     /**
-     * Initializes the AuthnRequest builder view.
+     * Initializes the AuthnRequest builder view. The view is set up again on the same page each time the flow is
+     * restarted, so the event handlers of an earlier view are removed first. All handlers of the view are attached in
+     * the "oidcRequest" event namespace.
      */
     init() {
+        $('#oidc-build-authn').find('*').addBack().off('.oidcRequest');
+
         this.initTemplates();
         this.initModeButtons();
         this.initRequestObjectOptions();
@@ -1511,10 +1515,10 @@ class OIDCAuthnRequest {
         this.initKeyOptions();
         this.initTokenRequestOptions();
         let parent = this;
-        $('#oidc-request-claims-present').click(function () {
+        $('#oidc-request-claims-present').on('click.oidcRequest', function () {
             parent.computeClaims();
         });
-        $('#oidc-request-claims-request-body').click(function () {
+        $('#oidc-request-claims-request-body').on('click.oidcRequest', function () {
             parent.computeClaims();
         });
         this.claimIdentifiers = {
@@ -1541,8 +1545,7 @@ class OIDCAuthnRequest {
         }
         for (const type of ['id', 'userinfo']) {
             $('#oidc-request-claims-' + type + '-add-button')
-                .off('click')
-                .on('click', function () {
+                .on('click.oidcRequest', function () {
                     parent.switchOnClaims();
                     parent.addClaimRow(type);
                 });
@@ -1574,7 +1577,7 @@ class OIDCAuthnRequest {
         this.computeClaims();
 
 
-        $('#oidc-request-restart-button').click(() => {
+        $('#oidc-request-restart-button').on('click.oidcRequest', () => {
             $("#oidc-request-main").show();
             $('#oidc-id-claims-table')
                 .children()
@@ -1590,14 +1593,14 @@ class OIDCAuthnRequest {
         });
 
         // The method is chosen by the button, and is not part of the request that is built
-        $('#oidc-request-submit-get-button').off('click').click(() => {
+        $('#oidc-request-submit-get-button').on('click.oidcRequest', () => {
             this.sendAuthnRequestCallback(this.readAndGetAuthnRequestParameters(), 'GET');
         });
-        $('#oidc-request-submit-post-button').off('click').click(() => {
+        $('#oidc-request-submit-post-button').on('click.oidcRequest', () => {
             this.sendAuthnRequestCallback(this.readAndGetAuthnRequestParameters(), 'POST');
         });
 
-        $('#oidc-request-export-button').click(() => {
+        $('#oidc-request-export-button').on('click.oidcRequest', () => {
             this.export();
         });
 
@@ -1635,19 +1638,19 @@ class OIDCAuthnRequest {
         let umCheckbox = $("#oidc-request-um-present");
         let rbCheckbox = $('#oidc-request-um-request-body');
         let um64 = $('#oidc-request-um-b64');
-        um64.change(function () {
+        um64.on('change.oidcRequest', function () {
             parent.pars["userMessage"]["b64Encode"] = this.checked;
         });
-        umCheckbox.change(function () {
+        umCheckbox.on('change.oidcRequest', function () {
             umDiv.toggle(this.checked || rbCheckbox.prop("checked"));
             parent.pars["userMessage"]["valuePresent"] = this.checked;
         });
-        rbCheckbox.change(function () {
+        rbCheckbox.on('change.oidcRequest', function () {
             umDiv.toggle(umCheckbox.prop("checked") || this.checked);
             parent.pars["userMessage"]["requestBody"] = this.checked;
         });
         let umMimeType = $('#oidc-request-um-mimetype-select');
-        umMimeType.change(function () {
+        umMimeType.on('change.oidcRequest', function () {
             parent.pars["userMessage"]["mime_type"] = umMimeType.val() || null;
         });
         this.refreshUserMessage();
@@ -1681,28 +1684,28 @@ class OIDCAuthnRequest {
         let sigCheckbox = $('#oidc-request-sig-present');
         let sigb64Checkbox = $('#oidc-request-sig-b64');
         let sigRbCheckbox = $('#oidc-request-sig-request-body');
-        sigb64Checkbox.change(function () {
+        sigb64Checkbox.on('change.oidcRequest', function () {
             parent.pars["signMessage"]["b64Encode"] = this.checked;
         });
-        sigCheckbox.change(function () {
+        sigCheckbox.on('change.oidcRequest', function () {
             parent.pars["signMessage"]["valuePresent"] = this.checked;
             parent.updateSignMessageView(true);
         });
-        sigRbCheckbox.change(function () {
+        sigRbCheckbox.on('change.oidcRequest', function () {
             parent.pars["signMessage"]["requestBody"] = this.checked;
             parent.updateSignMessageView(true);
         });
 
         let sigMimeType = $('#oidc-request-sig-mimetype-select');
-        sigMimeType.change(function () {
+        sigMimeType.on('change.oidcRequest', function () {
             parent.signMessageObject()["mime_type"] = sigMimeType.val() || null;
         });
 
         let tbsTextarea = $('#oidc-request-tbs-textarea');
-        tbsTextarea.on('input change', function () {
+        tbsTextarea.on('input.oidcRequest change.oidcRequest', function () {
             parent.pars["signMessage"]["tbsData"] = tbsTextarea.prop('value');
         });
-        $('#oidc-request-tbs-include').change(function () {
+        $('#oidc-request-tbs-include').on('change.oidcRequest', function () {
             parent.pars["signMessage"]["includeTbsData"] = this.checked;
             tbsTextarea.prop('disabled', !this.checked);
         });
@@ -1719,7 +1722,7 @@ class OIDCAuthnRequest {
         });
         this.createIncludeRows($('#oidc-request-sig-jwt-claim-rows'), OIDCAuthnRequest.SIGN_REQUEST_JWT_CLAIMS,
             () => this.pars.signMessage, 'oidc-request-sig-');
-        sigJwtSign.change(function () {
+        sigJwtSign.on('change.oidcRequest', function () {
             parent.pars["signMessage"]["signJwt"] = this.checked;
             sigJwtSignKey.prop('disabled', !this.checked);
             // The claims are included in a signed JWT and left out of an unsecured one
@@ -1729,10 +1732,10 @@ class OIDCAuthnRequest {
             parent.refreshIncludeRows(OIDCAuthnRequest.SIGN_REQUEST_JWT_CLAIMS, parent.pars.signMessage,
                 'oidc-request-sig-');
         });
-        sigJwtSignKey.change(function () {
+        sigJwtSignKey.on('change.oidcRequest', function () {
             parent.pars["signMessage"]["signKey"] = sigJwtSignKey.val();
         });
-        $('#oidc-request-sig-jwt-encrypt').change(function () {
+        $('#oidc-request-sig-jwt-encrypt').on('change.oidcRequest', function () {
             parent.pars["signMessage"]["encryptJwt"] = this.checked;
         });
 
@@ -1841,10 +1844,10 @@ class OIDCAuthnRequest {
      */
     initModeButtons() {
         this.pars.requestMode = this.getMode();
-        $('#oidc-request-mode-request').off('click').on('click', () => {
+        $('#oidc-request-mode-request').on('click.oidcRequest', () => {
             this.applyMode(OIDCAuthnRequest.MODE_REQUEST);
         });
-        $('#oidc-request-mode-request-body').off('click').on('click', () => {
+        $('#oidc-request-mode-request-body').on('click.oidcRequest', () => {
             this.applyMode(OIDCAuthnRequest.MODE_REQUEST_BODY);
         });
         this.updateModeButtons();
@@ -1978,7 +1981,7 @@ class OIDCAuthnRequest {
         let parent = this;
         const key = OIDCAuthnRequest.messageKey(msg.lang_code);
         const messages = () => sig ? parent.signMessageObject() : parent.pars.userMessage;
-        textArea.on('input change', function () {
+        textArea.on('input.oidcRequest change.oidcRequest', function () {
             messages()[key] = textArea.prop('value');
         });
         let textAreaCloseButton = $('<button>', {
@@ -2038,21 +2041,21 @@ class OIDCAuthnRequest {
         if (type === 'id') {
             this.initValueListLine(this.claimAcrLine(currentIndex, type));
         }
-        this.getClaimElement(currentIndex, this.claimIdentifiers[type]["add-value-button"]).off('click')
-            .on('click', () => {
+        this.getClaimElement(currentIndex, this.claimIdentifiers[type]["add-value-button"])
+            .on('click.oidcRequest', () => {
                 this.addClaimValueField(currentIndex, type).trigger('focus');
             });
         this.computeClaims();
         // "Essential" and the value are independent - a claim may be requested as essential with a value
         // (OpenID Connect Core 1.0, section 5.5.1)
-        essentialCheckBox.click(function () {
+        essentialCheckBox.on('click.oidcRequest', function () {
             parent.computeClaims();
         })
-        keyInput.on('input change', function () {
+        keyInput.on('input.oidcRequest change.oidcRequest', function () {
             parent.updateClaimValueMode(currentIndex, type);
             parent.computeClaims();
         });
-        removeButton.off('click').click(function () {
+        removeButton.on('click.oidcRequest', function () {
             clone.remove();
             parent.computeClaims();
         });
@@ -2134,8 +2137,8 @@ class OIDCAuthnRequest {
             text: '\u00d7'
         });
         const field = $('<div>', { class: 'input-group mb-1' }).append(input).append(remove);
-        input.on('input change', () => this.computeClaims());
-        remove.on('click', () => {
+        input.on('input.oidcRequest change.oidcRequest', () => this.computeClaims());
+        remove.on('click.oidcRequest', () => {
             field.remove();
             OIDCAuthnRequest.updateClaimValueRemoveButtons(valuesDiv);
             this.computeClaims();
@@ -2284,7 +2287,7 @@ class OIDCAuthnRequest {
         inputElement.prop("value", parent.pars[valueReference[0]][valueReference[1]]["value"]);
         presentElement.prop("checked", parent.pars[valueReference[0]][valueReference[1]]["valuePresent"]);
         requestBodyElement.prop("checked", parent.pars[valueReference[0]][valueReference[1]]["requestBody"]);
-        requestBodyElement.click(function () {
+        requestBodyElement.on('click.oidcRequest', function () {
             let isChecked = presentElement.prop('checked');
             parent.pars[valueReference[0]][valueReference[1]]["requestBody"] = requestBodyElement.prop("checked");
             let isRbChecked = requestBodyElement.prop('checked');
@@ -2311,11 +2314,11 @@ class OIDCAuthnRequest {
             }
         };
         if (valueReference != null) {
-            inputElement.change(function () {
+            inputElement.on('change.oidcRequest', function () {
                 parent.pars[valueReference[0]][valueReference[1]]["value"] = inputElement.prop('value');
             });
         }
-        $(presentElement).click(onClickFunction);
+        $(presentElement).on('click.oidcRequest', onClickFunction);
         onClickFunction();
     }
 
@@ -2332,7 +2335,7 @@ class OIDCAuthnRequest {
         inputElement.prop("value", parent.pars[valueReference]["value"]);
         presentElement.prop("checked", parent.pars[valueReference]["valuePresent"]);
         requestBodyElement.prop("checked", parent.pars[valueReference]["requestBody"]);
-        requestBodyElement.click(function () {
+        requestBodyElement.on('click.oidcRequest', function () {
             let isChecked = presentElement.prop('checked');
             let isRbchecked = requestBodyElement.prop("checked");
             let disabled = !(isChecked || isRbchecked);
@@ -2359,11 +2362,11 @@ class OIDCAuthnRequest {
             parent.pars[valueReference]["valuePresent"] = isChecked;
         };
         if (valueReference != null) {
-            inputElement.change(function () {
+            inputElement.on('change.oidcRequest', function () {
                 parent.pars[valueReference]["value"] = inputElement.prop('value');
             });
         }
-        $(presentElement).click(onClickFunction);
+        $(presentElement).on('click.oidcRequest', onClickFunction);
         onClickFunction();
     }
 
@@ -2374,7 +2377,7 @@ class OIDCAuthnRequest {
     initCallUserInfo() {
         this.pars.callUserInfo = this.pars.callUserInfo !== false;
         this.refreshCallUserInfo();
-        $('#oidc-request-call-userinfo-check').off('change').on('change', (event) => {
+        $('#oidc-request-call-userinfo-check').on('change.oidcRequest', (event) => {
             this.pars.callUserInfo = $(event.target).prop('checked');
         });
     }
@@ -2440,18 +2443,18 @@ class OIDCAuthnRequest {
         let parent = this;
         let signRequestCheckbox = $("#oidc-request-sign-request-body");
         signRequestCheckbox.prop("checked", parent.pars["requestObject"]["signRequest"]);
-        signRequestCheckbox.click(function () {
+        signRequestCheckbox.on('click.oidcRequest', function () {
             parent.pars["requestObject"]["signRequest"] = signRequestCheckbox.prop("checked");
         });
         let encryptRequestCheckbox = $("#oidc-request-encrypt-request-body");
         encryptRequestCheckbox.prop("checked", parent.pars["requestObject"]["encryptRequest"]);
-        encryptRequestCheckbox.click(function () {
+        encryptRequestCheckbox.on('click.oidcRequest', function () {
             parent.pars["requestObject"]["encryptRequest"] = encryptRequestCheckbox.prop("checked");
         });
 
         let inRequestBodyCheckbox = $("#oidc-request-claims-request-body");
         inRequestBodyCheckbox.prop("checked", parent.pars["claimInRequestBody"]);
-        inRequestBodyCheckbox.click(function () {
+        inRequestBodyCheckbox.on('click.oidcRequest', function () {
             parent.pars["claimInRequestBody"] = inRequestBodyCheckbox.prop("checked");
         });
 
@@ -2463,7 +2466,7 @@ class OIDCAuthnRequest {
                 && Object.keys(parent.pars["claims"] || {}).length > 0;
         }
         inRequestCheckbox.prop("checked", parent.pars["claimInRequest"]);
-        inRequestCheckbox.click(function () {
+        inRequestCheckbox.on('click.oidcRequest', function () {
             parent.pars["claimInRequest"] = inRequestCheckbox.prop("checked");
         });
     }
@@ -2487,7 +2490,7 @@ class OIDCAuthnRequest {
             this.pars[moduleReference].moduleEnabled = visible;
             OIDCAuthnRequest.refreshDisplayToggle(buttonSelector, optionsSelector, visible, label);
         };
-        $(buttonSelector).off("click").click(() => apply(!this.pars[moduleReference].moduleEnabled));
+        $(buttonSelector).on('click.oidcRequest', () => apply(!this.pars[moduleReference].moduleEnabled));
         apply(this.pars[moduleReference].moduleEnabled || false);
     }
 
@@ -2516,19 +2519,19 @@ class OIDCAuthnRequest {
         let fieldPresentCheckbox = $(fieldPresentSelector);
         let parent = this;
         requestBodyCheckbox.prop("checked", parent.pars[valueReference[0]][valueReference[1]]["requestBody"]);
-        requestBodyCheckbox.click(function () {
+        requestBodyCheckbox.on('click.oidcRequest', function () {
             parent.pars[valueReference[0]][valueReference[1]]["requestBody"] = requestBodyCheckbox.prop("checked");
         });
         fieldPresentCheckbox.prop("checked", parent.pars[valueReference[0]][valueReference[1]]["valuePresent"]);
-        fieldPresentCheckbox.click(function () {
+        fieldPresentCheckbox.on('click.oidcRequest', function () {
             parent.pars[valueReference[0]][valueReference[1]]["valuePresent"] = fieldPresentCheckbox.prop("checked");
         });
         input.prop("value", parent.pars[valueReference[0]][valueReference[1]]["value"]);
         input.prop("disabled", true);
-        $(buttonSelector).click(function () {
+        $(buttonSelector).on('click.oidcRequest', function () {
             input.prop("disabled", false);
         })
-        input.change(function () {
+        input.on('change.oidcRequest', function () {
             parent.pars[valueReference[0]][valueReference[1]]["value"] = input.prop("value");
         })
     }
@@ -2609,7 +2612,7 @@ class OIDCAuthnRequest {
             signKeySelector.append('<option value="' + key["kid"] + '">' + description + '</option>')
         });
         signKeySelector.val(this.pars["keys"]["signKey"]);
-        signKeySelector.change(() => {
+        signKeySelector.on('change.oidcRequest', () => {
             this.pars["keys"]["signKey"] = signKeySelector.val();
         });
         let encryptionKeySelector = $("#oidc-request-advanced-enckey-select");
@@ -2622,7 +2625,7 @@ class OIDCAuthnRequest {
             encryptionKeySelector.append('<option value="' + key["kid"] + '">' + description + '</option>')
         });
         encryptionKeySelector.val(this.pars["keys"]["encKey"]);
-        encryptionKeySelector.change(() => {
+        encryptionKeySelector.on('change.oidcRequest', () => {
             this.pars["keys"]["encKey"] = encryptionKeySelector.val();
         });
     }
@@ -2696,7 +2699,7 @@ class OIDCAuthnRequest {
         this.createIncludeRows($('#oidc-token-request-assertion-claim-rows'),
             OIDCAuthnRequest.TOKEN_REQUEST_ASSERTION_CLAIMS, getSettings, 'oidc-token-request-');
 
-        $('#oidc-token-request-auth-method-select').off('change').on('change', (event) => {
+        $('#oidc-token-request-auth-method-select').on('change.oidcRequest', (event) => {
             const method = $(event.target).val();
             settings.authMethod = method;
             // The values typed in the rows are kept
@@ -2754,11 +2757,11 @@ class OIDCAuthnRequest {
             if (row.filledIn) {
                 input.attr('placeholder', 'Filled in at time of sending');
             }
-            input.on('input change', () => {
+            input.on('input.oidcRequest change.oidcRequest', () => {
                 par(row.key).value = input.val();
             });
             const include = $('<input>', { type: 'checkbox', class: 'form-check-input', id: id + '-include' });
-            include.on('change', () => {
+            include.on('change.oidcRequest', () => {
                 par(row.key)[includeKey] = include.prop('checked');
             });
             const rowDiv = $('<div>', { class: 'row mt-4' })
@@ -2801,17 +2804,17 @@ class OIDCAuthnRequest {
         let inputSelect = $(inputSelector);
         let parent = this;
         inputSelect.val(parent.pars[valueReference[0]][valueReference[1]]["value"]);
-        inputSelect.change(function () {
+        inputSelect.on('change.oidcRequest', function () {
             parent.pars[valueReference[0]][valueReference[1]]["value"] = inputSelect.val();
         })
         let requestBodyCheckbox = $(requestBodySelector);
         requestBodyCheckbox.prop("checked", parent.pars[valueReference[0]][valueReference[1]]["requestBody"]);
-        requestBodyCheckbox.click(function () {
+        requestBodyCheckbox.on('click.oidcRequest', function () {
             parent.pars[valueReference[0]][valueReference[1]]["requestBody"] = requestBodyCheckbox.prop("checked");
         })
         let presentCheckbox = $(presentSelector);
         presentCheckbox.prop("checked", parent.pars[valueReference[0]][valueReference[1]]["valuePresent"]);
-        presentCheckbox.click(function () {
+        presentCheckbox.on('click.oidcRequest', function () {
             parent.pars[valueReference[0]][valueReference[1]]["valuePresent"] = presentCheckbox.prop("checked");
         })
     }
@@ -2899,11 +2902,11 @@ class OIDCAuthnRequest {
         }
         this.refreshValueList(row);
 
-        presentCheckbox.off('change').change(() => {
+        presentCheckbox.on('change.oidcRequest', () => {
             row.par().valuePresent = presentCheckbox.prop('checked');
             this.updateSplitLines();
         });
-        requestBodyCheckbox.off('change').change(() => {
+        requestBodyCheckbox.on('change.oidcRequest', () => {
             row.par().requestBody = requestBodyCheckbox.prop('checked');
             this.updateSplitLines();
         });
@@ -2968,7 +2971,7 @@ class OIDCAuthnRequest {
 
         this.renderValueListLine(line);
 
-        list.off('click').on('click', 'button.btn-close', function () {
+        list.on('click.oidcRequest', 'button.btn-close', function () {
             const ul = $(this).closest('ul');
             const value = $(this).closest('li').find('span').text();
             $(this).closest('li').remove();
@@ -2986,7 +2989,7 @@ class OIDCAuthnRequest {
             updateValue();
         });
 
-        $(line.prefix + '-custom-button').off('click').click(function () {
+        $(line.prefix + '-custom-button').on('click.oidcRequest', function () {
             const custom = $(line.prefix + '-custom');
             const value = custom.val().trim();
             if (value !== '') {
@@ -3075,10 +3078,10 @@ class OIDCAuthnRequest {
         oidcRequestScopeCheckbox.prop('checked', this.pars.scope.valuePresent || false);
         oidcRequestScopeRequestBodyCheckbox.prop('checked', this.pars.scope.requestBody || false);
 
-        oidcRequestScopeCheckbox.off('change').on('change', function() {
+        oidcRequestScopeCheckbox.on('change.oidcRequest', function() {
             parent.pars.scope.valuePresent = oidcRequestScopeCheckbox.prop('checked');
         });
-        oidcRequestScopeRequestBodyCheckbox.off('change').on('change', function() {
+        oidcRequestScopeRequestBodyCheckbox.on('change.oidcRequest', function() {
             parent.pars.scope.requestBody = oidcRequestScopeRequestBodyCheckbox.prop('checked');
             parent.updateScopeBodyLine();
         });
@@ -3137,7 +3140,7 @@ class OIDCAuthnRequest {
             }
         }));
 
-        list.off('click').on('click', 'button.btn-close', function() {
+        list.on('click.oidcRequest', 'button.btn-close', function() {
             let ul = $(this).closest('ul');
             let uri = $(this).closest('li').find('span').text();
             $(this).closest('li').remove();
@@ -3155,7 +3158,7 @@ class OIDCAuthnRequest {
             updateScopeValue();
         });
 
-        $(line.prefix + '-custom-button').off('click').on('click', function() {
+        $(line.prefix + '-custom-button').on('click.oidcRequest', function() {
             let uri = customInput.val().trim();
             if (uri !== '') {
                 OIDCAuthnRequest.addSelectedScopeValue(list, uri);
@@ -3238,7 +3241,7 @@ class OIDCAuthnRequest {
             this.pars.advanced.allowDifferentValues = false;
         }
         setting.prop('checked', this.pars.advanced.allowDifferentValues);
-        setting.off('change').on('change', () => {
+        setting.on('change.oidcRequest', () => {
             this.pars.advanced.allowDifferentValues = setting.prop('checked');
             this.updateSplitLines();
         });
@@ -3248,17 +3251,17 @@ class OIDCAuthnRequest {
                 continue;
             }
             const element = $(row.prefix + '-body-' + (row.kind === 'select' ? 'select' : 'input'));
-            element.off('change').on('change', () => {
+            element.on('change.oidcRequest', () => {
                 row.par().requestBodyValue = element.prop('value');
             });
             if (row.modify) {
                 // As on the first line, the generated value is only edited after "Modify" is clicked
                 element.prop('disabled', true);
-                $(row.prefix + '-body-button').off('click').click(() => element.prop('disabled', false));
+                $(row.prefix + '-body-button').on('click.oidcRequest', () => element.prop('disabled', false));
             }
             // The boxes of these rows are bound by initField(), initServerGeneratedField() and initModuleSelector()
-            $(row.prefix + '-present').off('change.split').on('change.split', () => this.updateSplitLines());
-            $(row.prefix + '-request-body').off('change.split').on('change.split', () => this.updateSplitLines());
+            $(row.prefix + '-present').on('change.oidcRequest', () => this.updateSplitLines());
+            $(row.prefix + '-request-body').on('change.oidcRequest', () => this.updateSplitLines());
         }
 
         this.updateSplitLines();
