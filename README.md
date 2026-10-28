@@ -48,11 +48,11 @@ The tool is deployed in the Sweden Connect test environments:
 
 ## Releases
 
-- See [Release notes](docs/release-notes.md).
+- See [Release notes](https://docs.swedenconnect.se/sweden-connect-test-client/release-notes.html).
 
 ## Documentation
 
-See [docs/index.md](docs/index.md) for documentation about how the test client is configured and deployed.
+See [https://docs.swedenconnect.se/sweden-connect-test-client/index.html](https://docs.swedenconnect.se/sweden-connect-test-client/index.html) for documentation about how the test client is configured and deployed.
 
 -----
 
