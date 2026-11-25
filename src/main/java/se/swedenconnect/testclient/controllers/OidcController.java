@@ -126,6 +126,16 @@ public class OidcController {
     final OidcOp selectedOp = (OidcOp) httpSession.getAttribute("selected_op");
     final OidcRp selectedRp = (OidcRp) httpSession.getAttribute("selected_rp");
 
+    if (authRequest == null || selectedOp == null || selectedRp == null) {
+      log.info("OIDC redirection rejected: there is no complete OIDC authentication in the session");
+      httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE, OIDCResponse.builder()
+          .errors(List.of("The OIDC authentication is missing from the session. "
+              + "The session may have expired or its cookie may have been replaced by another application "
+              + "on the same host. Restart the authentication."))
+          .build());
+      return new ModelAndView("redirect:/");
+    }
+
     if (Objects.nonNull(error) || Objects.nonNull(errorDescription)) {
       httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE,
           OIDCResponse.builder()

@@ -375,3 +375,17 @@ span .bi {
     word-break: break-all;
     text-align: left;
 }
+
+/* Decoded claims of the token in a token field (Token Exchange, Call Protected Resource) */
+.token-summary {
+    word-break: break-all;
+}
+.token-summary .token-summary-claim {
+    margin-right: 1em;
+}
+.token-summary .token-summary-name {
+    font-weight: bold;
+}
+.token-summary .token-summary-source {
+    font-style: italic;
+}

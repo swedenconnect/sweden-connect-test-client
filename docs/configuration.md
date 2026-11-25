@@ -46,7 +46,8 @@ mvn spring-boot:run -Dspring-boot.run.profiles=<indicate your profile>
 ```
 
 > **A configuration is always required.** The `application.yml` that is bundled with the application only defines the
-> credential bundles and `testclient.non-registered-credential`. It does not assign `testclient.base-url`, which is
+> application name, session cookie name, credential bundles and `testclient.non-registered-credential`.
+> It does not assign `testclient.base-url`, which is
 > mandatory, so the application will fail at startup unless a profile, or an external configuration file, supplies the
 > rest of the settings.
 
@@ -66,6 +67,17 @@ standard Spring Boot mechanisms, for example:
 ```bash
 java -jar test-client.jar --spring.config.additional-location=file:/opt/testclient/config/
 ```
+
+### Session cookies
+
+The client uses the session cookie name `SCTCSESSION` instead of the servlet default `JSESSIONID`. Browsers share
+cookies across ports on the same host: when the client and a provider both run on `localhost`, using the same cookie
+name and path can cause the provider to overwrite the client's session cookie during authentication.
+
+The name can be overridden with `server.servlet.session.cookie.name`. Use a distinct name for each test-client
+instance that shares a host and cookie path. After changing it, restart the application and start a new authentication
+from the client. An OIDC callback without the original authentication in the session is reported as a response
+processing error; no token request is sent.
 
 <a name="the-base-url"></a>
 ## The base URL
@@ -383,6 +395,40 @@ testclient:
         token-endpoint: https://dev.swedenconnect.se/proxy/realms/BankID/protocol/openid-connect/token
         user-info-endpoint: https://dev.swedenconnect.se/proxy/realms/BankID/protocol/openid-connect/userinfo
         metadata-endpoint: https://dev.swedenconnect.se/proxy/realms/BankID/.well-known/openid-configuration
+```
+
+### Token exchange and protected resources
+
+The advanced options of the OIDC request have a **Resource** row: resource indicators
+([RFC 8707](https://www.rfc-editor.org/rfc/rfc8707)) separated by spaces. Each is sent as a `resource` parameter of its
+own, exactly as typed. In the request object, one value is a string and several are an array.
+
+The OIDC authentication result has two more frames.
+
+**Token Exchange** sends a token exchange request ([RFC 8693](https://www.rfc-editor.org/rfc/rfc8693)) to the token
+endpoint of the OP of the authentication. By default the subject token is the access token of the authentication, and
+the client is the RP of the authentication, which authenticates with `private_key_jwt` and the signing key selected
+under "Key options". `resource` and `audience` can be given more than once, one value per line. The issued token can
+be used as the next subject token, so a chain of exchanges can be tested. The request and response are checked against
+section 2 of the
+[Ena OAuth 2.0 Token Exchange Profile for Chaining Identity and Authorization](https://ena-infrastructure.github.io/specifications/ena-oauth2-chaining.html#protected-resource-acting-as-an-client).
+The checks only report: the test client sends whatever is entered. No configuration is needed.
+
+**Call Protected Resource** sends a `GET` request with an access token (`Authorization: Bearer`) to a protected
+resource and shows the response. Only the URLs configured under `testclient.oidc.protected-resources` can be called.
+The frame is hidden if none are configured.
+
+| Property | Description | Type | Default value |
+| :--- | :--- | :--- | :--- |
+| `testclient.oidc.protected-resources[].url` | The URL to call. | String | - |
+| `testclient.oidc.protected-resources[].name` | The name displayed in the user interface. | String | the URL |
+
+```yaml
+testclient:
+  oidc:
+    protected-resources:
+      - name: "API 1"
+        url: https://api1.example.com/api/hello
 ```
 
 <a name="openid-federation-settings"></a>

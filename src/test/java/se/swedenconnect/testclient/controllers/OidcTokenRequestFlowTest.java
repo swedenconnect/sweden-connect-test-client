@@ -198,6 +198,54 @@ class OidcTokenRequestFlowTest {
 
   // Token requests that are not sent
 
+  @ParameterizedTest
+  @ValueSource(strings = {"auth_request", "selected_op", "selected_rp"})
+  void incompleteAuthenticationInTheSessionGivesAnErrorAndNoRequest(final String missingAttribute) throws Exception {
+    this.session.removeAttribute(missingAttribute);
+    this.server.expect(never(), anything());
+
+    final OIDCResponse response = this.redirect();
+
+    this.server.verify();
+    assertMissingAuthentication(response);
+  }
+
+  @Test
+  void anEmptySessionGivesAnErrorAndNoRequest() throws Exception {
+    this.session.clearAttributes();
+    this.server.expect(never(), anything());
+
+    final OIDCResponse response = this.redirect();
+
+    this.server.verify();
+    assertMissingAuthentication(response);
+  }
+
+  @Test
+  void anAuthorizationErrorWithAnEmptySessionDoesNotDereferenceTheMissingRequest() {
+    this.session.clearAttributes();
+    this.server.expect(never(), anything());
+
+    assertEquals("redirect:/", this.controller.handleRedirection(new MockHttpServletRequest(), "rp",
+        "access_denied", "Denied", "state", OP, null).getViewName());
+
+    this.server.verify();
+    assertMissingAuthentication(
+        (OIDCResponse) this.session.getAttribute(OidcController.SESSION_NAME_OIDC_RESPONSE));
+  }
+
+  private static void assertMissingAuthentication(final OIDCResponse response) {
+    assertNotNull(response);
+    assertEquals(1, response.getErrors().size());
+    assertTrue(response.getErrors().getFirst().contains("OIDC authentication is missing from the session"));
+    assertTrue(response.getErrors().getFirst().contains("Restart the authentication"));
+    assertNull(response.getAuthorizationRequest());
+    assertNull(response.getTokenRequest());
+    assertNull(response.getTokenError());
+    assertNull(response.getOpError());
+    assertNull(response.getAccessToken());
+  }
+
   @Test
   void anUnavailableKeyOptionsKeyGivesATokenEndpointErrorAndNoRequest() throws Exception {
     this.session.setAttribute(OidcController.SESSION_NAME_TOKEN_REQUEST_SETTINGS,

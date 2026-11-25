@@ -816,6 +816,60 @@ class AuthorizationParameterResolverTest {
   }
 
   @Test
+  void resourceIsNotSentByDefault() throws Exception {
+    final Result result = generate(defaultModel());
+
+    Assertions.assertNull(result.parameters().get("resource"));
+  }
+
+  @Test
+  void eachResourceIsSentAsAParameterOfItsOwnAndAsTyped() throws Exception {
+    final OIDCAuthnRequestParameterModel model = defaultModel();
+    // The second value is not an absolute URI - it is sent anyway
+    model.getAdvanced().getResource().setValue("  https://api1.example.com \n not-a-uri  ");
+    model.getAdvanced().getResource().setValuePresent(true);
+
+    final Result result = generate(model);
+
+    Assertions.assertEquals(List.of("https://api1.example.com", "not-a-uri"), result.parameters().get("resource"));
+    Assertions.assertEquals(List.of("https://api1.example.com", "not-a-uri"),
+        URLUtils.parseParameters(URI.create(result.get().url()).getRawQuery()).get("resource"));
+    Assertions.assertEquals(List.of("https://api1.example.com", "not-a-uri"),
+        result.post().parameters().get("resource"));
+  }
+
+  @Test
+  void resourceInTheRequestObjectIsAStringForOneAndAnArrayForSeveral() throws Exception {
+    final OIDCAuthnRequestParameterModel one = requestObjectModel();
+    one.getAdvanced().getResource().setValue("https://api1.example.com");
+    one.getAdvanced().getResource().setRequestBody(true);
+    final Result oneResult = generate(one);
+    Assertions.assertNull(oneResult.parameters().get("resource"));
+    Assertions.assertEquals("https://api1.example.com", oneResult.claims().getClaim("resource"));
+
+    final OIDCAuthnRequestParameterModel several = requestObjectModel();
+    several.getAdvanced().getResource().setValue("https://api1.example.com https://api2.example.com");
+    several.getAdvanced().getResource().setRequestBody(true);
+    Assertions.assertEquals(List.of("https://api1.example.com", "https://api2.example.com"),
+        generate(several).claims().getStringListClaim("resource"));
+  }
+
+  @Test
+  void aBlankResourceOrAModelWithoutTheRowSendsNoResource() throws Exception {
+    final OIDCAuthnRequestParameterModel blank = defaultModel();
+    blank.getAdvanced().getResource().setValue("   ");
+    blank.getAdvanced().getResource().setValuePresent(true);
+    Assertions.assertNull(generate(blank).parameters().get("resource"));
+
+    // As in templates and requests exported before the setting existed
+    final OIDCAuthnRequestParameterModel old = defaultModel();
+    old.getAdvanced().setResource(null);
+    final Result result = generate(old);
+    Assertions.assertNull(result.parameters().get("resource"));
+    Assertions.assertEquals(RP, result.url("client_id"));
+  }
+
+  @Test
   void requestBodyModeMovesMaxAgeToTheRequestObject() throws Exception {
     final OIDCAuthnRequestParameterModel model = requestObjectModel();
     // The "In Request Body-mode" button moves an enabled row to the request object

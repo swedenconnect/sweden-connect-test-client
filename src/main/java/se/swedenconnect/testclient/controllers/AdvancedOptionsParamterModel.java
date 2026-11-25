@@ -40,6 +40,12 @@ public class AdvancedOptionsParamterModel {
   private ModelParameter prompt;
   private ModelParameter loginHint;
   private ModelParameter maxAge;
+  /**
+   * The {@code resource} parameter (RFC 8707) - one or more resource indicators separated by white space, each sent as
+   * a {@code resource} parameter of its own. {@code null}, as in templates and requests exported before the setting
+   * existed, means that it is not sent.
+   */
+  private ModelParameter resource;
   private ModelParameter codeChallengeMethod;
   private ModelParameter codeChallenge;
   /**
