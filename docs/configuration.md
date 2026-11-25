@@ -414,6 +414,16 @@ section 2 of the
 [Ena OAuth 2.0 Token Exchange Profile for Chaining Identity and Authorization](https://ena-infrastructure.github.io/specifications/ena-oauth2-chaining.html#protected-resource-acting-as-an-client).
 The checks only report: the test client sends whatever is entered. No configuration is needed.
 
+The client authentication of every request the test client sends to a token endpoint - the token request of the
+authentication and the token exchange request - is also checked against section 4.1.1 of the
+[SDG OAuth 2.0 profile](https://docs.swedenconnect.se/technical-framework/sdg/sdg-oauth2-profile.html#client-authentication):
+`private_key_jwt` only, `client_assertion_type`, an asymmetric signature, `iss` and `sub` equal to the client ID,
+`aud` equal to the token endpoint URL, `iat`, `exp`, a `jti` with at least 128 bits of entropy that has not been sent
+before in the session, and any additional claims. The checks of the token request are shown under "Authentication
+Request" on the result, and those of a token exchange request with its Ena checks. The jti entropy is estimated from
+the value's form: a random UUID has 122 bits, so it fails. The test client's defaults (`aud` = the OP's issuer, `jti` =
+a random UUID) do not meet the profile; set `aud` and `jti` under "Token request options" for the token request.
+
 **Call Protected Resource** sends a `GET` request with an access token (`Authorization: Bearer`) to a protected
 resource and shows the response. Only the URLs configured under `testclient.oidc.protected-resources` can be called.
 The frame is hidden if none are configured.

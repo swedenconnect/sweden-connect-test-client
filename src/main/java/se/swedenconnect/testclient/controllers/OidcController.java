@@ -169,15 +169,17 @@ public class OidcController {
     }
     catch (final TokenRequestException e) {
       log.info("Token request for '{}' not sent: {}", selectedRp.getEntityId(), e.getMessage());
-      return this.tokenEndpointError(authRequest, null, TokenEndpointError.builder()
+      return this.tokenEndpointError(authRequest, null, null, TokenEndpointError.builder()
           .message("The token request was not sent to the token endpoint %s. %s."
               .formatted(selectedOp.getTokenEndpoint(), e.getMessage()))
           .build());
     }
 
     final TokenRequestSender.Result tokenResult = this.tokenRequestSender.send(tokenRequest);
+    final List<TokenExchangeChecks.Check> clientAuthChecks = this.clientAuthChecks(tokenRequest,
+        selectedRp.getEntityId());
     if (tokenResult.error() != null) {
-      return this.tokenEndpointError(authRequest, tokenRequest, tokenResult.error());
+      return this.tokenEndpointError(authRequest, tokenRequest, clientAuthChecks, tokenResult.error());
     }
     final Map<String, Object> tokenResponse = Objects.requireNonNull(tokenResult.tokenResponse());
 
@@ -252,6 +254,7 @@ public class OidcController {
           .idTokenClaimTimes(ClaimTimes.of(idTokenClaims))
           .authorizationRequest(this.sentRequest(authRequest))
           .tokenRequest(tokenRequest)
+          .clientAuthChecks(clientAuthChecks)
           .userInfoResult(userInfo.getUserInfoResult())
           .userInfoClaims(userInfo.getUserInfoClaims())
           .userInfoClaimTimes(userInfo.getUserInfoClaimTimes())
@@ -293,6 +296,7 @@ public class OidcController {
           .errors(errors)
           .authorizationRequest(this.sentRequest(authRequest))
           .tokenRequest(tokenRequest)
+          .clientAuthChecks(clientAuthChecks)
           .response(tokenResponse)
           .tokenResponseBody(tokenResult.body())
           .build());
@@ -301,21 +305,41 @@ public class OidcController {
   }
 
   /**
+   * Checks the client authentication of a token request that was sent against the SDG OAuth 2.0 profile, and remembers
+   * the jti of its client assertion. Call it once per request.
+   *
+   * @param tokenRequest the token request as it was sent
+   * @param clientId the client ID of the RP
+   * @return the checks
+   */
+  @Nonnull
+  private List<TokenExchangeChecks.Check> clientAuthChecks(@Nonnull final SentTokenRequest tokenRequest,
+      @Nonnull final String clientId) {
+    final List<TokenExchangeChecks.Check> checks = ClientAuthenticationChecks.evaluate(tokenRequest, clientId,
+        ClientAuthenticationChecks.earlierJtis(this.httpSession));
+    ClientAuthenticationChecks.rememberJti(this.httpSession, tokenRequest.clientAssertion());
+    return checks;
+  }
+
+  /**
    * Stores the result of a token request that did not give a token response, and redirects to the result page.
    *
    * @param authRequest the authentication request
    * @param tokenRequest the token request as it was sent, or {@code null} if it could not be sent
+   * @param clientAuthChecks the checks of its client authentication, or {@code null} if it could not be sent
    * @param error why no token response was received
    * @return the redirect to the result page
    */
   @Nonnull
   private ModelAndView tokenEndpointError(@Nonnull final AuthenticationRequest authRequest,
-      @Nullable final SentTokenRequest tokenRequest, @Nonnull final TokenEndpointError error) {
+      @Nullable final SentTokenRequest tokenRequest,
+      @Nullable final List<TokenExchangeChecks.Check> clientAuthChecks, @Nonnull final TokenEndpointError error) {
     httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE, OIDCResponse.builder()
         .errors(error.toMessages())
         .tokenError(error)
         .authorizationRequest(this.sentRequest(authRequest))
         .tokenRequest(tokenRequest)
+        .clientAuthChecks(clientAuthChecks)
         .tokenResponseBody(error.getBody())
         .build());
     return new ModelAndView("redirect:/");

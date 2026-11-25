@@ -64,6 +64,11 @@ public class OIDCResponse {
   private SentAuthorizationRequest authorizationRequest;
   /** The token request as it was sent, or {@code null} if no token request was sent. */
   private SentTokenRequest tokenRequest;
+  /**
+   * The checks of the client authentication of the token request against the SDG OAuth 2.0 profile, or {@code null}
+   * if no token request was sent.
+   */
+  private List<TokenExchangeChecks.Check> clientAuthChecks;
   /** Why no tokens were received from the token endpoint, or {@code null} if they were (or were never requested). */
   private TokenEndpointError tokenError;
   private Map<String, Object> response;

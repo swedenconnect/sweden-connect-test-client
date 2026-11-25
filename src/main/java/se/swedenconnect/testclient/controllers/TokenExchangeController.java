@@ -231,9 +231,15 @@ public class TokenExchangeController {
     final TokenRequestSender.Result result =
         this.tokenRequestSender.send(op.getTokenEndpoint(), clientAuth.headers(), parameters);
 
+    final List<TokenExchangeChecks.Check> clientAuthChecks = ClientAuthenticationChecks.evaluate(
+        op.getTokenEndpoint(), clientAuth.headers(), parameters.toSingleValueMap(), clientAuth.clientAssertion(),
+        clientId, ClientAuthenticationChecks.earlierJtis(this.httpSession));
+    ClientAuthenticationChecks.rememberJti(this.httpSession, clientAuth.clientAssertion());
+
     final DecodedToken subjectToken = decode(trim(model.getSubjectToken()));
     final TokenExchangeResult.TokenExchangeResultBuilder builder = TokenExchangeResult.builder()
         .request(sent)
+        .clientAuthChecks(clientAuthChecks)
         .body(result.body())
         .error(result.error())
         .subjectToken(subjectToken);
@@ -492,6 +498,10 @@ public class TokenExchangeController {
 
     /** The checks against the Ena chaining profile. */
     private List<TokenExchangeChecks.Check> checks;
+
+    /** The checks of the client authentication against the SDG OAuth 2.0 profile, section 4.1.1. */
+    @JsonProperty("client_auth_checks")
+    private List<TokenExchangeChecks.Check> clientAuthChecks;
   }
 
   /**

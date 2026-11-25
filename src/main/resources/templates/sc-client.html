@@ -2427,6 +2427,17 @@
                                 </table>
                             </div>
                         </div>
+                        <div class="row hide" id="oidc-authn-result-client-auth">
+                            <div class="col-md-12">
+                                <p class="card-text">Client authentication of the token request, checked against
+                                    section 4.1.1 of the
+                                    <a href="https://docs.swedenconnect.se/technical-framework/sdg/sdg-oauth2-profile.html#client-authentication"
+                                       target="_blank">SDG OAuth 2.0 profile</a>. The checks only report.</p>
+                                <table class="table table-hover saml-table">
+                                    <tbody id="oidc-authn-result-client-auth-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
                         <div class="row">
                             <p class="text-end">
                                 <button id="oidc-authn-result-view-authnrequest-details" type="button"
@@ -2575,7 +2586,9 @@
                             resource. The test client authenticates as the RP of the authentication. The result is
                             checked against the
                             <a href="https://ena-infrastructure.github.io/specifications/ena-oauth2-chaining.html#protected-resource-acting-as-an-client"
-                               target="_blank">Ena chaining profile</a>. Empty fields are left out of the request.</p>
+                               target="_blank">Ena chaining profile</a>, and its client authentication against section 4.1.1 of the
+                            <a href="https://docs.swedenconnect.se/technical-framework/sdg/sdg-oauth2-profile.html#client-authentication"
+                               target="_blank">SDG OAuth 2.0 profile</a>. Empty fields are left out of the request.</p>
                         <div class="row">
                             <div class="col-sm-3">
                                 <label class="col-form-label" for="oidc-te-subject-token">subject_token</label>

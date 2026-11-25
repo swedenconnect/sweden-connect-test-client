@@ -434,6 +434,29 @@ class OIDCAuthenticationResult {
     }
 
     /**
+     * Appends rows for profile checks to a result table: the profile, section and level in the first column, the outcome,
+     * requirement and what was found in the second.
+     * @param tbody the table body
+     * @param checks the checks, as reported by the server (may be missing)
+     * @param profile the short name of the profile, e.g. "Ena" or "SDG"
+     */
+    static appendChecks(tbody, checks, profile) {
+        const classes = { PASS: 'table-success', FAIL: 'table-danger', INFO: 'table-info' };
+        (checks || []).forEach((check) => {
+            const cls = 'table-text ' + (classes[check.outcome] || '');
+            tbody.append($('<tr>')
+                             .append($('<th>', {
+                                 scope: 'row', class: cls,
+                                 text: profile + ' §' + check.section + (check.level !== '-' ? ' ' + check.level : '')
+                             }))
+                             .append($('<td>', { class: cls })
+                                         .append($('<span>', { class: 'fw-bold', text: check.outcome + ': ' }))
+                                         .append(document.createTextNode(check.requirement
+                                             + (check.detail ? ' - ' + check.detail : '')))));
+        });
+    }
+
+    /**
      * Decodes a Base64url-encoded UTF-8 string.
      * @param value the encoded value
      * @returns {string} the decoded string
@@ -524,6 +547,16 @@ class OIDCAuthenticationResult {
                 codeViewer.displayParts('Authentication Request', [request]);
             }
         });
+
+        const clientAuthDiv = $('#oidc-authn-result-client-auth');
+        const clientAuthTbody = $('#oidc-authn-result-client-auth-tbody').empty();
+        if (resultData.clientAuthChecks && resultData.clientAuthChecks.length) {
+            OIDCAuthenticationResult.appendChecks(clientAuthTbody, resultData.clientAuthChecks, 'SDG');
+            clientAuthDiv.show();
+        }
+        else {
+            clientAuthDiv.hide();
+        }
 
         const tokenRequestButton = $('#oidc-authn-result-view-token-request');
         if (resultData.tokenRequest) {
@@ -1122,19 +1155,8 @@ class OIDCAuthenticationResult {
                 }
             }
         }
-        const classes = { PASS: 'table-success', FAIL: 'table-danger', INFO: 'table-info' };
-        (result.checks || []).forEach((check) => {
-            const cls = 'table-text ' + (classes[check.outcome] || '');
-            tbody.append($('<tr>')
-                             .append($('<th>', {
-                                 scope: 'row', class: cls,
-                                 text: 'Ena §' + check.section + (check.level !== '-' ? ' ' + check.level : '')
-                             }))
-                             .append($('<td>', { class: cls })
-                                         .append($('<span>', { class: 'fw-bold', text: check.outcome + ': ' }))
-                                         .append(document.createTextNode(check.requirement
-                                             + (check.detail ? ' - ' + check.detail : '')))));
-        });
+        OIDCAuthenticationResult.appendChecks(tbody, result.checks, 'Ena');
+        OIDCAuthenticationResult.appendChecks(tbody, result.client_auth_checks, 'SDG');
 
         const issuedSource = 'Issued by token exchange at ' + new Date().toLocaleTimeString();
         const resourceFrameShown = $('#oidc-authn-result-protected-resource').is(':visible');
@@ -1171,6 +1193,9 @@ class OIDCAuthenticationResult {
             }
             if (result.checks) {
                 parts.push({ label: 'Checks', json: result.checks });
+            }
+            if (result.client_auth_checks) {
+                parts.push({ label: 'Client Authentication Checks (SDG)', json: result.client_auth_checks });
             }
             codeViewer.displayParts('Token Exchange', parts);
         });
