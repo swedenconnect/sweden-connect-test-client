@@ -1001,9 +1001,9 @@ class OIDCAuthenticationResult {
                        const aud = Array.isArray(claims.aud) ? claims.aud : (claims.aud ? [claims.aud] : []);
                        const tokenScopes = typeof claims.scope === 'string' ? claims.scope.split(/\s+/) : [];
                        const resources = [...(defaults.resources || []), ...aud];
-                       this.initTokenExchangePicker('resource', resources, '\n');
-                       this.initTokenExchangePicker('audience', [...resources, ...(defaults.client_id ? [defaults.client_id] : [])], '\n');
-                       this.initTokenExchangePicker('scope', [...(defaults.scopes || []), ...tokenScopes], ' ');
+                       this.initTokenExchangePicker('resource', resources);
+                       this.initTokenExchangePicker('audience', [...resources, ...(defaults.client_id ? [defaults.client_id] : [])]);
+                       this.initTokenExchangePicker('scope', [...(defaults.scopes || []), ...tokenScopes]);
                    }
                });
         $('#oidc-te-send-button').off('click').click(() => this.sendTokenExchangeRequest());
@@ -1011,69 +1011,94 @@ class OIDCAuthenticationResult {
     }
 
     /**
-     * Sets up the dropdown under a token exchange field. Picking a suggestion adds it to the field, and "Other..."
-     * shows a free text input whose value is added with "Add" (or Enter). A value already in the field is not added
-     * again.
+     * Sets up a token exchange field the way the scope and prompt rows of the authentication request are built: a list
+     * of the values, each with a button that removes it, an "Add ..." menu with the suggested values, and "Enter other
+     * ..." for a custom value. The values are kept in the field's hidden input (separated by spaces), which the request
+     * is built from.
      * @param field the field: resource, audience or scope
      * @param suggestions the values to suggest - duplicates and empty values are left out
-     * @param separator what the values of the field are separated with
      */
-    initTokenExchangePicker(field, suggestions, separator) {
-        const target = $('#oidc-te-' + field);
-        const picker = $('#oidc-te-' + field + '-picker');
-        const other = $('#oidc-te-' + field + '-other');
-        const otherInput = $('#oidc-te-' + field + '-other-input');
-        const OTHER = '\u0000other';
+    initTokenExchangePicker(field, suggestions) {
+        const prefix = '#oidc-te-' + field;
+        const target = $(prefix);
+        const list = $(prefix + '-list');
+        const addDiv = $(prefix + '-drop-div');
+        const customDiv = $(prefix + '-custom-div');
+        const customInput = $(prefix + '-custom');
+        const plural = field === 'audience' ? 'audiences' : field + 's';
 
-        picker.find('option:not(:first)').remove();
-        [...new Set(suggestions.filter((v) => v && String(v).trim()))].forEach(
-            (v) => picker.append($('<option>', { value: v, text: v })));
-        picker.append($('<option>', { value: OTHER, text: 'Other (free text)...' }));
-        picker.val('');
-        other.hide();
-        otherInput.val('');
-
+        const values = () => (target.val() || '').split(/\s+/).filter((v) => v);
+        const render = () => {
+            const current = values();
+            list.empty();
+            current.forEach((v) => OIDCAuthnRequest.addSelectedScopeValue(list, v));
+            if (current.length === 0) {
+                list.append($('<li>')
+                                .text('-- No ' + plural + ' assigned --')
+                                .addClass('list-group-item d-flex justify-content-between align-items-center'));
+            }
+            addDiv.find('a[data-te-value]').each(function () {
+                $(this).toggleClass('disabled', current.includes($(this).attr('data-te-value')));
+            });
+        };
         const add = (value) => {
             const v = (value || '').trim();
-            if (!v) {
-                return;
+            if (v && !values().includes(v)) {
+                target.val([...values(), v].join(' '));
             }
-            const current = (target.val() || '').split(/\s+/).filter((x) => x);
-            if (!current.includes(v)) {
-                target.val([...current, v].join(separator));
-            }
-            if (target.is('textarea')) {
-                // One line per value, so that every value is visible
-                target.attr('rows', Math.max(1, (target.val() || '').split('\n').length));
-            }
+            render();
         };
-        picker.off('change').on('change', () => {
-            const value = picker.val();
-            if (value === OTHER) {
-                other.show();
-                otherInput.trigger('focus');
-            }
-            else if (value) {
-                add(value);
-                other.hide();
-            }
-            if (value !== OTHER) {
-                picker.val('');
-            }
+
+        addDiv.empty();
+        [...new Set(suggestions.map((v) => String(v || '').trim()).filter((v) => v))].forEach((v) => {
+            addDiv.append($('<a>', {
+                href: 'javascript:void(0)',
+                class: 'dropdown-item',
+                'data-te-value': v,
+                text: v,
+                click: function (event) {
+                    event.preventDefault();
+                    if ($(this).hasClass('disabled')) {
+                        return;
+                    }
+                    customDiv.hide();
+                    add(v);
+                }
+            }));
         });
-        const addOther = () => {
-            add(otherInput.val());
-            otherInput.val('');
-            other.hide();
-            picker.val('');
+        addDiv.append($('<a>', {
+            href: 'javascript:void(0)',
+            class: 'dropdown-item',
+            text: 'Enter other ' + field + ' ...',
+            click: (event) => {
+                event.preventDefault();
+                customDiv.show();
+                customInput.trigger('focus');
+            }
+        }));
+
+        list.off('click.oidcTe').on('click.oidcTe', 'button.btn-close', function () {
+            const v = $(this).closest('li').find('span').text();
+            target.val(values().filter((x) => x !== v).join(' '));
+            render();
+        });
+        const addCustom = () => {
+            if (customInput.val().trim() !== '') {
+                add(customInput.val());
+                customInput.val('');
+                customDiv.hide();
+            }
         };
-        $('#oidc-te-' + field + '-other-add').off('click').on('click', addOther);
-        otherInput.off('keydown').on('keydown', (event) => {
+        $(prefix + '-custom-button').off('click.oidcTe').on('click.oidcTe', addCustom);
+        customInput.off('keydown.oidcTe').on('keydown.oidcTe', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                addOther();
+                addCustom();
             }
         });
+        customDiv.hide();
+        customInput.val('');
+        render();
     }
 
     /**

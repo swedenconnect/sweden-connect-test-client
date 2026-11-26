@@ -2627,24 +2627,32 @@
                         </datalist>
                         <div class="row mt-2">
                             <div class="col-sm-3">
-                                <label class="col-form-label" for="oidc-te-resource">resource</label>
+                                <label class="col-form-label" id="oidc-te-resource-label">resource</label>
                             </div>
                             <div class="col-sm-9">
-                                <textarea class="form-control" id="oidc-te-resource" rows="1"
-                                          placeholder="One resource indicator per line (RFC 8707)"></textarea>
-                                <div class="row g-1 mt-1">
-                                    <div class="col-sm-5">
-                                        <select class="form-select form-select-sm" id="oidc-te-resource-picker"
-                                                aria-label="Add a resource value">
-                                            <option value="">Add resource...</option>
-                                        </select>
+                                <input type="hidden" id="oidc-te-resource">
+                                <ul class="list-group" id="oidc-te-resource-list" aria-labelledby="oidc-te-resource-label">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">-- No resources assigned --</li>
+                                </ul>
+                                <div class="btn-group mt-2" role="group">
+                                    <button id="oidc-te-resource-drop" type="button"
+                                            class="btn btn-sm btn-primary dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
+                                        Resource
+                                    </button>
+                                    <div id="oidc-te-resource-drop-div" class="dropdown-menu"
+                                         aria-labelledby="oidc-te-resource-drop">
                                     </div>
-                                    <div class="col-sm-7 hide" id="oidc-te-resource-other">
-                                        <div class="input-group input-group-sm">
-                                            <input class="form-control" id="oidc-te-resource-other-input"
-                                                   placeholder="Free text">
-                                            <button class="btn btn-outline-primary" type="button"
-                                                    id="oidc-te-resource-other-add">Add
+                                </div>
+                                <div class="row mt-2" id="oidc-te-resource-custom-div" style="display: none;">
+                                    <label class="col-sm-3 col-form-label" for="oidc-te-resource-custom">Custom Value</label>
+                                    <div class="col-sm-9">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control"
+                                                   aria-describedby="oidc-te-resource-custom-button"
+                                                   id="oidc-te-resource-custom">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                    id="oidc-te-resource-custom-button">Add
                                             </button>
                                         </div>
                                     </div>
@@ -2653,24 +2661,32 @@
                         </div>
                         <div class="row mt-2">
                             <div class="col-sm-3">
-                                <label class="col-form-label" for="oidc-te-audience">audience</label>
+                                <label class="col-form-label" id="oidc-te-audience-label">audience</label>
                             </div>
                             <div class="col-sm-9">
-                                <textarea class="form-control" id="oidc-te-audience" rows="1"
-                                          placeholder="One audience per line"></textarea>
-                                <div class="row g-1 mt-1">
-                                    <div class="col-sm-5">
-                                        <select class="form-select form-select-sm" id="oidc-te-audience-picker"
-                                                aria-label="Add a audience value">
-                                            <option value="">Add audience...</option>
-                                        </select>
+                                <input type="hidden" id="oidc-te-audience">
+                                <ul class="list-group" id="oidc-te-audience-list" aria-labelledby="oidc-te-audience-label">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">-- No audiences assigned --</li>
+                                </ul>
+                                <div class="btn-group mt-2" role="group">
+                                    <button id="oidc-te-audience-drop" type="button"
+                                            class="btn btn-sm btn-primary dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
+                                        Audience
+                                    </button>
+                                    <div id="oidc-te-audience-drop-div" class="dropdown-menu"
+                                         aria-labelledby="oidc-te-audience-drop">
                                     </div>
-                                    <div class="col-sm-7 hide" id="oidc-te-audience-other">
-                                        <div class="input-group input-group-sm">
-                                            <input class="form-control" id="oidc-te-audience-other-input"
-                                                   placeholder="Free text">
-                                            <button class="btn btn-outline-primary" type="button"
-                                                    id="oidc-te-audience-other-add">Add
+                                </div>
+                                <div class="row mt-2" id="oidc-te-audience-custom-div" style="display: none;">
+                                    <label class="col-sm-3 col-form-label" for="oidc-te-audience-custom">Custom Value</label>
+                                    <div class="col-sm-9">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control"
+                                                   aria-describedby="oidc-te-audience-custom-button"
+                                                   id="oidc-te-audience-custom">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                    id="oidc-te-audience-custom-button">Add
                                             </button>
                                         </div>
                                     </div>
@@ -2679,23 +2695,32 @@
                         </div>
                         <div class="row mt-2">
                             <div class="col-sm-3">
-                                <label class="col-form-label" for="oidc-te-scope">scope</label>
+                                <label class="col-form-label" id="oidc-te-scope-label">scope</label>
                             </div>
                             <div class="col-sm-9">
-                                <input class="form-control" id="oidc-te-scope" placeholder="Space separated">
-                                <div class="row g-1 mt-1">
-                                    <div class="col-sm-5">
-                                        <select class="form-select form-select-sm" id="oidc-te-scope-picker"
-                                                aria-label="Add a scope value">
-                                            <option value="">Add scope...</option>
-                                        </select>
+                                <input type="hidden" id="oidc-te-scope">
+                                <ul class="list-group" id="oidc-te-scope-list" aria-labelledby="oidc-te-scope-label">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">-- No scopes assigned --</li>
+                                </ul>
+                                <div class="btn-group mt-2" role="group">
+                                    <button id="oidc-te-scope-drop" type="button"
+                                            class="btn btn-sm btn-primary dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
+                                        Scope
+                                    </button>
+                                    <div id="oidc-te-scope-drop-div" class="dropdown-menu"
+                                         aria-labelledby="oidc-te-scope-drop">
                                     </div>
-                                    <div class="col-sm-7 hide" id="oidc-te-scope-other">
-                                        <div class="input-group input-group-sm">
-                                            <input class="form-control" id="oidc-te-scope-other-input"
-                                                   placeholder="Free text">
-                                            <button class="btn btn-outline-primary" type="button"
-                                                    id="oidc-te-scope-other-add">Add
+                                </div>
+                                <div class="row mt-2" id="oidc-te-scope-custom-div" style="display: none;">
+                                    <label class="col-sm-3 col-form-label" for="oidc-te-scope-custom">Custom Value</label>
+                                    <div class="col-sm-9">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control"
+                                                   aria-describedby="oidc-te-scope-custom-button"
+                                                   id="oidc-te-scope-custom">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                    id="oidc-te-scope-custom-button">Add
                                             </button>
                                         </div>
                                     </div>
