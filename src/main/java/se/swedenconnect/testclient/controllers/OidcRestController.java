@@ -386,6 +386,7 @@ public class OidcRestController {
         .prompt(ModelParameter.builder().value("login").valuePresent(true).requestBody(false).build())
         .loginHint(ModelParameter.builder().value("").valuePresent(false).requestBody(false).build())
         .maxAge(ModelParameter.builder().value("0").valuePresent(false).requestBody(false).build())
+        .resource(ModelParameter.builder().value("").valuePresent(false).requestBody(false).build())
         .responseType(ModelParameter.builder().value("code").valuePresent(true).requestBody(false).build())
         .codeChallenge(ModelParameter.builder().valuePresent(true).requestBody(false).build())
         .codeChallengeMethod(ModelParameter.builder().value("S256").valuePresent(true).requestBody(false).build())

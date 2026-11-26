@@ -1916,6 +1916,36 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="row mt-4" id="oidc-resource-row">
+                            <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 data-bs-original-title="Resource indicators (RFC 8707): the protected resources the access token is for. Separate several with spaces - each is sent as a resource parameter of its own (in the request object: a string for one, an array for several).">
+                                <label class="col-form-label text-sm-right" for="oidc-request-resource-input">Resource
+                                </label>
+                            </div>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" id="oidc-request-resource-input"
+                                       placeholder="https://api.example.com">
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input" id="oidc-request-resource-present">
+                                <label for="oidc-request-resource-present">
+                                    <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                          data-bs-original-title="Check this box if you want this parameter to be present in request as a parameter.">
+                                    In Request URL
+                                </span>
+                                </label>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="checkbox" class="form-check-input"
+                                       id="oidc-request-resource-request-body">
+                                <label for="oidc-request-resource-request-body">
+                                    <span data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                          data-bs-original-title="Check this box if you want this parameter to be present in request body.">
+                                    In Request Body
+                                </span>
+                                </label>
+                            </div>
+                        </div>
                         <div class="row mt-4" id="oidc-code_challenge_method-row">
                             <div class="col-sm-2" data-bs-toggle="tooltip" data-bs-placement="bottom"
                                  data-bs-original-title="The code_challenge_method indicates the transformation method used to generate the code_challenge (typically 'S256' or 'plain').">
@@ -2397,6 +2427,17 @@
                                 </table>
                             </div>
                         </div>
+                        <div class="row hide" id="oidc-authn-result-client-auth">
+                            <div class="col-md-12">
+                                <p class="card-text">Client authentication of the token request, checked against
+                                    section 4.1.1 of the
+                                    <a href="https://docs.swedenconnect.se/technical-framework/sdg/sdg-oauth2-profile.html#client-authentication"
+                                       target="_blank">SDG OAuth 2.0 profile</a>. The checks only report.</p>
+                                <table class="table table-hover saml-table">
+                                    <tbody id="oidc-authn-result-client-auth-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
                         <div class="row">
                             <p class="text-end">
                                 <button id="oidc-authn-result-view-authnrequest-details" type="button"
@@ -2530,6 +2571,259 @@
                             <p class="text-end">
                                 <button id="oidc-userinfo-request-send-button" type="button"
                                         class="btn btn-primary btn-sm">Send UserInfo Request
+                                </button>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-primary mb-3 hide" id="oidc-authn-result-token-exchange">
+                    <div class="card-header">Token Exchange</div>
+                    <div class="card-body">
+                        <p class="card-text">Exchanges a token for another at the token endpoint of the OP
+                            (<a href="https://www.rfc-editor.org/rfc/rfc8693" target="_blank">RFC 8693</a>), for
+                            example the access token of this authentication for an access token for another protected
+                            resource. The test client authenticates as the RP of the authentication. The result is
+                            checked against the
+                            <a href="https://ena-infrastructure.github.io/specifications/ena-oauth2-chaining.html#protected-resource-acting-as-an-client"
+                               target="_blank">Ena chaining profile</a>, and its client authentication against section 4.1.1 of the
+                            <a href="https://docs.swedenconnect.se/technical-framework/sdg/sdg-oauth2-profile.html#client-authentication"
+                               target="_blank">SDG OAuth 2.0 profile</a>. Empty fields are left out of the request.</p>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" for="oidc-te-subject-token">subject_token</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <textarea class="form-control user-message" id="oidc-te-subject-token"
+                                          rows="3"></textarea>
+                                <div class="form-text token-summary" id="oidc-te-subject-token-summary"></div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" for="oidc-te-subject-token-type">subject_token_type</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <input class="form-control" id="oidc-te-subject-token-type" list="oidc-te-token-types"
+                                       value="urn:ietf:params:oauth:token-type:access_token">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-3">
+                                <label class="col-form-label"
+                                       for="oidc-te-requested-token-type">requested_token_type</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <input class="form-control" id="oidc-te-requested-token-type"
+                                       list="oidc-te-token-types"
+                                       value="urn:ietf:params:oauth:token-type:access_token">
+                            </div>
+                        </div>
+                        <datalist id="oidc-te-token-types">
+                            <option value="urn:ietf:params:oauth:token-type:access_token"></option>
+                            <option value="urn:ietf:params:oauth:token-type:refresh_token"></option>
+                            <option value="urn:ietf:params:oauth:token-type:id_token"></option>
+                            <option value="urn:ietf:params:oauth:token-type:jwt"></option>
+                        </datalist>
+                        <div class="row mt-2">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" id="oidc-te-resource-label">resource</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <input type="hidden" id="oidc-te-resource">
+                                <ul class="list-group" id="oidc-te-resource-list" aria-labelledby="oidc-te-resource-label">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">-- No resources assigned --</li>
+                                </ul>
+                                <div class="btn-group mt-2" role="group">
+                                    <button id="oidc-te-resource-drop" type="button"
+                                            class="btn btn-sm btn-primary dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
+                                        Resource
+                                    </button>
+                                    <div id="oidc-te-resource-drop-div" class="dropdown-menu"
+                                         aria-labelledby="oidc-te-resource-drop">
+                                    </div>
+                                </div>
+                                <div class="row mt-2" id="oidc-te-resource-custom-div" style="display: none;">
+                                    <label class="col-sm-3 col-form-label" for="oidc-te-resource-custom">Custom Value</label>
+                                    <div class="col-sm-9">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control"
+                                                   aria-describedby="oidc-te-resource-custom-button"
+                                                   id="oidc-te-resource-custom">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                    id="oidc-te-resource-custom-button">Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" id="oidc-te-audience-label">audience</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <input type="hidden" id="oidc-te-audience">
+                                <ul class="list-group" id="oidc-te-audience-list" aria-labelledby="oidc-te-audience-label">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">-- No audiences assigned --</li>
+                                </ul>
+                                <div class="btn-group mt-2" role="group">
+                                    <button id="oidc-te-audience-drop" type="button"
+                                            class="btn btn-sm btn-primary dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
+                                        Audience
+                                    </button>
+                                    <div id="oidc-te-audience-drop-div" class="dropdown-menu"
+                                         aria-labelledby="oidc-te-audience-drop">
+                                    </div>
+                                </div>
+                                <div class="row mt-2" id="oidc-te-audience-custom-div" style="display: none;">
+                                    <label class="col-sm-3 col-form-label" for="oidc-te-audience-custom">Custom Value</label>
+                                    <div class="col-sm-9">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control"
+                                                   aria-describedby="oidc-te-audience-custom-button"
+                                                   id="oidc-te-audience-custom">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                    id="oidc-te-audience-custom-button">Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" id="oidc-te-scope-label">scope</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <input type="hidden" id="oidc-te-scope">
+                                <ul class="list-group" id="oidc-te-scope-list" aria-labelledby="oidc-te-scope-label">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">-- No scopes assigned --</li>
+                                </ul>
+                                <div class="btn-group mt-2" role="group">
+                                    <button id="oidc-te-scope-drop" type="button"
+                                            class="btn btn-sm btn-primary dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Add
+                                        Scope
+                                    </button>
+                                    <div id="oidc-te-scope-drop-div" class="dropdown-menu"
+                                         aria-labelledby="oidc-te-scope-drop">
+                                    </div>
+                                </div>
+                                <div class="row mt-2" id="oidc-te-scope-custom-div" style="display: none;">
+                                    <label class="col-sm-3 col-form-label" for="oidc-te-scope-custom">Custom Value</label>
+                                    <div class="col-sm-9">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control"
+                                                   aria-describedby="oidc-te-scope-custom-button"
+                                                   id="oidc-te-scope-custom">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                    id="oidc-te-scope-custom-button">Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" for="oidc-te-actor-token">actor_token</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <textarea class="form-control user-message" id="oidc-te-actor-token" rows="1"
+                                          placeholder="Optional - for delegation"></textarea>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" for="oidc-te-actor-token-type">actor_token_type</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <input class="form-control" id="oidc-te-actor-token-type" list="oidc-te-token-types"
+                                       value="urn:ietf:params:oauth:token-type:access_token">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" for="oidc-te-client-id">client_id</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <input class="form-control" id="oidc-te-client-id">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" for="oidc-te-auth-method">Client authentication</label>
+                            </div>
+                            <div class="col-sm-4">
+                                <select class="form-select" id="oidc-te-auth-method"></select>
+                            </div>
+                            <div class="col-sm-5">
+                                <input class="form-control" id="oidc-te-client-secret" type="password"
+                                       placeholder="Client secret (client_secret_*)">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <p class="text-end">
+                                <button id="oidc-te-send-button" type="button" class="btn btn-primary btn-sm">Send
+                                    Token Exchange Request
+                                </button>
+                            </p>
+                        </div>
+                        <div id="oidc-te-result" class="hide">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <table class="table table-hover saml-table">
+                                        <tbody id="oidc-te-result-tbody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <p class="text-end">
+                                    <button id="oidc-te-use-as-subject-button" type="button"
+                                            class="btn btn-outline-primary btn-sm">Use issued token as subject_token
+                                    </button>
+                                    <button id="oidc-te-use-for-resource-button" type="button"
+                                            class="btn btn-outline-primary btn-sm">Use issued token for resource call
+                                    </button>
+                                    <button id="oidc-te-details-button" type="button"
+                                            class="btn btn-outline-primary btn-sm">Request and response
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-primary mb-3 hide" id="oidc-authn-result-protected-resource">
+                    <div class="card-header">Call Protected Resource</div>
+                    <div class="card-body">
+                        <p class="card-text">Sends a GET request with the access token in the Authorization header
+                            (Bearer) to one of the protected resources configured for the test client.</p>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" for="oidc-resource-select">Protected resource</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <select class="form-select" id="oidc-resource-select"></select>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-3">
+                                <label class="col-form-label" for="oidc-resource-access-token">Access Token</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <textarea class="form-control user-message" id="oidc-resource-access-token"
+                                          rows="3"></textarea>
+                                <div class="form-text token-summary" id="oidc-resource-access-token-summary"></div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <p class="text-end">
+                                <button id="oidc-resource-send-button" type="button" class="btn btn-primary btn-sm">
+                                    Call Protected Resource
                                 </button>
                             </p>
                         </div>

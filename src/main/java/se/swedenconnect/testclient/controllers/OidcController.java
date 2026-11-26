@@ -30,6 +30,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -66,6 +68,7 @@ public class OidcController {
   private final HttpSession httpSession;
   private final UserInfoCaller userInfoCaller;
   private final TokenRequestSender tokenRequestSender;
+  private final boolean sdgChecks;
 
   public static final String SESSION_NAME_OIDC_RESPONSE = "sctc.oidcResponse";
 
@@ -103,15 +106,30 @@ public class OidcController {
   private static final ObjectMapper objectMapper = JsonMapper.builder().build();
 
   /**
-   * Constructor.
+   * Constructor. The client authentication of the token request is not checked.
    *
    * @param httpSession the HTTP session
    * @param client the HTTP client used against the token and UserInfo endpoints
    */
   public OidcController(@Nonnull final HttpSession httpSession, @Nonnull final RestClient client) {
+    this(httpSession, client, false);
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param httpSession the HTTP session
+   * @param client the HTTP client used against the token and UserInfo endpoints
+   * @param sdgChecks whether the client authentication of the token request is checked against the SDG OAuth 2.0
+   *     profile ({@code testclient.oidc.checks.sdg-client-authentication})
+   */
+  @Autowired
+  public OidcController(@Nonnull final HttpSession httpSession, @Nonnull final RestClient client,
+      @Value("${testclient.oidc.checks.sdg-client-authentication:false}") final boolean sdgChecks) {
     this.httpSession = httpSession;
     this.userInfoCaller = new UserInfoCaller(client);
     this.tokenRequestSender = new TokenRequestSender(client);
+    this.sdgChecks = sdgChecks;
   }
 
   @RequestMapping(path = REDIRECTION_URL_BASE + "/{rpSuffix}", method = {RequestMethod.GET, RequestMethod.POST})
@@ -125,6 +143,16 @@ public class OidcController {
     final AuthenticationRequest authRequest = (AuthenticationRequest) httpSession.getAttribute("auth_request");
     final OidcOp selectedOp = (OidcOp) httpSession.getAttribute("selected_op");
     final OidcRp selectedRp = (OidcRp) httpSession.getAttribute("selected_rp");
+
+    if (authRequest == null || selectedOp == null || selectedRp == null) {
+      log.info("OIDC redirection rejected: there is no complete OIDC authentication in the session");
+      httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE, OIDCResponse.builder()
+          .errors(List.of("The OIDC authentication is missing from the session. "
+              + "The session may have expired or its cookie may have been replaced by another application "
+              + "on the same host. Restart the authentication."))
+          .build());
+      return new ModelAndView("redirect:/");
+    }
 
     if (Objects.nonNull(error) || Objects.nonNull(errorDescription)) {
       httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE,
@@ -159,15 +187,17 @@ public class OidcController {
     }
     catch (final TokenRequestException e) {
       log.info("Token request for '{}' not sent: {}", selectedRp.getEntityId(), e.getMessage());
-      return this.tokenEndpointError(authRequest, null, TokenEndpointError.builder()
+      return this.tokenEndpointError(authRequest, null, null, TokenEndpointError.builder()
           .message("The token request was not sent to the token endpoint %s. %s."
               .formatted(selectedOp.getTokenEndpoint(), e.getMessage()))
           .build());
     }
 
     final TokenRequestSender.Result tokenResult = this.tokenRequestSender.send(tokenRequest);
+    final List<TokenExchangeChecks.Check> clientAuthChecks = this.clientAuthChecks(tokenRequest,
+        selectedRp.getEntityId());
     if (tokenResult.error() != null) {
-      return this.tokenEndpointError(authRequest, tokenRequest, tokenResult.error());
+      return this.tokenEndpointError(authRequest, tokenRequest, clientAuthChecks, tokenResult.error());
     }
     final Map<String, Object> tokenResponse = Objects.requireNonNull(tokenResult.tokenResponse());
 
@@ -242,6 +272,7 @@ public class OidcController {
           .idTokenClaimTimes(ClaimTimes.of(idTokenClaims))
           .authorizationRequest(this.sentRequest(authRequest))
           .tokenRequest(tokenRequest)
+          .clientAuthChecks(clientAuthChecks)
           .userInfoResult(userInfo.getUserInfoResult())
           .userInfoClaims(userInfo.getUserInfoClaims())
           .userInfoClaimTimes(userInfo.getUserInfoClaimTimes())
@@ -283,6 +314,7 @@ public class OidcController {
           .errors(errors)
           .authorizationRequest(this.sentRequest(authRequest))
           .tokenRequest(tokenRequest)
+          .clientAuthChecks(clientAuthChecks)
           .response(tokenResponse)
           .tokenResponseBody(tokenResult.body())
           .build());
@@ -291,21 +323,45 @@ public class OidcController {
   }
 
   /**
+   * Checks the client authentication of a token request that was sent against the SDG OAuth 2.0 profile, and remembers
+   * the jti of its client assertion. Call it once per request. The checks are only made when
+   * {@code testclient.oidc.checks.sdg-client-authentication} is on.
+   *
+   * @param tokenRequest the token request as it was sent
+   * @param clientId the client ID of the RP
+   * @return the checks, or {@code null} if the checks are off
+   */
+  @Nullable
+  private List<TokenExchangeChecks.Check> clientAuthChecks(@Nonnull final SentTokenRequest tokenRequest,
+      @Nonnull final String clientId) {
+    if (!this.sdgChecks) {
+      return null;
+    }
+    final List<TokenExchangeChecks.Check> checks = ClientAuthenticationChecks.evaluate(tokenRequest, clientId,
+        ClientAuthenticationChecks.earlierJtis(this.httpSession));
+    ClientAuthenticationChecks.rememberJti(this.httpSession, tokenRequest.clientAssertion());
+    return checks;
+  }
+
+  /**
    * Stores the result of a token request that did not give a token response, and redirects to the result page.
    *
    * @param authRequest the authentication request
    * @param tokenRequest the token request as it was sent, or {@code null} if it could not be sent
+   * @param clientAuthChecks the checks of its client authentication, or {@code null} if it could not be sent
    * @param error why no token response was received
    * @return the redirect to the result page
    */
   @Nonnull
   private ModelAndView tokenEndpointError(@Nonnull final AuthenticationRequest authRequest,
-      @Nullable final SentTokenRequest tokenRequest, @Nonnull final TokenEndpointError error) {
+      @Nullable final SentTokenRequest tokenRequest,
+      @Nullable final List<TokenExchangeChecks.Check> clientAuthChecks, @Nonnull final TokenEndpointError error) {
     httpSession.setAttribute(SESSION_NAME_OIDC_RESPONSE, OIDCResponse.builder()
         .errors(error.toMessages())
         .tokenError(error)
         .authorizationRequest(this.sentRequest(authRequest))
         .tokenRequest(tokenRequest)
+        .clientAuthChecks(clientAuthChecks)
         .tokenResponseBody(error.getBody())
         .build());
     return new ModelAndView("redirect:/");

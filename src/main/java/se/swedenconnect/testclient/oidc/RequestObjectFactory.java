@@ -199,6 +199,9 @@ public class RequestObjectFactory {
     resolver.getLoginHint().ifPresent(loginHint -> builder.claim("login_hint", loginHint));
     // max_age is a JSON number, not a string
     resolver.getMaxAge().ifPresent(maxAge -> builder.claim("max_age", maxAge));
+    // One resource indicator is a string, several are an array
+    resolver.getResources().ifPresent(resources ->
+        builder.claim("resource", resources.size() == 1 ? resources.getFirst() : resources));
     resolver.getCodeChallenge().ifPresent(codeChallenge -> {
       builder.claim("code_challenge",
           CodeChallenge.compute(codeChallenge.getLeft(), codeChallenge.getRight()).getValue());

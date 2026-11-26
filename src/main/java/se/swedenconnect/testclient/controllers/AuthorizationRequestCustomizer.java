@@ -107,6 +107,9 @@ public class AuthorizationRequestCustomizer {
     setOrRemove(parameters, "redirect_uri", resolver.getRedirectionURI().map(URI::toString));
     setOrRemove(parameters, "scope", resolver.getScope().map(Scope::toString));
     setOrRemove(parameters, "prompt", resolver.getPrompt());
+    // Sent as typed, one parameter per resource indicator - not through the request library, which rejects values
+    // that are not absolute URIs
+    resolver.getResources().ifPresentOrElse(r -> parameters.put("resource", r), () -> parameters.remove("resource"));
     return parameters;
   }
 

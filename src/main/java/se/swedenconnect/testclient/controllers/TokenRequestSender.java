@@ -72,7 +72,22 @@ public class TokenRequestSender {
   public Result send(@Nonnull final SentTokenRequest request) {
     final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
     request.parameters().forEach(body::add);
+    return this.send(request.url(), request.headers(), body);
+  }
 
+  /**
+   * Sends a token request whose form parameters may have several values - such as the {@code resource} and
+   * {@code audience} parameters of a token exchange request (RFC 8693, section 2.1).
+   *
+   * @param url the token endpoint
+   * @param headers the request headers
+   * @param body the form parameters, in the order they are sent
+   * @return the outcome
+   */
+  @Nonnull
+  public Result send(@Nonnull final String url, @Nonnull final Map<String, String> headers,
+      @Nonnull final MultiValueMap<String, String> body) {
+    final SentTokenRequest request = new SentTokenRequest("POST", url, headers, Map.of(), null);
     final ResponseEntity<String> response;
     try {
       response = this.client.post().uri(request.url())

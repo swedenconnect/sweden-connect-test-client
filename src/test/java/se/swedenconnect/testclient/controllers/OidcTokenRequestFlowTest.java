@@ -196,7 +196,74 @@ class OidcTokenRequestFlowTest {
     assertEquals(otherKid, response.getTokenRequest().clientAssertion().header().get("kid"));
   }
 
+  @Test
+  void theClientAuthenticationIsOnlyCheckedWhenTheSdgChecksAreOn() throws Exception {
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withSuccess(UserInfoTestSupport.tokenResponse(), MediaType.APPLICATION_JSON));
+    assertNull(this.redirect().getClientAuthChecks(), "The SDG checks are off by default");
+    this.server.verify();
+
+    final RestClient.Builder builder = RestClient.builder();
+    this.server = MockRestServiceServer.bindTo(builder).build();
+    this.controller = new OidcController(this.session, builder.build(), true);
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withSuccess(UserInfoTestSupport.tokenResponse(), MediaType.APPLICATION_JSON));
+    final OIDCResponse response = this.redirect();
+    this.server.verify();
+    assertNotNull(response.getClientAuthChecks());
+    assertTrue(response.getClientAuthChecks().stream()
+        .anyMatch(c -> c.requirement().startsWith("aud is the URL of the token endpoint")));
+  }
+
   // Token requests that are not sent
+
+  @ParameterizedTest
+  @ValueSource(strings = {"auth_request", "selected_op", "selected_rp"})
+  void incompleteAuthenticationInTheSessionGivesAnErrorAndNoRequest(final String missingAttribute) throws Exception {
+    this.session.removeAttribute(missingAttribute);
+    this.server.expect(never(), anything());
+
+    final OIDCResponse response = this.redirect();
+
+    this.server.verify();
+    assertMissingAuthentication(response);
+  }
+
+  @Test
+  void anEmptySessionGivesAnErrorAndNoRequest() throws Exception {
+    this.session.clearAttributes();
+    this.server.expect(never(), anything());
+
+    final OIDCResponse response = this.redirect();
+
+    this.server.verify();
+    assertMissingAuthentication(response);
+  }
+
+  @Test
+  void anAuthorizationErrorWithAnEmptySessionDoesNotDereferenceTheMissingRequest() {
+    this.session.clearAttributes();
+    this.server.expect(never(), anything());
+
+    assertEquals("redirect:/", this.controller.handleRedirection(new MockHttpServletRequest(), "rp",
+        "access_denied", "Denied", "state", OP, null).getViewName());
+
+    this.server.verify();
+    assertMissingAuthentication(
+        (OIDCResponse) this.session.getAttribute(OidcController.SESSION_NAME_OIDC_RESPONSE));
+  }
+
+  private static void assertMissingAuthentication(final OIDCResponse response) {
+    assertNotNull(response);
+    assertEquals(1, response.getErrors().size());
+    assertTrue(response.getErrors().getFirst().contains("OIDC authentication is missing from the session"));
+    assertTrue(response.getErrors().getFirst().contains("Restart the authentication"));
+    assertNull(response.getAuthorizationRequest());
+    assertNull(response.getTokenRequest());
+    assertNull(response.getTokenError());
+    assertNull(response.getOpError());
+    assertNull(response.getAccessToken());
+  }
 
   @Test
   void anUnavailableKeyOptionsKeyGivesATokenEndpointErrorAndNoRequest() throws Exception {

@@ -180,6 +180,10 @@ class TestClient {
     return window.app_info && window.app_info.oidf_enabled;
   }
 
+  static isTokenExchangeEnabled() {
+    return window.app_info && window.app_info.token_exchange_enabled;
+  }
+
   static getFederationName() {
     if (window.app_info) {
       return window.app_info.federation_name;

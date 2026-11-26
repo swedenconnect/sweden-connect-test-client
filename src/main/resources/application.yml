@@ -17,6 +17,12 @@ spring:
   application:
     name: swedenconnect-test-client
 
+server:
+  servlet:
+    session:
+      cookie:
+        name: SCTCSESSION
+
 credential:
   bundles:
     keystore:

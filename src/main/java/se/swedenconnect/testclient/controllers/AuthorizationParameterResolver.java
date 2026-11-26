@@ -271,6 +271,23 @@ public class AuthorizationParameterResolver {
   }
 
   /**
+   * Gets the resource indicators ({@code resource}, RFC 8707) for this location. The value is split on white space,
+   * and each part is sent as typed - it is not checked to be an absolute URI without a fragment, so that the test
+   * client can send values that break the specification.
+   *
+   * @return the resource indicators, or an empty optional if none are placed here or the value is blank
+   */
+  public Optional<List<String>> getResources() {
+    final ModelParameter resource = this.model.getAdvanced().getResource();
+    if (resource == null || !this.isSelected(resource)) {
+      return Optional.empty();
+    }
+    final List<String> resources = Arrays.stream(Optional.ofNullable(resource.getValue()).orElse("").trim()
+        .split("\\s+")).filter(r -> !r.isEmpty()).toList();
+    return resources.isEmpty() ? Optional.empty() : Optional.of(resources);
+  }
+
+  /**
    * Gets the {@code max_age} value for this location. The value must be a whole number of 0 or above (OpenID Connect
    * Core 1.0, section 3.1.2.1); a row that is on but holds anything else is treated as off, so that the request is
    * sent without {@code max_age}.

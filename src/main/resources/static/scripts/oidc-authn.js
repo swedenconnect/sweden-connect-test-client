@@ -434,6 +434,29 @@ class OIDCAuthenticationResult {
     }
 
     /**
+     * Appends rows for profile checks to a result table: the profile, section and level in the first column, the outcome,
+     * requirement and what was found in the second.
+     * @param tbody the table body
+     * @param checks the checks, as reported by the server (may be missing)
+     * @param profile the short name of the profile, e.g. "Ena" or "SDG"
+     */
+    static appendChecks(tbody, checks, profile) {
+        const classes = { PASS: 'table-success', FAIL: 'table-danger', INFO: 'table-info' };
+        (checks || []).forEach((check) => {
+            const cls = 'table-text ' + (classes[check.outcome] || '');
+            tbody.append($('<tr>')
+                             .append($('<th>', {
+                                 scope: 'row', class: cls,
+                                 text: profile + ' §' + check.section + (check.level !== '-' ? ' ' + check.level : '')
+                             }))
+                             .append($('<td>', { class: cls })
+                                         .append($('<span>', { class: 'fw-bold', text: check.outcome + ': ' }))
+                                         .append(document.createTextNode(check.requirement
+                                             + (check.detail ? ' - ' + check.detail : '')))));
+        });
+    }
+
+    /**
      * Decodes a Base64url-encoded UTF-8 string.
      * @param value the encoded value
      * @returns {string} the decoded string
@@ -524,6 +547,16 @@ class OIDCAuthenticationResult {
                 codeViewer.displayParts('Authentication Request', [request]);
             }
         });
+
+        const clientAuthDiv = $('#oidc-authn-result-client-auth');
+        const clientAuthTbody = $('#oidc-authn-result-client-auth-tbody').empty();
+        if (resultData.clientAuthChecks && resultData.clientAuthChecks.length) {
+            OIDCAuthenticationResult.appendChecks(clientAuthTbody, resultData.clientAuthChecks, 'SDG');
+            clientAuthDiv.show();
+        }
+        else {
+            clientAuthDiv.hide();
+        }
 
         const tokenRequestButton = $('#oidc-authn-result-view-token-request');
         if (resultData.tokenRequest) {
@@ -736,6 +769,8 @@ class OIDCAuthenticationResult {
         }
 
         this.initUserInfoRequest(resultData);
+        this.initTokenExchange(resultData);
+        this.initProtectedResource(resultData);
     }
 
     /**
@@ -934,6 +969,438 @@ class OIDCAuthenticationResult {
             parts.push({ label: 'UserInfo Protection', json: exchange.protection });
         }
         return parts;
+    }
+
+    /**
+     * Sets up the "Token Exchange" frame. It is shown on the same results as the "Send UserInfo Request" frame. The
+     * subject token is the access token of the authentication, and the client is the RP of the authentication.
+     * @param resultData the authentication result
+     */
+    initTokenExchange(resultData) {
+        const frame = $('#oidc-authn-result-token-exchange');
+        if (!TestClient.isTokenExchangeEnabled() || resultData.op_error || resultData.tokenError) {
+            frame.hide();
+            return;
+        }
+        this.setTokenField('#oidc-te-subject-token',
+            resultData.accessToken || (resultData.response && resultData.response.access_token) || '',
+            'Access token of the authentication');
+        $('#oidc-te-result').hide();
+        $.ajax({
+                   url: buildUrl('/oidc/authn/token-exchange/defaults'),
+                   type: 'GET',
+                   dataType: 'json',
+                   success: (defaults) => {
+                       const select = $('#oidc-te-auth-method').empty();
+                       (defaults.auth_methods || []).forEach((m) => select.append($('<option>', { value: m, text: m })));
+                       select.val('private_key_jwt');
+                       $('#oidc-te-client-id').val(defaults.client_id || '');
+
+                       // The access token's own aud and scope are suggested along with the configured values
+                       const claims = resultData.accessTokenClaims || {};
+                       const aud = Array.isArray(claims.aud) ? claims.aud : (claims.aud ? [claims.aud] : []);
+                       const tokenScopes = typeof claims.scope === 'string' ? claims.scope.split(/\s+/) : [];
+                       const resources = [...(defaults.resources || []), ...aud];
+                       this.initTokenExchangePicker('resource', resources);
+                       this.initTokenExchangePicker('audience', [...resources, ...(defaults.client_id ? [defaults.client_id] : [])]);
+                       this.initTokenExchangePicker('scope', [...(defaults.scopes || []), ...tokenScopes]);
+                   }
+               });
+        $('#oidc-te-send-button').off('click').click(() => this.sendTokenExchangeRequest());
+        frame.show();
+    }
+
+    /**
+     * Sets up a token exchange field the way the scope and prompt rows of the authentication request are built: a list
+     * of the values, each with a button that removes it, an "Add ..." menu with the suggested values, and "Enter other
+     * ..." for a custom value. The values are kept in the field's hidden input (separated by spaces), which the request
+     * is built from.
+     * @param field the field: resource, audience or scope
+     * @param suggestions the values to suggest - duplicates and empty values are left out
+     */
+    initTokenExchangePicker(field, suggestions) {
+        const prefix = '#oidc-te-' + field;
+        const target = $(prefix);
+        const list = $(prefix + '-list');
+        const addDiv = $(prefix + '-drop-div');
+        const customDiv = $(prefix + '-custom-div');
+        const customInput = $(prefix + '-custom');
+        const plural = field === 'audience' ? 'audiences' : field + 's';
+
+        const values = () => (target.val() || '').split(/\s+/).filter((v) => v);
+        const render = () => {
+            const current = values();
+            list.empty();
+            current.forEach((v) => OIDCAuthnRequest.addSelectedScopeValue(list, v));
+            if (current.length === 0) {
+                list.append($('<li>')
+                                .text('-- No ' + plural + ' assigned --')
+                                .addClass('list-group-item d-flex justify-content-between align-items-center'));
+            }
+            addDiv.find('a[data-te-value]').each(function () {
+                $(this).toggleClass('disabled', current.includes($(this).attr('data-te-value')));
+            });
+        };
+        const add = (value) => {
+            const v = (value || '').trim();
+            if (v && !values().includes(v)) {
+                target.val([...values(), v].join(' '));
+            }
+            render();
+        };
+
+        addDiv.empty();
+        [...new Set(suggestions.map((v) => String(v || '').trim()).filter((v) => v))].forEach((v) => {
+            addDiv.append($('<a>', {
+                href: 'javascript:void(0)',
+                class: 'dropdown-item',
+                'data-te-value': v,
+                text: v,
+                click: function (event) {
+                    event.preventDefault();
+                    if ($(this).hasClass('disabled')) {
+                        return;
+                    }
+                    customDiv.hide();
+                    add(v);
+                }
+            }));
+        });
+        addDiv.append($('<a>', {
+            href: 'javascript:void(0)',
+            class: 'dropdown-item',
+            text: 'Enter other ' + field + ' ...',
+            click: (event) => {
+                event.preventDefault();
+                customDiv.show();
+                customInput.trigger('focus');
+            }
+        }));
+
+        list.off('click.oidcTe').on('click.oidcTe', 'button.btn-close', function () {
+            const v = $(this).closest('li').find('span').text();
+            target.val(values().filter((x) => x !== v).join(' '));
+            render();
+        });
+        const addCustom = () => {
+            if (customInput.val().trim() !== '') {
+                add(customInput.val());
+                customInput.val('');
+                customDiv.hide();
+            }
+        };
+        $(prefix + '-custom-button').off('click.oidcTe').on('click.oidcTe', addCustom);
+        customInput.off('keydown.oidcTe').on('keydown.oidcTe', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addCustom();
+            }
+        });
+        customDiv.hide();
+        customInput.val('');
+        render();
+    }
+
+    /**
+     * Sends a token exchange request (made by the backend) and shows the outcome and the checks in the frame.
+     */
+    sendTokenExchangeRequest() {
+        const lines = (id) => ($('#' + id).val() || '').split(/\s+/).map((v) => v.trim()).filter((v) => v);
+        const request = {
+            subject_token: $('#oidc-te-subject-token').val(),
+            subject_token_type: $('#oidc-te-subject-token-type').val(),
+            requested_token_type: $('#oidc-te-requested-token-type').val(),
+            resource: lines('oidc-te-resource'),
+            audience: lines('oidc-te-audience'),
+            scope: $('#oidc-te-scope').val(),
+            actor_token: $('#oidc-te-actor-token').val(),
+            actor_token_type: $('#oidc-te-actor-token-type').val(),
+            client_id: $('#oidc-te-client-id').val(),
+            auth_method: $('#oidc-te-auth-method').val(),
+            client_secret: $('#oidc-te-client-secret').val()
+        };
+        const button = $('#oidc-te-send-button').prop('disabled', true);
+        $.ajax({
+                   url: buildUrl('/oidc/authn/token-exchange'),
+                   type: 'POST',
+                   contentType: 'application/json',
+                   data: JSON.stringify(request),
+                   dataType: 'json',
+                   success: (result) => this.displayTokenExchangeResult(result),
+                   error: (error) => {
+                       const reason = error && error.status
+                           ? 'the test client answered ' + error.status + ' ' + (error.statusText || '')
+                           : 'no response from the test client';
+                       codeViewer.displayParts('Token Exchange', [
+                           { label: 'Error', text: 'The token exchange request could not be sent: ' + reason }
+                       ]);
+                   },
+                   complete: () => {
+                       button.prop('disabled', false);
+                   }
+               });
+    }
+
+    /**
+     * Displays the outcome of a token exchange request in the "Token Exchange" frame.
+     * @param result the result, as reported by the server
+     */
+    displayTokenExchangeResult(result) {
+        const tbody = $('#oidc-te-result-tbody').empty();
+        const issuedToken = result.response && result.response.access_token;
+        if (result.error) {
+            tbody.append(this.createTextRow('Outcome', 'No token was issued', 'table-text table-danger'));
+            (result.error.message ? [result.error.message] : []).forEach(
+                (m) => tbody.append(this.createTextRow('Error', m, 'table-text table-danger')));
+            if (result.error.http_status) {
+                tbody.append(this.createTextRow('HTTP status', String(result.error.http_status)));
+            }
+            if (result.error.error) {
+                tbody.append(this.createTextRow('error', result.error.error, 'table-text table-danger'));
+            }
+            if (result.error.error_description) {
+                tbody.append(this.createTextRow('error_description', result.error.error_description));
+            }
+        }
+        else {
+            tbody.append(this.createTextRow('Outcome', 'A token was issued', 'table-text table-success'));
+            const response = result.response || {};
+            for (const prop in response) {
+                if (Object.prototype.hasOwnProperty.call(response, prop) && prop !== 'access_token') {
+                    tbody.append(this.createTextRow(prop, JSON.stringify(response[prop])));
+                }
+            }
+            if (result.issued_token) {
+                const claims = result.issued_token.claims || {};
+                for (const prop in claims) {
+                    if (Object.prototype.hasOwnProperty.call(claims, prop)) {
+                        tbody.append(this.createTextRow('Issued token: ' + prop,
+                            typeof claims[prop] === 'string' ? claims[prop] : JSON.stringify(claims[prop])));
+                    }
+                }
+            }
+        }
+        OIDCAuthenticationResult.appendChecks(tbody, result.checks, 'Ena');
+        OIDCAuthenticationResult.appendChecks(tbody, result.client_auth_checks, 'SDG');
+
+        const issuedSource = 'Issued by token exchange at ' + new Date().toLocaleTimeString();
+        const resourceFrameShown = $('#oidc-authn-result-protected-resource').is(':visible');
+        if (issuedToken && resourceFrameShown) {
+            // The next resource call uses the issued token, and a resource matching its aud is picked
+            this.useTokenForResourceCall(issuedToken, issuedSource);
+            tbody.append(this.createTextRow('Call Protected Resource',
+                'The access token there is now the issued token'));
+        }
+        $('#oidc-te-use-as-subject-button').toggle(!!issuedToken).off('click').click(() => {
+            this.setTokenField('#oidc-te-subject-token', issuedToken, issuedSource);
+            $('#oidc-te-subject-token')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        $('#oidc-te-use-for-resource-button')
+            .text('Go to resource call')
+            .toggle(!!issuedToken && resourceFrameShown)
+            .off('click').click(() => {
+            this.useTokenForResourceCall(issuedToken, issuedSource);
+            $('#oidc-authn-result-protected-resource')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        $('#oidc-te-details-button').off('click').click(() => {
+            const parts = [];
+            if (result.request) {
+                parts.push({ label: 'Request', json: result.request });
+            }
+            if (result.body !== null && result.body !== undefined) {
+                parts.push({ label: 'Response Body', text: result.body || '(empty)' });
+            }
+            if (result.subject_token) {
+                parts.push({ label: 'Subject Token', json: result.subject_token });
+            }
+            if (result.issued_token) {
+                parts.push({ label: 'Issued Token', json: result.issued_token });
+            }
+            if (result.checks) {
+                parts.push({ label: 'Checks', json: result.checks });
+            }
+            if (result.client_auth_checks) {
+                parts.push({ label: 'Client Authentication Checks (SDG)', json: result.client_auth_checks });
+            }
+            codeViewer.displayParts('Token Exchange', parts);
+        });
+        $('#oidc-te-result').show();
+    }
+
+    /**
+     * Sets up the "Call Protected Resource" frame. It is only shown if the test client has protected resources
+     * configured.
+     * @param resultData the authentication result
+     */
+    initProtectedResource(resultData) {
+        const frame = $('#oidc-authn-result-protected-resource');
+        frame.hide();
+        if (!TestClient.isTokenExchangeEnabled() || resultData.op_error || resultData.tokenError) {
+            return;
+        }
+        $.ajax({
+                   url: buildUrl('/oidc/protected-resources'),
+                   type: 'GET',
+                   dataType: 'json',
+                   success: (resources) => {
+                       if (!resources || resources.length === 0) {
+                           return;
+                       }
+                       this.protectedResources = resources;
+                       const select = $('#oidc-resource-select').empty();
+                       resources.forEach((r) => select.append($('<option>', {
+                           value: r.index, text: r.name === r.url ? r.url : r.name + ' (' + r.url + ')'
+                       })));
+                       this.setTokenField('#oidc-resource-access-token',
+                           resultData.accessToken || (resultData.response && resultData.response.access_token) || '',
+                           'Access token of the authentication');
+                       $('#oidc-resource-send-button').off('click').click(() => this.callProtectedResource());
+                       frame.show();
+                   }
+               });
+    }
+
+    /**
+     * Puts a token in the "Call Protected Resource" frame. If the selected resource is not one of the token's
+     * audiences, the first configured resource whose URL is under one of them is selected.
+     * @param token the access token
+     * @param source where the token came from, shown with its claims
+     */
+    useTokenForResourceCall(token, source) {
+        this.setTokenField('#oidc-resource-access-token', token, source);
+        const decoded = OIDCAuthenticationResult.decodeRequestObject(token);
+        const aud = decoded ? [].concat(decoded.claims.aud || []).map(String) : [];
+        const resources = this.protectedResources || [];
+        const isFor = (r) => r && aud.some((a) => r.url === a || r.url.startsWith(a.endsWith('/') ? a : a + '/'));
+        const select = $('#oidc-resource-select');
+        const selected = resources.find((r) => String(r.index) === String(select.val()));
+        if (!isFor(selected)) {
+            const match = resources.find(isFor);
+            if (match) {
+                select.val(String(match.index));
+            }
+        }
+    }
+
+    /**
+     * Sets the value of a token field and shows the token's claims under it.
+     * @param selector the token field (a textarea followed by a .token-summary element)
+     * @param token the token
+     * @param source where the token came from, shown with its claims (cleared when the field is edited)
+     */
+    setTokenField(selector, token, source) {
+        const field = $(selector);
+        field.val(token || '');
+        field.data('token-source', token ? source : null);
+        if (!field.data('token-summary-bound')) {
+            field.data('token-summary-bound', true);
+            field.on('input', () => {
+                field.data('token-source', null);
+                OIDCAuthenticationResult.updateTokenSummary(field);
+            });
+        }
+        OIDCAuthenticationResult.updateTokenSummary(field);
+        if (!OIDCAuthenticationResult.tokenSummaryTimer) {
+            // Keeps "expires in" current
+            OIDCAuthenticationResult.tokenSummaryTimer = setInterval(() => $('.token-summary').each((i, el) =>
+                OIDCAuthenticationResult.updateTokenSummary($(el).prev('textarea'))), 15000);
+        }
+    }
+
+    /**
+     * Shows the main claims of the token in a token field in the .token-summary element after it: where the token
+     * came from, aud, scope, azp or client_id, sub, and when it expires. Nothing is verified.
+     * @param field the token field
+     */
+    static updateTokenSummary(field) {
+        const summary = field.next('.token-summary').empty();
+        const token = (field.val() || '').trim();
+        if (!token) {
+            return;
+        }
+        const source = field.data('token-source');
+        if (source) {
+            summary.append($('<span>', { class: 'token-summary-claim token-summary-source', text: source }));
+        }
+        const decoded = OIDCAuthenticationResult.decodeRequestObject(token);
+        if (!decoded) {
+            summary.append($('<span>', { class: 'token-summary-claim',
+                text: 'Not a signed JWT - its claims cannot be shown' }));
+            return;
+        }
+        const claims = decoded.claims;
+        const add = (name, value, cls) => summary.append($('<span>', { class: 'token-summary-claim ' + (cls || '') })
+                                                             .append($('<span>', { class: 'token-summary-name', text: name + ': ' }))
+                                                             .append(document.createTextNode(value)));
+        const show = (v) => Array.isArray(v) ? v.join(', ') : String(v);
+        ['aud', 'scope', 'azp', 'client_id', 'sub'].forEach((name) => {
+            if (claims[name] !== undefined && claims[name] !== null) {
+                add(name, show(claims[name]));
+            }
+        });
+        if (claims.act) {
+            add('act', JSON.stringify(claims.act));
+        }
+        if (typeof claims.exp === 'number') {
+            const left = Math.round(claims.exp - Date.now() / 1000);
+            const span = (sec) => (sec >= 60 ? Math.floor(sec / 60) + ' min ' : '') + (sec % 60) + ' s';
+            const when = new Date(claims.exp * 1000).toLocaleTimeString();
+            if (left > 0) {
+                add('exp', when + ' (expires in ' + span(left) + ')');
+            }
+            else {
+                add('exp', when + ' (EXPIRED ' + span(-left) + ' ago)', 'text-danger');
+            }
+        }
+    }
+
+    /**
+     * Calls a protected resource (made by the backend) and shows the request and response in the JSON viewer.
+     */
+    callProtectedResource() {
+        const request = {
+            index: Number($('#oidc-resource-select').val()),
+            access_token: $('#oidc-resource-access-token').val()
+        };
+        const button = $('#oidc-resource-send-button').prop('disabled', true);
+        $.ajax({
+                   url: buildUrl('/oidc/authn/protected-resource'),
+                   type: 'POST',
+                   contentType: 'application/json',
+                   data: JSON.stringify(request),
+                   dataType: 'json',
+                   success: (call) => {
+                       const parts = [];
+                       if (call.request) {
+                           parts.push({ label: 'Request', json: call.request });
+                       }
+                       if (call.error) {
+                           parts.push({ label: 'Error', text: call.error });
+                       }
+                       if (call.status !== null && call.status !== undefined) {
+                           parts.push({ label: 'Response Status', text: String(call.status) });
+                           parts.push({ label: 'Response Headers', json: call.response_headers || {} });
+                       }
+                       if (call.json !== null && call.json !== undefined) {
+                           parts.push({ label: 'Response Body', json: call.json });
+                       }
+                       else if (call.status !== null && call.status !== undefined) {
+                           parts.push({ label: 'Response Body', text: call.body ? call.body : '(empty)' });
+                       }
+                       codeViewer.displayParts('Protected Resource', parts);
+                   },
+                   error: (error) => {
+                       const reason = error && error.status
+                           ? 'the test client answered ' + error.status + ' ' + (error.statusText || '')
+                           : 'no response from the test client';
+                       codeViewer.displayParts('Protected Resource', [
+                           { label: 'Error', text: 'The protected resource could not be called: ' + reason }
+                       ]);
+                   },
+                   complete: () => {
+                       button.prop('disabled', false);
+                   }
+               });
     }
 
     /**
@@ -1832,6 +2299,7 @@ class OIDCAuthnRequest {
             [adv.nonce, false],
             [adv.loginHint, false],
             [adv.maxAge, false],
+            [adv.resource, false],
             [adv.codeChallengeMethod, false],
             [adv.codeChallenge, false],
             [this.pars.userMessage, false],
@@ -2580,6 +3048,16 @@ class OIDCAuthnRequest {
             '#oidc-request-max_age-request-body',
             '#oidc-request-max_age-input',
             ["advanced", "maxAge"]
+        );
+        // A configuration saved before the resource setting existed loads with the row off
+        if (!this.pars.advanced.resource) {
+            this.pars.advanced.resource = { value: '', valuePresent: false, requestBody: false };
+        }
+        this.initNestedField(
+            '#oidc-request-resource-present',
+            '#oidc-request-resource-request-body',
+            '#oidc-request-resource-input',
+            ["advanced", "resource"]
         );
         this.initModuleSelector(
             "#oidc-request-responsetype-select",
@@ -3532,6 +4010,7 @@ class OIDCAuthnRequest {
         for (const [field, inputSel, rbSel, presentSel] of [
             ['loginHint', '#oidc-request-login_hint-input', '#oidc-request-login_hint-request-body', '#oidc-request-login_hint-present'],
             ['maxAge',    '#oidc-request-max_age-input',    '#oidc-request-max_age-request-body',    '#oidc-request-max_age-present'],
+            ['resource',  '#oidc-request-resource-input',   '#oidc-request-resource-request-body',   '#oidc-request-resource-present'],
         ]) {
             if (adv[field] !== undefined) {
                 const f = adv[field];
