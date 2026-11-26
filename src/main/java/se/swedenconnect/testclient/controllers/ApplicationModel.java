@@ -41,6 +41,10 @@ public class ApplicationModel {
   @JsonProperty("oidf_enabled")
   private boolean oidfEnabled = false;
 
+  /** Whether the token exchange features are enabled, see {@code testclient.oidc.token-exchange.enabled}. */
+  @JsonProperty("token_exchange_enabled")
+  private boolean tokenExchangeEnabled = false;
+
   @JsonProperty("federation_name")
   private String federationName;
 }

@@ -70,8 +70,22 @@ public class OidcProperties implements InitializingBean {
   private final List<OidcOpProperties> ops = new ArrayList<>();
 
   /**
+   * Token exchange settings.
+   */
+  @Getter
+  @NestedConfigurationProperty
+  private final TokenExchange tokenExchange = new TokenExchange();
+
+  /**
+   * Which profile checks are made. They only report, and are all off by default.
+   */
+  @Getter
+  @NestedConfigurationProperty
+  private final Checks checks = new Checks();
+
+  /**
    * Protected resources (APIs) that an access token can be sent to from the authentication result ("Call Protected
-   * Resource"). Only these URLs can be called - the test client never sends a token to a URL typed in the browser.
+   * Resource"). Only used when token exchange is enabled, see {@link TokenExchange#isEnabled()}. Only these URLs can be called - the test client never sends a token to a URL typed in the browser.
    */
   @Getter
   @NestedConfigurationProperty
@@ -126,6 +140,40 @@ public class OidcProperties implements InitializingBean {
         "Missing user-info-endpoint for OIDC OP '%s'".formatted(opId));
     Assert.hasText(op.getMetadataEndpoint(),
         "Missing metadata-endpoint for OIDC OP '%s'".formatted(opId));
+  }
+
+  /**
+   * Token exchange settings.
+   */
+  @Getter
+  @Setter
+  public static class TokenExchange {
+
+    /**
+     * Whether the token exchange features are enabled: the "Token Exchange" and "Call Protected Resource" frames of the
+     * authentication result and their endpoints.
+     */
+    private boolean enabled = false;
+  }
+
+  /**
+   * Profile checks.
+   */
+  @Getter
+  @Setter
+  public static class Checks {
+
+    /**
+     * Whether token exchange requests and responses are checked against section 2 of the Ena OAuth 2.0 Token Exchange
+     * Profile for Chaining Identity and Authorization. Only has an effect when token exchange is enabled.
+     */
+    private boolean enaChaining = false;
+
+    /**
+     * Whether the client authentication of the requests to the token endpoint (the token request of an authentication,
+     * and token exchange requests) is checked against section 4.1.1 of the SDG OAuth 2.0 profile.
+     */
+    private boolean sdgClientAuthentication = false;
   }
 
   /**

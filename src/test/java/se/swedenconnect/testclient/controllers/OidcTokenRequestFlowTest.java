@@ -196,6 +196,25 @@ class OidcTokenRequestFlowTest {
     assertEquals(otherKid, response.getTokenRequest().clientAssertion().header().get("kid"));
   }
 
+  @Test
+  void theClientAuthenticationIsOnlyCheckedWhenTheSdgChecksAreOn() throws Exception {
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withSuccess(UserInfoTestSupport.tokenResponse(), MediaType.APPLICATION_JSON));
+    assertNull(this.redirect().getClientAuthChecks(), "The SDG checks are off by default");
+    this.server.verify();
+
+    final RestClient.Builder builder = RestClient.builder();
+    this.server = MockRestServiceServer.bindTo(builder).build();
+    this.controller = new OidcController(this.session, builder.build(), true);
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withSuccess(UserInfoTestSupport.tokenResponse(), MediaType.APPLICATION_JSON));
+    final OIDCResponse response = this.redirect();
+    this.server.verify();
+    assertNotNull(response.getClientAuthChecks());
+    assertTrue(response.getClientAuthChecks().stream()
+        .anyMatch(c -> c.requirement().startsWith("aud is the URL of the token endpoint")));
+  }
+
   // Token requests that are not sent
 
   @ParameterizedTest

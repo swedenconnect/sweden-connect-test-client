@@ -30,6 +30,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -66,6 +68,7 @@ public class OidcController {
   private final HttpSession httpSession;
   private final UserInfoCaller userInfoCaller;
   private final TokenRequestSender tokenRequestSender;
+  private final boolean sdgChecks;
 
   public static final String SESSION_NAME_OIDC_RESPONSE = "sctc.oidcResponse";
 
@@ -103,15 +106,30 @@ public class OidcController {
   private static final ObjectMapper objectMapper = JsonMapper.builder().build();
 
   /**
-   * Constructor.
+   * Constructor. The client authentication of the token request is not checked.
    *
    * @param httpSession the HTTP session
    * @param client the HTTP client used against the token and UserInfo endpoints
    */
   public OidcController(@Nonnull final HttpSession httpSession, @Nonnull final RestClient client) {
+    this(httpSession, client, false);
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param httpSession the HTTP session
+   * @param client the HTTP client used against the token and UserInfo endpoints
+   * @param sdgChecks whether the client authentication of the token request is checked against the SDG OAuth 2.0
+   *     profile ({@code testclient.oidc.checks.sdg-client-authentication})
+   */
+  @Autowired
+  public OidcController(@Nonnull final HttpSession httpSession, @Nonnull final RestClient client,
+      @Value("${testclient.oidc.checks.sdg-client-authentication:false}") final boolean sdgChecks) {
     this.httpSession = httpSession;
     this.userInfoCaller = new UserInfoCaller(client);
     this.tokenRequestSender = new TokenRequestSender(client);
+    this.sdgChecks = sdgChecks;
   }
 
   @RequestMapping(path = REDIRECTION_URL_BASE + "/{rpSuffix}", method = {RequestMethod.GET, RequestMethod.POST})
@@ -306,15 +324,19 @@ public class OidcController {
 
   /**
    * Checks the client authentication of a token request that was sent against the SDG OAuth 2.0 profile, and remembers
-   * the jti of its client assertion. Call it once per request.
+   * the jti of its client assertion. Call it once per request. The checks are only made when
+   * {@code testclient.oidc.checks.sdg-client-authentication} is on.
    *
    * @param tokenRequest the token request as it was sent
    * @param clientId the client ID of the RP
-   * @return the checks
+   * @return the checks, or {@code null} if the checks are off
    */
-  @Nonnull
+  @Nullable
   private List<TokenExchangeChecks.Check> clientAuthChecks(@Nonnull final SentTokenRequest tokenRequest,
       @Nonnull final String clientId) {
+    if (!this.sdgChecks) {
+      return null;
+    }
     final List<TokenExchangeChecks.Check> checks = ClientAuthenticationChecks.evaluate(tokenRequest, clientId,
         ClientAuthenticationChecks.earlierJtis(this.httpSession));
     ClientAuthenticationChecks.rememberJti(this.httpSession, tokenRequest.clientAssertion());

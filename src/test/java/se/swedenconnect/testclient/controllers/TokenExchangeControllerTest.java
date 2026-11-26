@@ -74,6 +74,8 @@ class TokenExchangeControllerTest {
   private MockRestServiceServer server;
   private TokenExchangeController controller;
   private OidcRp rp;
+  private OidcProperties properties;
+  private OIDCOPMetadataFetcher fetcher;
   private final List<String> sentBodies = new ArrayList<>();
 
   @BeforeEach
@@ -81,13 +83,17 @@ class TokenExchangeControllerTest {
     this.session = new MockHttpSession();
     final RestClient.Builder builder = RestClient.builder();
     this.server = MockRestServiceServer.bindTo(builder).build();
-    final OidcProperties properties = new OidcProperties();
+    this.properties = new OidcProperties();
+    // Both checks are off by default - the tests below look at them
+    this.properties.getChecks().setEnaChaining(true);
+    this.properties.getChecks().setSdgClientAuthentication(true);
+    final OidcProperties properties = this.properties;
     final OidcProperties.ProtectedResource resource = new OidcProperties.ProtectedResource();
     resource.setName("API 1");
     resource.setUrl(RESOURCE_URL);
     resource.setResource(API1);
     properties.getProtectedResources().add(resource);
-    final OIDCOPMetadataFetcher fetcher = new OIDCOPMetadataFetcher(builder.build()) {
+    this.fetcher = new OIDCOPMetadataFetcher(builder.build()) {
       @Override
       public JSONObject getOPMetadata(final OidcOp oidcOp) {
         final JSONObject metadata = new JSONObject();
@@ -95,7 +101,7 @@ class TokenExchangeControllerTest {
         return metadata;
       }
     };
-    this.controller = new TokenExchangeController(this.session, builder.build(), properties, fetcher);
+    this.controller = new TokenExchangeController(this.session, builder.build(), properties, this.fetcher);
     this.rp = UserInfoTestSupport.rp();
     UserInfoTestSupport.authenticationInSession(this.session, this.rp);
   }
@@ -201,6 +207,25 @@ class TokenExchangeControllerTest {
     assertNull(result.getResponse());
     assertTrue(result.getChecks().stream().anyMatch(c -> c.outcome() == TokenExchangeChecks.Outcome.FAIL
         && c.requirement().contains("target indicator")));
+  }
+
+  @Test
+  void withTheChecksOffTheResultHasNoChecks() {
+    this.properties.getChecks().setEnaChaining(false);
+    this.properties.getChecks().setSdgClientAuthentication(false);
+    final RestClient.Builder builder = RestClient.builder();
+    this.server = MockRestServiceServer.bindTo(builder).build();
+    this.controller = new TokenExchangeController(this.session, builder.build(), this.properties, this.fetcher);
+    this.server.expect(requestTo(TOKEN_ENDPOINT))
+        .andRespond(withSuccess(tokenResponse("opaque"), MediaType.APPLICATION_JSON));
+
+    final TokenExchangeController.TokenExchangeResult result =
+        this.controller.sendTokenExchangeRequest(request("subject", List.of(API2), null));
+
+    this.server.verify();
+    assertEquals("opaque", result.getResponse().get("access_token"));
+    assertNull(result.getChecks());
+    assertNull(result.getClientAuthChecks());
   }
 
   @Test

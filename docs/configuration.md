@@ -114,6 +114,9 @@ is always the base URL followed by the RP:s `path-suffix`.
 | `testclient.saml.enabled` | Whether the SAML side is enabled. | Boolean | `false` |
 | `testclient.oidc.enabled` | Whether the OpenID Connect side is enabled. | Boolean | `false` |
 | `testclient.oidc.federation.enabled` | Whether OpenID Federation support is enabled. Requires that OIDC is enabled. | Boolean | `false` |
+| `testclient.oidc.token-exchange.enabled` | Whether the token exchange features are enabled: the Token Exchange and Call Protected Resource frames and their endpoints. Requires that OIDC is enabled. See [Token exchange and protected resources](#token-exchange-and-protected-resources). | Boolean | `false` |
+| `testclient.oidc.checks.ena-chaining` | Whether token exchange requests and responses are checked against the Ena chaining profile. Only has an effect when token exchange is enabled. | Boolean | `false` |
+| `testclient.oidc.checks.sdg-client-authentication` | Whether the client authentication of the token request, and of token exchange requests, is checked against the SDG OAuth 2.0 profile. | Boolean | `false` |
 
 A protocol that is turned off has no beans at all, and its endpoints are not published. The user interface hides the
 corresponding tabs. At least one of the two protocols has to be enabled for the application to be of any use, but
@@ -403,19 +406,34 @@ The advanced options of the OIDC request have a **Resource** row: resource indic
 ([RFC 8707](https://www.rfc-editor.org/rfc/rfc8707)) separated by spaces. Each is sent as a `resource` parameter of its
 own, exactly as typed. In the request object, one value is a string and several are an array.
 
-The OIDC authentication result has two more frames.
+The Token Exchange and Call Protected Resource frames are only there when `testclient.oidc.token-exchange.enabled`
+is `true` (default `false`). When it is `false`, the frames are hidden and their endpoints are not published. The
+checks against the Ena chaining profile and the SDG OAuth 2.0 profile have properties of their own under
+`testclient.oidc.checks`, also `false` by default. They only report: the test client sends whatever is entered.
+
+```yaml
+testclient:
+  oidc:
+    token-exchange:
+      enabled: true
+    checks:
+      ena-chaining: true
+      sdg-client-authentication: true
+```
+
+The OIDC authentication result then has two more frames.
 
 **Token Exchange** sends a token exchange request ([RFC 8693](https://www.rfc-editor.org/rfc/rfc8693)) to the token
 endpoint of the OP of the authentication. By default the subject token is the access token of the authentication, and
 the client is the RP of the authentication, which authenticates with `private_key_jwt` and the signing key selected
 under "Key options". `resource` and `audience` can be given more than once, one value per line. The issued token can
-be used as the next subject token, so a chain of exchanges can be tested. The request and response are checked against
-section 2 of the
+be used as the next subject token, so a chain of exchanges can be tested. With `testclient.oidc.checks.ena-chaining`,
+the request and response are checked against section 2 of the
 [Ena OAuth 2.0 Token Exchange Profile for Chaining Identity and Authorization](https://ena-infrastructure.github.io/specifications/ena-oauth2-chaining.html#protected-resource-acting-as-an-client).
-The checks only report: the test client sends whatever is entered. No configuration is needed.
 
-The client authentication of every request the test client sends to a token endpoint - the token request of the
-authentication and the token exchange request - is also checked against section 4.1.1 of the
+With `testclient.oidc.checks.sdg-client-authentication`, the client authentication of every request the test client
+sends to a token endpoint - the token request of the authentication, and token exchange requests when token exchange
+is enabled - is checked against section 4.1.1 of the
 [SDG OAuth 2.0 profile](https://docs.swedenconnect.se/technical-framework/sdg/sdg-oauth2-profile.html#client-authentication):
 `private_key_jwt` only, `client_assertion_type`, an asymmetric signature, `iss` and `sub` equal to the client ID,
 `aud` equal to the token endpoint URL, `iat`, `exp`, a `jti` with at least 128 bits of entropy that has not been sent
@@ -432,10 +450,13 @@ The frame is hidden if none are configured.
 | :--- | :--- | :--- | :--- |
 | `testclient.oidc.protected-resources[].url` | The URL to call. | String | - |
 | `testclient.oidc.protected-resources[].name` | The name displayed in the user interface. | String | the URL |
+| `testclient.oidc.protected-resources[].resource` | The resource identifier, suggested as `resource` and `audience` in the Token Exchange frame. | String | the origin of the URL (scheme, host and port) |
 
 ```yaml
 testclient:
   oidc:
+    token-exchange:
+      enabled: true
     protected-resources:
       - name: "API 1"
         url: https://api1.example.com/api/hello

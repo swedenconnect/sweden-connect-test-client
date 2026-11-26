@@ -978,7 +978,7 @@ class OIDCAuthenticationResult {
      */
     initTokenExchange(resultData) {
         const frame = $('#oidc-authn-result-token-exchange');
-        if (resultData.op_error || resultData.tokenError) {
+        if (!TestClient.isTokenExchangeEnabled() || resultData.op_error || resultData.tokenError) {
             frame.hide();
             return;
         }
@@ -1235,7 +1235,7 @@ class OIDCAuthenticationResult {
     initProtectedResource(resultData) {
         const frame = $('#oidc-authn-result-protected-resource');
         frame.hide();
-        if (resultData.op_error || resultData.tokenError) {
+        if (!TestClient.isTokenExchangeEnabled() || resultData.op_error || resultData.tokenError) {
             return;
         }
         $.ajax({

@@ -105,6 +105,11 @@ public class TestClientConfiguration {
         .map(OidcProperties::getFederation)
         .map(OidfProperties::isEnabled)
         .orElse(false));
+    model.setTokenExchangeEnabled(model.isOidcEnabled()
+        && Optional.ofNullable(this.properties.getOidc())
+        .map(OidcProperties::getTokenExchange)
+        .map(OidcProperties.TokenExchange::isEnabled)
+        .orElse(false));
 
     // TODO: change
     model.setFederationName(

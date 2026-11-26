@@ -28,6 +28,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -63,11 +64,17 @@ import java.util.stream.IntStream;
  * "Send Token Exchange Request" exchanges a token - by default the access token of the authentication - at the token
  * endpoint of the OP selected for the authentication. The test client authenticates as the RP selected for the
  * authentication, so this is an RP (or a protected resource that holds the RP's keys) acting as a client in the
- * sense of the Ena OAuth 2.0 chaining profile. The request and response are checked with {@link TokenExchangeChecks}.
+ * sense of the Ena OAuth 2.0 chaining profile. If {@code testclient.oidc.checks.ena-chaining} is on, the request and
+ * response are checked with {@link TokenExchangeChecks}, and if {@code testclient.oidc.checks.sdg-client-authentication}
+ * is on, the client authentication with {@link ClientAuthenticationChecks}.
  * </p>
  * <p>
  * "Call Protected Resource" sends an access token to one of the protected resources configured under
  * {@code testclient.oidc.protected-resources}. URLs from the browser are never called.
+ * </p>
+ * <p>
+ * The controller only exists when {@code testclient.oidc.token-exchange.enabled} is {@code true} (default
+ * {@code false}).
  * </p>
  *
  * @author Simon Tardell
@@ -75,6 +82,8 @@ import java.util.stream.IntStream;
 @Slf4j
 @RestController
 @RequestMapping("/oidc")
+@ConditionalOnProperty(value = {"testclient.oidc.enabled", "testclient.oidc.token-exchange.enabled"},
+    havingValue = "true")
 public class TokenExchangeController {
 
   private static final ObjectMapper objectMapper = JsonMapper.builder().build();
@@ -85,12 +94,18 @@ public class TokenExchangeController {
   private final List<OidcProperties.ProtectedResource> protectedResources;
   private final OIDCOPMetadataFetcher metadataFetcher;
 
+  /** Whether token exchanges are checked against the Ena chaining profile ({@code testclient.oidc.checks}). */
+  private final boolean enaChecks;
+
+  /** Whether client authentication is checked against the SDG OAuth 2.0 profile ({@code testclient.oidc.checks}). */
+  private final boolean sdgChecks;
+
   /**
    * Constructor.
    *
    * @param httpSession the HTTP session
    * @param client the HTTP client
-   * @param oidcProperties the OIDC configuration (for the protected resources)
+   * @param oidcProperties the OIDC configuration (for the protected resources and which checks are made)
    * @param metadataFetcher reads the metadata of the OP (for the scopes it supports)
    */
   public TokenExchangeController(@Nonnull final HttpSession httpSession, @Nonnull final RestClient client,
@@ -100,6 +115,8 @@ public class TokenExchangeController {
     this.client = client;
     this.tokenRequestSender = new TokenRequestSender(client);
     this.protectedResources = List.copyOf(oidcProperties.getProtectedResources());
+    this.enaChecks = oidcProperties.getChecks().isEnaChaining();
+    this.sdgChecks = oidcProperties.getChecks().isSdgClientAuthentication();
   }
 
   /**
@@ -231,10 +248,13 @@ public class TokenExchangeController {
     final TokenRequestSender.Result result =
         this.tokenRequestSender.send(op.getTokenEndpoint(), clientAuth.headers(), parameters);
 
-    final List<TokenExchangeChecks.Check> clientAuthChecks = ClientAuthenticationChecks.evaluate(
-        op.getTokenEndpoint(), clientAuth.headers(), parameters.toSingleValueMap(), clientAuth.clientAssertion(),
-        clientId, ClientAuthenticationChecks.earlierJtis(this.httpSession));
-    ClientAuthenticationChecks.rememberJti(this.httpSession, clientAuth.clientAssertion());
+    List<TokenExchangeChecks.Check> clientAuthChecks = null;
+    if (this.sdgChecks) {
+      clientAuthChecks = ClientAuthenticationChecks.evaluate(
+          op.getTokenEndpoint(), clientAuth.headers(), parameters.toSingleValueMap(), clientAuth.clientAssertion(),
+          clientId, ClientAuthenticationChecks.earlierJtis(this.httpSession));
+      ClientAuthenticationChecks.rememberJti(this.httpSession, clientAuth.clientAssertion());
+    }
 
     final DecodedToken subjectToken = decode(trim(model.getSubjectToken()));
     final TokenExchangeResult.TokenExchangeResultBuilder builder = TokenExchangeResult.builder()
@@ -245,7 +265,7 @@ public class TokenExchangeController {
         .subjectToken(subjectToken);
     if (result.error() != null) {
       return builder
-          .checks(TokenExchangeChecks.evaluate(parameters, claims(subjectToken), null, null))
+          .checks(this.enaChecks ? TokenExchangeChecks.evaluate(parameters, claims(subjectToken), null, null) : null)
           .build();
     }
     final Map<String, Object> response = result.tokenResponse();
@@ -254,7 +274,9 @@ public class TokenExchangeController {
     return builder
         .response(response)
         .issuedToken(issued)
-        .checks(TokenExchangeChecks.evaluate(parameters, claims(subjectToken), response, claims(issued)))
+        .checks(this.enaChecks
+            ? TokenExchangeChecks.evaluate(parameters, claims(subjectToken), response, claims(issued))
+            : null)
         .build();
   }
 
